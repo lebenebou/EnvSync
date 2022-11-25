@@ -1,3 +1,3 @@
-# ServerChecker
+# ServerToggler
 This repo toggles the availability of some apps that run online.
-This description is nowhere near enough, because this repo is a mystery repo.
+It conatains files with the app names. If the file name starts with an underscore, the app server is down.
