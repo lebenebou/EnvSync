@@ -28,9 +28,6 @@ import json
 import os
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PARENT_DIR = os.path.dirname(CURRENT_DIR)
-
-sys.path.append(PARENT_DIR)
 import cli
 
 SETTINGS_FILE = os.path.join("D:\\", ".mxdevenvpp", "settings", "python_scripts_settings.json")
