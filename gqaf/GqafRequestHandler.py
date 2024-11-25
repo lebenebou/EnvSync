@@ -1,0 +1,593 @@
+
+import os
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(CURRENT_DIR)
+
+import sys
+sys.path.append(PARENT_DIR)
+
+import settings
+
+from requests.auth import HTTPBasicAuth
+import requests
+from getpass import getpass
+
+import urllib3
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+from datetime import datetime
+
+from tabulate import tabulate
+import time
+
+import base64
+def decrypt(encoded_message: str) -> str:
+
+    base64_bytes = encoded_message.encode('utf-8')
+    message_bytes = base64.b64decode(base64_bytes)
+    return message_bytes.decode('utf-8')
+
+class BuildJob:
+    def __init__(self, data: dict):
+
+        valid = (len(data['events']) > 0)
+
+        try:
+            self.deployer = data['events'][0]['user'] if valid else None
+        except KeyError:
+            self.deployer = None
+
+        self.changelist: int = int(data.get('changelist'))
+        self.buildId: str = data.get('buildId')
+        self.status = data.get('status')
+        self.customized: bool = data.get('customized')
+        self.operatingSystem: str = data.get('operatingSystem')
+        self.deployDate = data.get('startDate')
+        self.version = data.get('version')
+
+        if self.customized is not None:
+            self.customized = 'custom' if self.customized else 'standard'
+
+    def isValid(self) -> bool:
+        return all([self.deployer])
+
+    def makeDateReadable(self):
+
+        date = datetime.fromisoformat(self.deployDate)
+        self.deployDate = date.strftime("%b %d %I:%M %p")
+
+class DeploymentJob:
+    def __init__(self, data: dict):
+
+        self.testPackage = data.get('testPackage')
+        self.nickname = data.get('nickname')
+        self.id = data.get('id')
+        self.status = data.get('analysisStatus')
+        self.owner = data.get('owner')
+        self.buildId: str = data.get('buildId')
+        self.feeder = data.get('feederGroup')
+        self.pushDate = data.get('pushDate')
+
+        self.changelist = int(self.buildId.split('-')[0]) if self.buildId else None
+
+    def __hash__(self):
+        return hash((self.testPackage, self.nickname))
+
+    def __eq__(self, other):
+        
+        if not isinstance(other, DeploymentJob):
+            return False
+
+        return self.testPackage == other.testPackage and self.nickname == other.nickname
+
+    def isFailed(self) -> bool:
+        return self.status == 'FAILED' or self.status == 'REQUESTED_FOR_ANALYSIS'
+
+    def isPassed(self) -> bool:
+        return self.status == 'PASSED'
+
+    def makeDateReadable(self):
+
+        date = datetime.fromisoformat(self.pushDate)
+        self.pushDate = date.strftime("%b %d %I:%M %p")
+
+    def isValid(self) -> bool:
+        return all([self.id, self.pushDate, self.status])
+
+class GqafApiInput:
+    def __init__(self):
+        self.alreadyPrepared = False # can only prepare an input ONCE
+
+    def isValid(self) -> bool:
+        raise NotImplementedError("Abstract method, please override")
+
+    def prepare(self):
+
+        if self.alreadyPrepared:
+            return
+        
+        assert self.isValid(), f'GQAF {self.__class__.__name__} is invalid'
+
+        noneAttributes: list[str] = [attr for attr, value in self.__dict__.items() if value is None]
+
+        for attr in noneAttributes:
+            delattr(self, attr)
+
+        self.alreadyPrepared = True
+
+    def toJson(self) -> dict:
+        
+        if not self.alreadyPrepared:
+            self.prepare()
+
+        data = dict(self.__dict__)
+        data.pop('alreadyPrepared', None)
+
+        return data
+
+class BuildJobInput(GqafApiInput):
+
+    osMap = {
+        "linux" : "Linux-rhel-8.6-x86_64",
+        "windows" : "Windows-x86-5.2-64b",
+    }
+
+    def __init__(self):
+
+        super().__init__()
+
+        # required
+        self.version: str = None
+        self.changelist: int = None
+
+        # optional
+        self.owner: str = None
+
+        self.customize: str = None
+        self.operatingSystems: list[str] = []
+
+        self.shelvedChangelists: list[int] = []
+
+        self.javaProperties: dict[str, str] = {}
+        self.binaryProperties: dict[str, str] = {}
+
+        self.force: bool = None
+        self.mts: bool = None
+        self.skipJava: bool = None
+
+        self.priority: int = None
+
+    # override
+    def prepare(self):
+
+        if self.alreadyPrepared:
+            return
+
+        self.operatingSystems = [BuildJobInput.osMap.get(os, os) for os in self.operatingSystems] # 'linux' -> 'Linux-rhel-8.6-x86_64' etc..
+        self.changelist = str(self.changelist)
+
+        if len(self.operatingSystems) == 0:
+            self.operatingSystems = None
+
+        if len(self.shelvedChangelists) == 0:
+            self.shelvedChangelists = None
+
+        if len(self.javaProperties) == 0:
+            self.javaProperties = None
+
+        if len(self.binaryProperties) == 0:
+            self.binaryProperties = None
+
+        if not self.force:
+            self.force = None
+
+        if not self.mts:
+            self.mts = None
+
+        super().prepare() # removes None attributes
+
+    # override
+    def isValid(self) -> bool:
+
+        invalidOs = [os for os in self.operatingSystems if os not in BuildJobInput.osMap.values()]
+        if len(invalidOs) >= 1:
+            return False
+
+        return all([self.version, self.changelist]) and isinstance(self.changelist, str) # required inputs
+
+class DeploymentJobInput(GqafApiInput):
+
+    def __init__(self):
+
+        super().__init__()
+
+        # required
+        self.testPackage: str = None # example: PAR.TPK.0000366
+        self.nickname: str = None # example: DEFAULT_1
+
+        self.versionValidationId: str = None # example: PAR.ATOK.0000217
+
+        self.buildId: str = None
+        self.waitingBuildId: str = None
+
+        # optional
+        self.version: str = None
+        self.operatingSystem: str = "Linux-rhel-8.6-x86_64"
+        self.changelist: int = None
+        self.queue: str = None
+        self.keepIfFailed: bool = None
+        self.unofficial: bool = None
+        self.priority: int = None
+
+    def __str__(self) -> str:
+        return f'{self.testPackage} - {self.nickname}'
+
+    def setBuildId(self, newBuildId: str):
+        self.buildId = newBuildId
+
+    def getChangelist(self) -> int:
+
+        if self.changelist:
+            return self.changelist
+
+        assert self.buildId or self.waitingBuildId, 'no buildId to parse CL from'
+        
+        if self.waitingBuildId:
+            return int(self.waitingBuildId.split('-')[0])
+
+        return int(self.buildId.split('-')[0])
+
+    # override
+    def prepare(self):
+
+        if self.alreadyPrepared:
+            return
+
+        if self.keepIfFailed == False:
+            self.keepIfFailed = None
+
+        if self.unofficial == False:
+            self.unofficial = None
+
+        if self.changelist:
+            self.changelist = str(self.changelist)
+
+        super().prepare() # removes None attributes
+
+    # override
+    def isValid(self) -> bool:
+
+        if not self.buildId and not self.waitingBuildId:
+            return False
+
+        return all([self.testPackage, self.nickname, self.versionValidationId]) # required inputs
+
+class GqafRequestHandler:
+    @staticmethod
+    def buildDefaultHeaders() -> dict:
+        return {'Authorization': f'Bearer {settings.getAuthToken()}', 'Accept': 'application/json'}
+
+    @staticmethod
+    def authenticate(username: str, password: str) -> str:
+
+        response = requests.get("https://icarus:10113/pc/auth", headers={'Accept':'application/json'}, auth=HTTPBasicAuth(username, password), verify=False)
+
+        if response.status_code == 401:
+            return None
+
+        accessToken = response.json().get('jwt', None)
+        return accessToken
+
+    @staticmethod
+    def authenticateUserThroughSettings() -> str:
+
+        username: str = settings.getUsername()
+        password: str = decrypt(settings.getEncryptedPassword())
+
+        if not username or not password:
+            print(f'Failed to authenticate using settings JSON. Please authenticate through CMD', file=sys.stderr)
+            return GqafRequestHandler.authenticateUserThroughCmd()
+
+        accessToken: str = GqafRequestHandler.authenticate(username, password)
+
+        if accessToken is None:
+            print(f'Failed to authenticate using settings JSON. Please authenticate through CMD', file=sys.stderr)
+            return GqafRequestHandler.authenticateUserThroughCmd()
+
+        settings.setSetting('gqaf_token', accessToken)
+        return accessToken
+
+    @staticmethod
+    def authenticateUserThroughCmd() -> str:
+
+        print('Authenticate into GQAF', file=sys.stderr)
+
+        accessToken: str = None
+        while accessToken is None:
+
+            username: str = input('username: ')
+            password: str = getpass('password: ')
+
+            accessToken = GqafRequestHandler.authenticate(username, password)
+
+            if accessToken is None:
+                print(f'Wrong username or password. Try again.', file=sys.stderr)
+                continue # ask again
+
+        settings.setSetting('gqaf_token', accessToken)
+        return accessToken
+
+    @staticmethod
+    def tryReauthenticate() -> str:
+
+        print('GQAF Token expired', file=sys.stderr)
+        print('Re-authenticating using credentials from settings JSON...', file=sys.stderr)
+        return GqafRequestHandler.authenticateUserThroughSettings()
+
+    @staticmethod
+    def postRequest(endpoint: str, jsonData: dict) -> requests.Response:
+
+        headers = GqafRequestHandler.buildDefaultHeaders()
+        headers['Content-Type'] = 'application/json'
+        
+        response = None
+        try:
+            response = requests.post(endpoint, headers=headers, json=jsonData, verify=False)
+        except requests.exceptions.ConnectionError:
+                print(f'\nCould not reach GQAF endpoint: {endpoint}', file=sys.stderr)
+                print('Make sure you are connected to the internet.', file=sys.stderr)
+                print('If you are not on Murex premises, make sure you\'re connected through a VPN.', file=sys.stderr)
+                exit(2)
+
+        if response.status_code == 401:
+            GqafRequestHandler.tryReauthenticate()
+            return GqafRequestHandler.postRequest(endpoint, jsonData)
+
+        if response.status_code >= 400:
+
+            if message := response.json().get('errorMessage'):
+                print(message, file=sys.stderr)
+
+            elif message := response.json().get('exception'):
+                print(message, file=sys.stderr)
+
+            else:
+                print(f'Error occured in POST request:\n{response.text}', file=sys.stderr)
+
+        return response
+
+    @staticmethod
+    def getRequest(endpoint: str) -> requests.Response:
+        
+        response = None
+        try:
+            response = requests.get(endpoint, headers=GqafRequestHandler.buildDefaultHeaders(), verify=False)
+        except requests.exceptions.ConnectionError:
+                print(f'\nCould not reach GQAF endpoint: {endpoint}', file=sys.stderr)
+                print('Make sure you are connected to the internet.', file=sys.stderr)
+                print('If you are not on Murex premises, make sure you\'re connected through a VPN.', file=sys.stderr)
+                exit(2)
+
+        if response.status_code == 401:
+            GqafRequestHandler.tryReauthenticate()
+            return GqafRequestHandler.getRequest(endpoint)
+
+        if response.status_code != 200:
+
+            if message := response.json().get('errorMessage'):
+                print(message, file=sys.stderr)
+
+            elif message := response.json().get('exception'):
+                print(message, file=sys.stderr)
+
+            else:
+                print(f'Error occured in GET request:\n{response.text}', file=sys.stderr)
+
+        return response
+
+    @staticmethod
+    def filterOnLatestChangelist(valueObjects: list[object]) -> list[object]:
+
+        # keep the objects which have the latest changelist
+        if len(valueObjects) == 0:
+            return []
+
+        # object MUST have self.changelist attribute
+        assert valueObjects[0].changelist
+
+        latestCl: int = max(obj.changelist for obj in valueObjects)
+        return [obj for obj in valueObjects if obj.changelist == latestCl]
+
+    @staticmethod
+    def getAllMxVersions() -> list[str]:
+
+        response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/version/all/name')
+
+        if response.status_code != 200:
+            return None
+
+        jsonData = response.json()
+        return list(jsonData["versions"]["version"])
+
+    @staticmethod
+    def fetchVersionDetailsJson(version: str) -> dict:
+
+        print(f'Fetching details of {version}...', file=sys.stderr)
+        response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/version/' + version)
+
+        if response.status_code != 200:
+            return None
+
+        return response.json()
+
+    @staticmethod
+    def getVersionValidationAtok(version: str) -> str:
+
+        if atok := settings.getVersionIdCache().get(version, False):
+            return atok
+
+        versionDetailsJson = GqafRequestHandler.fetchVersionDetailsJson(version)
+
+        atok = versionDetailsJson["versionValidations"]["versionValidation"][0]["id"]
+        settings.cacheVersionAtok(version, atok)
+        return atok
+
+    @staticmethod
+    def fetchSetupsJson(version: str) -> dict:
+
+        print(f'Fetching setups on {version}...', file=sys.stderr)
+
+        response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/setup/jobs' + '?versions=' + version)
+
+        if response.status_code != 200:
+            return None
+
+        return response.json()
+
+    @staticmethod
+    def removeDuplicates(buildJobs: list[BuildJob]):
+
+        # for some reason, a job will sometimes appear as 2 jobs with buildIds that differ by 1
+        # the one with the higher buildId is usually the correct one
+        toRemove: list[int] = []
+
+        for i, job in enumerate(buildJobs):
+
+            if i == len(buildJobs)-1:
+                break
+
+            if job.buildId is None:
+                continue
+
+            currentOs = job.operatingSystem
+            nextOs = buildJobs[i+1].operatingSystem
+
+            if currentOs != nextOs:
+                continue
+
+            currentBuildId = int(job.buildId.lower().replace('-', '').replace('shelve', ''))
+            nextBuildId = int(buildJobs[i+1].buildId.lower().replace('-', '').replace('shelve', ''))
+
+            if nextBuildId == currentBuildId - 1:
+                toRemove.append(i+1)
+
+        for index in reversed(toRemove):
+            buildJobs.pop(index)
+
+        return
+
+    @staticmethod
+    def fetchBuildJobs(version: str, changelistFilter: int = None, ownerFilter: str = None) -> list[BuildJob]:
+
+        json = GqafRequestHandler.fetchSetupsJson(version)
+
+        if json is None:
+            return None
+
+        buildJobs = json["productionJobs"]["productionJob"]
+        buildJobs = [BuildJob(job) for job in buildJobs]
+        buildJobs = [job for job in buildJobs if job.isValid()]
+        buildJobs.sort(key=lambda job: datetime.fromisoformat(job.deployDate), reverse=True) # sort by most recent
+        GqafRequestHandler.removeDuplicates(buildJobs)
+
+        if changelistFilter:
+            buildJobs = [job for job in buildJobs if job.changelist == changelistFilter]
+
+        if ownerFilter:
+            buildJobs = [job for job in buildJobs if job.deployer == ownerFilter]
+
+        [job.makeDateReadable() for job in buildJobs]
+
+        return buildJobs
+
+    @staticmethod
+    def getLatestLinuxSetups(version: str) -> BuildJob:
+
+        setups = GqafRequestHandler.fetchBuildJobs(version)
+        setups = [build for build in setups if 'linux' in build.operatingSystem.lower() and build.status == 'DONE']
+
+        if len(setups) == 0:
+            return None
+        
+        return max(setups, key=lambda b: b.changelist)
+
+    @staticmethod
+    def fetchDeploymentJobsJson(version: str) -> dict:
+
+        print(f'Fetching jobs on {version}...', file=sys.stderr)
+        versionAtok = GqafRequestHandler.getVersionValidationAtok(version)
+        response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/deployment' + f'?versionvalidationid={versionAtok}')
+
+        if response.status_code != 200:
+            return None
+
+        return response.json()
+
+    @staticmethod
+    def fetchDeploymentJobs(version: str, changelistFilter: int = None, ownerFiler: str = None) -> list[DeploymentJob]:
+
+        json = GqafRequestHandler.fetchDeploymentJobsJson(version)
+
+        if json is None:
+            return None
+
+        deploymentJobs = json["deploymentJobDetails"]["deploymentJobDetail"]
+        deploymentJobs = [DeploymentJob(job) for job in deploymentJobs]
+        deploymentJobs = [job for job in deploymentJobs if job.isValid()]
+        deploymentJobs.sort(key=lambda job: datetime.fromisoformat(job.pushDate), reverse=True) # sort by most recent
+
+        if changelistFilter:
+            deploymentJobs = [job for job in deploymentJobs if job.buildId.startswith(str(changelistFilter))]
+
+        if ownerFiler:
+            deploymentJobs = [job for job in deploymentJobs if job.owner == ownerFiler]
+
+        [job.makeDateReadable() for job in deploymentJobs]
+
+        return deploymentJobs
+
+    @staticmethod
+    def pushBuildJob(input: BuildJobInput) -> int: # returns commandId of the pushed job
+
+        print(f'Pushing build job on {input.version}, CL: {input.changelist}...', file=sys.stderr)
+        response: requests.Response = GqafRequestHandler.postRequest("https://icarus:10113/pc/version/build", jsonData=input.toJson())
+
+        if response.status_code != 201:
+            return None
+
+        return response.json().get('jobId', None)
+
+    @staticmethod
+    def pushDeploymentJob(input: DeploymentJobInput) -> str: # returns PAR_DJOB_ID
+
+        print(f'Pushing: {input} on {input.version}, CL: {input.getChangelist()}', file=sys.stderr)
+        response: requests.Response = GqafRequestHandler.postRequest("https://icarus:10113/pc/deployment", jsonData=input.toJson())
+
+        if response.status_code != 201:
+            return None
+
+        parDjobId: str =response.json().get('jobId', None)
+        return parDjobId
+
+def printObjectList(objects: list[object]):
+
+    if len(objects) == 0:
+        return
+
+    tableContent = [obj.__dict__.values() for obj in objects]
+    headers = objects[0].__dict__.keys()
+
+    fullTable: str = tabulate(tableContent, headers=headers)
+    headerContent = '\n'.join(fullTable.split('\n')[:2])
+    tableContent = '\n'.join(fullTable.split('\n')[2:])
+
+    if not len(tableContent):
+        return
+
+    print(headerContent, file=sys.stderr, end='\n\n')
+    time.sleep(0.005) # this is to avoid stderr getting mixed with stdout, force headers to first line
+
+    try:
+        print(tableContent)
+    except BrokenPipeError: # some commands like "head" will close the pipe early and prevent the program from outputting more lines
+        pass
