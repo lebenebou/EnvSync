@@ -3,7 +3,6 @@ import subprocess
 import sys
 
 def runDetached(command: str):
-
     subprocess.Popen(command, creationflags=subprocess.CREATE_NEW_CONSOLE)
 
 def runCommand(command: str) -> subprocess.CompletedProcess:
@@ -18,4 +17,6 @@ def runCommand(command: str) -> subprocess.CompletedProcess:
     result.stderr = result.stderr.strip()
     return result
 
-def commandOutput(command: str) -> str: return runCommand(command).stdout
+def commandOutput(command: str) -> str:
+    # do not use unless sure that the command will succeed
+    return runCommand(command).stdout

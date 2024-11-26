@@ -10,7 +10,6 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser('Fetch setups')
     parser.add_argument('--json', action='store_true', default=False, help='Output in JSON format')
-    parser.add_argument('--latest', action='store_true', default=False, help='Get latest Cl with setups')
 
     args, _ = parser.parse_known_args()
 
@@ -36,9 +35,6 @@ if __name__ == '__main__':
     if buildJobs is None:
         print('Failed to fetch setups', file=sys.stderr)
         exit(1)
-     
-    if args.latest:
-        buildJobs = GqafRequestHandler.filterOnLatestChangelist(buildJobs)
-        
+
     printObjectList(buildJobs)
     exit(0)

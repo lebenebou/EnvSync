@@ -10,7 +10,6 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser('Fetch deployment jobs')
     parser.add_argument('--json', action='store_true', default=False, help='Output in JSON format')
-    parser.add_argument('--latest', action='store_true', default=False, help='Get latest CL with jobs')
 
     args, _ = parser.parse_known_args()
 
@@ -37,8 +36,5 @@ if __name__ == '__main__':
         print('Failed to fetch jobs', file=sys.stderr)
         exit(1)
 
-    if args.latest:
-        jobs = GqafRequestHandler.filterOnLatestChangelist(jobs)
-        
     printObjectList(jobs)
     exit(0)

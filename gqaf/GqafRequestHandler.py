@@ -184,7 +184,7 @@ class BuildJobInput(GqafApiInput):
         if not self.mts:
             self.mts = None
 
-        super().prepare() # removes None attributes
+        super().prepare() # removes None attributes, among other things
 
     # override
     def isValid(self) -> bool:
@@ -252,7 +252,7 @@ class DeploymentJobInput(GqafApiInput):
         if self.changelist:
             self.changelist = str(self.changelist)
 
-        super().prepare() # removes None attributes
+        super().prepare() # removes None attributes, among other things
 
     # override
     def isValid(self) -> bool:

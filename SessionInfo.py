@@ -8,31 +8,24 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 from p4Helper import P4Helper
 
-import base64
-def encrypt(message: str) -> str:
-
-    message_bytes = message.encode('utf-8')
-    base64_bytes = base64.b64encode(message_bytes)
-    return base64_bytes.decode('utf-8')
-
 class SessionInfo:
 
     def __init__(self, forceVerbose: bool = False):
         
-        parser = argparse.ArgumentParser(description='Parse the arguments of a Murex SessionInfo', add_help=False)
+        parser = argparse.ArgumentParser(description='Parse the arguments of a Murex SessionInfo', add_help=True)
+
         parser.add_argument("-v", "--version", type=str, required=False)
 
         usernameArg = parser.add_mutually_exclusive_group(required=False)
         usernameArg.add_argument("-u", "--username", type=str)
         usernameArg.add_argument("--me", action="store_true", required=False)
 
-        parser.add_argument("-p", "--password", type=str, required=False)
-        parser.add_argument("--verbose", action="store_true", required=False)
-
         clArg = parser.add_mutually_exclusive_group(required=False)
         clArg.add_argument('-cl', '--changelist', type=int, required=False)
         clArg.add_argument('--head', nargs='?', const=0, default=None, type=int, help='Head CL minus N (--head 1 is CL just before head)')
         clArg.add_argument('--latest', action="store_true", help='Latest CL with Linux setups')
+
+        parser.add_argument("--verbose", action="store_true", required=False)
 
         args, _ = parser.parse_known_args()
 
@@ -80,9 +73,6 @@ class SessionInfo:
             self.username = settings.getUsername()
 
         self.usernameSpecifiedThroughCmd = bool(args.username or args.me)
-
-        # Password
-        self.password = encrypt(args.password) if args.password else settings.getEncryptedPassword()
 
         if self.verbose:
             print('\nParsed session info:', file=sys.stderr)
