@@ -58,12 +58,12 @@ class Changelist:
 
         cl.description = re.sub(Changelist.defectPattern, '', cl.description) # remove defect from description
 
-        if not (needMoreDetail := (detail == ChangelistDetail.Full) or (detail == ChangelistDetail.Defect and not cl.defect)):
+        if not ((detail == ChangelistDetail.Full) or (detail == ChangelistDetail.Defect and not cl.defect)):
             return cl
 
         cl.fetchInfoFromServer(verbose)
 
-        if not (descriptionIsXml := '<mxp4Root>' in cl.description):
+        if '<mxp4Root>' not in cl.description:
             return cl
 
         cl.parseXmlDescription(verbose)
@@ -191,7 +191,7 @@ class P4Helper:
 
         unmergedCls = [cl for cl in srcCls if cl.defect is not None and cl.defect not in destDefects]
 
-        if needMoreDetail := (detail == ChangelistDetail.Full):
+        if detail == ChangelistDetail.Full:
             [cl.fetchInfoFromServer(verbose) for cl in unmergedCls]
 
         return unmergedCls

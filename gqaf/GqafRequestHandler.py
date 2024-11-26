@@ -344,13 +344,9 @@ class GqafRequestHandler:
             return GqafRequestHandler.postRequest(endpoint, jsonData)
 
         if response.status_code >= 400:
-
-            if message := response.json().get('errorMessage'):
+            message = response.json().get('errorMessage') or response.json().get('exception')
+            if message:
                 print(message, file=sys.stderr)
-
-            elif message := response.json().get('exception'):
-                print(message, file=sys.stderr)
-
             else:
                 print(f'Error occured in POST request:\n{response.text}', file=sys.stderr)
 
@@ -373,13 +369,9 @@ class GqafRequestHandler:
             return GqafRequestHandler.getRequest(endpoint)
 
         if response.status_code != 200:
-
-            if message := response.json().get('errorMessage'):
+            message = response.json().get('errorMessage') or response.json().get('exception')
+            if message:
                 print(message, file=sys.stderr)
-
-            elif message := response.json().get('exception'):
-                print(message, file=sys.stderr)
-
             else:
                 print(f'Error occured in GET request:\n{response.text}', file=sys.stderr)
 
@@ -422,8 +414,8 @@ class GqafRequestHandler:
 
     @staticmethod
     def getVersionValidationAtok(version: str) -> str:
-
-        if atok := settings.getVersionIdCache().get(version, False):
+        atok = settings.getVersionIdCache().get(version)
+        if atok:
             return atok
 
         versionDetailsJson = GqafRequestHandler.fetchVersionDetailsJson(version)
