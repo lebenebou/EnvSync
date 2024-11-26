@@ -124,7 +124,13 @@ class P4Helper:
             print(f'Getting head changelists for {version}...', end= ' ', file=sys.stderr)
             print(f'Running command: {command}', file=sys.stderr)
 
-        outputLines: str = cli.commandOutput(command).splitlines()
+        result = cli.runCommand(command)
+
+        if result.returncode != 0 or not result.stdout:
+            print(f'Failed to retrieve head changelist for version: {version}. Are you sure this is a valid version?', file=sys.stderr)
+            return None
+
+        outputLines: str = result.stdout.splitlines()
         clResult: int = None
         for i, line in enumerate(outputLines):
 
