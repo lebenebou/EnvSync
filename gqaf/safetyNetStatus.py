@@ -2,10 +2,10 @@
 from GqafRequestHandler import GqafRequestHandler, DeploymentJob, BuildJob
 from p4Helper import Changelist, P4Helper
 from SessionInfo import SessionInfo
-
+from typing import List, Set, Dict
 import sys
 
-def getChangelistsBetween(start: int, end: int, allChangelists: list[Changelist]) -> list[Changelist]:
+def getChangelistsBetween(start: int, end: int, allChangelists: List[Changelist]) -> List[Changelist]:
 
     if start < end:
         start, end = end, start
@@ -16,7 +16,7 @@ class TPK:
     def __init__(self, job: DeploymentJob):
         self.testPackage = job.testPackage
         self.nickname = job.nickname
-        self.jobsDeployed: list[DeploymentJob]
+        self.jobsDeployed: List[DeploymentJob]
         self.isPossiblyRandom = False
 
     def __str__(self) -> str:
@@ -32,7 +32,7 @@ class TPK:
 
         return self.testPackage == other.testPackage and self.nickname == other.nickname
 
-    def fillJobsDeployed(self, jobs: list[DeploymentJob]):
+    def fillJobsDeployed(self, jobs: List[DeploymentJob]):
 
         jobs = [j for j in jobs if j.testPackage == self.testPackage and j.nickname == self.nickname]
         self.jobsDeployed = sorted(jobs, key=lambda j: j.changelist, reverse=True)
@@ -83,9 +83,9 @@ class TPK:
 
         return None
 
-    def printStatus(self, version: str, setupsPool: dict[int, list[BuildJob]] = None):
+    def printStatus(self, version: str, setupsPool: Dict[int, List[BuildJob]] = None):
 
-        guiltyCls: list[Changelist] = self.getGuiltyChangelists(version)
+        guiltyCls: List[Changelist] = self.getGuiltyChangelists(version)
 
         if len(guiltyCls) == 0:
             return
@@ -97,7 +97,7 @@ class TPK:
 
         print(end='\n')
 
-    def getGuiltyChangelists(self, version: str) -> list[Changelist]:
+    def getGuiltyChangelists(self, version: str) -> List[Changelist]:
 
         if len(self.jobsDeployed) == 0:
             return []
@@ -120,14 +120,14 @@ class TPK:
         guiltyCls.remove(Changelist(lastGreenCl))
         return guiltyCls
 
-def getAllDeploymentJobs(version: str) -> list[DeploymentJob]:
+def getAllDeploymentJobs(version: str) -> List[DeploymentJob]:
 
-    allDeploymentJobs: list[DeploymentJob] = GqafRequestHandler.fetchDeploymentJobs(version)
+    allDeploymentJobs: List[DeploymentJob] = GqafRequestHandler.fetchDeploymentJobs(version)
     allDeploymentJobs = [job for job in allDeploymentJobs if job.isFailed() or job.isPassed()]
 
     return allDeploymentJobs
 
-def extractTpks(jobs: list[DeploymentJob]) -> set[TPK]:
+def extractTpks(jobs: List[DeploymentJob]) -> Set[TPK]:
 
     tpkSet = set()
     for job in jobs:

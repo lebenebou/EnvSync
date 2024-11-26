@@ -3,6 +3,7 @@ import argparse
 import sys
 import json
 
+from typing import List
 from GqafRequestHandler import GqafRequestHandler, printObjectList, BuildJob
 from SessionInfo import SessionInfo
 
@@ -30,7 +31,7 @@ if __name__ == '__main__':
         exit(0)
 
     ownerFilter = session.username if session.usernameSpecifiedThroughCmd else None
-    buildJobs: list[BuildJob] = GqafRequestHandler.fetchBuildJobs(session.version, session.changelist, ownerFilter)
+    buildJobs: List[BuildJob] = GqafRequestHandler.fetchBuildJobs(session.version, session.changelist, ownerFilter)
 
     if buildJobs is None:
         print('Failed to fetch setups', file=sys.stderr)

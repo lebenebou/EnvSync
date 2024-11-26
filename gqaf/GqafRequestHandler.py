@@ -11,6 +11,7 @@ import settings
 from requests.auth import HTTPBasicAuth
 import requests
 from getpass import getpass
+from typing import List, Dict
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -108,7 +109,7 @@ class GqafApiInput:
         
         assert self.isValid(), f'GQAF {self.__class__.__name__} is invalid'
 
-        noneAttributes: list[str] = [attr for attr, value in self.__dict__.items() if value is None]
+        noneAttributes: List[str] = [attr for attr, value in self.__dict__.items() if value is None]
 
         for attr in noneAttributes:
             delattr(self, attr)
@@ -144,12 +145,12 @@ class BuildJobInput(GqafApiInput):
         self.owner: str = None
 
         self.customize: str = None
-        self.operatingSystems: list[str] = []
+        self.operatingSystems: List[str] = []
 
-        self.shelvedChangelists: list[int] = []
+        self.shelvedChangelists: List[int] = []
 
-        self.javaProperties: dict[str, str] = {}
-        self.binaryProperties: dict[str, str] = {}
+        self.javaProperties: Dict[str, str] = {}
+        self.binaryProperties: Dict[str, str] = {}
 
         self.force: bool = None
         self.mts: bool = None
@@ -378,7 +379,7 @@ class GqafRequestHandler:
         return response
 
     @staticmethod
-    def filterOnLatestChangelist(valueObjects: list[object]) -> list[object]:
+    def filterOnLatestChangelist(valueObjects: List[object]) -> List[object]:
 
         # keep the objects which have the latest changelist
         if len(valueObjects) == 0:
@@ -391,7 +392,7 @@ class GqafRequestHandler:
         return [obj for obj in valueObjects if obj.changelist == latestCl]
 
     @staticmethod
-    def getAllMxVersions() -> list[str]:
+    def getAllMxVersions() -> List[str]:
 
         response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/version/all/name')
 
@@ -437,11 +438,11 @@ class GqafRequestHandler:
         return response.json()
 
     @staticmethod
-    def removeDuplicates(buildJobs: list[BuildJob]):
+    def removeDuplicates(buildJobs: List[BuildJob]):
 
         # for some reason, a job will sometimes appear as 2 jobs with buildIds that differ by 1
         # the one with the higher buildId is usually the correct one
-        toRemove: list[int] = []
+        toRemove: List[int] = []
 
         for i, job in enumerate(buildJobs):
 
@@ -469,7 +470,7 @@ class GqafRequestHandler:
         return
 
     @staticmethod
-    def fetchBuildJobs(version: str, changelistFilter: int = None, ownerFilter: str = None) -> list[BuildJob]:
+    def fetchBuildJobs(version: str, changelistFilter: int = None, ownerFilter: str = None) -> List[BuildJob]:
 
         json = GqafRequestHandler.fetchSetupsJson(version)
 
@@ -516,7 +517,7 @@ class GqafRequestHandler:
         return response.json()
 
     @staticmethod
-    def fetchDeploymentJobs(version: str, changelistFilter: int = None, ownerFiler: str = None) -> list[DeploymentJob]:
+    def fetchDeploymentJobs(version: str, changelistFilter: int = None, ownerFiler: str = None) -> List[DeploymentJob]:
 
         json = GqafRequestHandler.fetchDeploymentJobsJson(version)
 
@@ -561,7 +562,7 @@ class GqafRequestHandler:
         parDjobId: str =response.json().get('jobId', None)
         return parDjobId
 
-def printObjectList(objects: list[object]):
+def printObjectList(objects: List[object]):
 
     if len(objects) == 0:
         return

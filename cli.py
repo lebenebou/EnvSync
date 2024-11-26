@@ -7,7 +7,7 @@ def runDetached(command: str):
 
 def runCommand(command: str) -> subprocess.CompletedProcess:
 
-    result = subprocess.run(command, shell=True, text=True, capture_output=True, encoding="latin1")
+    result = subprocess.run(command, shell=True, universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, encoding="latin1")
 
     if result.returncode != 0:
         print(f'Error while running command: {command}', file=sys.stderr)

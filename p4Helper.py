@@ -7,6 +7,7 @@ import cli
 import re
 
 import xml.etree.ElementTree as xmlParser
+from typing import List
 
 import argparse
 from enum import Enum
@@ -95,7 +96,7 @@ class Changelist:
 
         assert result.returncode == 0
 
-        output: list[str] = result.stdout.splitlines()
+        output: List[str] = result.stdout.splitlines()
 
         self.description = output[2].strip()
 
@@ -175,13 +176,13 @@ class P4Helper:
             print(f'Failed to get changelists', file=sys.stderr)
             return []
 
-        output: list[str] = result.stdout.splitlines()
+        output: List[str] = result.stdout.splitlines()
 
         for line in output:
             yield Changelist.fromP4ChangesOutputLine(line, detail, verbose)
 
     @staticmethod
-    def getUnmergredChangelists(src: str, dest: str, developer: str = None, detail = ChangelistDetail.Defect, verbose: bool = False) -> list[Changelist]:
+    def getUnmergredChangelists(src: str, dest: str, developer: str = None, detail = ChangelistDetail.Defect, verbose: bool = False) -> List[Changelist]:
 
         # returns changelists submitted by <developer> that are NOT merged from src to dest, based on defectID
         srcCls = P4Helper.getChangelists(src, developer, ChangelistDetail.Defect, verbose)
@@ -197,7 +198,7 @@ class P4Helper:
         return unmergedCls
 
     @staticmethod
-    def getUnmergredDefects(src: str, dest: str, developer: str = None, detail = ChangelistDetail.Defect, verbose: bool = False) -> list[str]:
+    def getUnmergredDefects(src: str, dest: str, developer: str = None, detail = ChangelistDetail.Defect, verbose: bool = False) -> List[str]:
         # returns defects submitted by <developer> that are NOT merged from src to dest
         return [cl.defect for cl in P4Helper.getUnmergredChangelists(src, dest, developer, detail, verbose)]
 

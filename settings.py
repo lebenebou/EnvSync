@@ -2,9 +2,9 @@
 import sys
 
 # Sanity Checks ---
-if sys.version_info < (3, 11):
-    print(f'Your python version is too old! ({sys.version_info[0]}.{sys.version_info[1]})', file=sys.stderr)
-    print(f'Python 3.11 or higher is required', file=sys.stderr)
+if sys.version_info < (3, 6, 8):
+    print(f'Your python version is too old! ({sys.version_info[0]}.{sys.version_info[1]}.{sys.version_info[2]})', file=sys.stderr)
+    print(f'Python 3.6.8 or higher is required', file=sys.stderr)
     exit(1)
 
 try:
@@ -29,6 +29,8 @@ import os
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 import cli
+
+from typing import Dict
 
 SETTINGS_FILE = os.path.join("D:\\", ".mxdevenvpp", "settings", "python_scripts_settings.json")
 
@@ -104,7 +106,7 @@ def getAuthToken() -> str:
 def getMxBotNotificationList() -> str:
     return getSetting("mxbot_notification_list")
 
-def getVersionIdCache() -> dict[str, str]:
+def getVersionIdCache() -> Dict[str, str]:
     return getSetting("version_id_cache")
 
 def cacheVersionAtok(version: str, atok: str):

@@ -1,7 +1,7 @@
 
 import argparse
 import sys
-
+from typing import List
 import re
 
 import asyncio
@@ -9,16 +9,16 @@ import asyncio
 from GqafRequestHandler import GqafRequestHandler, DeploymentJobInput, BuildJob
 from SessionInfo import SessionInfo
 
-def readStdinLines() -> list[str]:
+def readStdinLines() -> List[str]:
 
     print(f"reading from stdin...", file=sys.stderr)
     return sys.stdin.read().splitlines()
 
-def parseJobInputsFromLines(lines: list[str], verbose: bool = False) -> list[DeploymentJobInput]:
+def parseJobInputsFromLines(lines: List[str], verbose: bool = False) -> List[DeploymentJobInput]:
 
     pattern = re.compile(r'(\d+).*?(\S{3,})')
 
-    inputs: list[DeploymentJobInput] = []
+    inputs: List[DeploymentJobInput] = []
 
     if verbose:
         print(f"Parsing jobs from input...", file=sys.stderr)
@@ -58,7 +58,7 @@ def getLinuxSetupsAtCl(version: str, changelist: int) -> BuildJob:
 
     return validSetups[0]
 
-def fillJobInputs(inputs: list[DeploymentJobInput], session: SessionInfo, cliArgs: any):
+def fillJobInputs(inputs: List[DeploymentJobInput], session: SessionInfo, cliArgs: any):
 
     for input in inputs:
         
@@ -117,7 +117,7 @@ async def main():
         print(f"Cannot push job without buildId or CL", file=sys.stderr)
         exit(1)
 
-    jobsToPush: list[DeploymentJobInput] = parseJobInputsFromLines(readStdinLines(), session.verbose)
+    jobsToPush: List[DeploymentJobInput] = parseJobInputsFromLines(readStdinLines(), session.verbose)
     [job.setBuildId(chosenBuildId) for job in jobsToPush]
 
     if len(jobsToPush) == 0:
