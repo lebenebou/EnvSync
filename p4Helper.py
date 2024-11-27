@@ -79,6 +79,7 @@ class Changelist:
  
         root = xmlParser.fromstring(self.description)
         self.description = root.find(".//mxp4description").text.strip()
+        self.description = re.sub(r'\s+', ' ', self.description)
         self.defect = root.find(".//mxp4defectID").text.strip()
 
         return self
@@ -98,7 +99,17 @@ class Changelist:
 
         output: List[str] = result.stdout.splitlines()
 
-        self.description = output[2].strip()
+        self.description = ''
+        startIndex = 0
+        while output[startIndex].startswith('Change'):
+            startIndex += 1
+
+        endIndex = startIndex
+        while not output[endIndex].startswith('Affected files'):
+            endIndex += 1
+
+        for i in range(startIndex, endIndex):
+            self.description += output[i]
 
         m = re.search(Changelist.defectPattern, self.description)
         self.defect = m.group(1) if m else None
