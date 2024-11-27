@@ -76,7 +76,8 @@ def fillJobInputs(inputs: List[DeploymentJobInput], session: SessionInfo, cliArg
 
 async def pushJob(input: DeploymentJobInput) -> dict: # returns the input with an extra parJobId field
 
-    parDjobId = await asyncio.to_thread(GqafRequestHandler.pushDeploymentJob, input)
+    loop = asyncio.get_event_loop()
+    parDjobId = await loop.run_in_executor(None, GqafRequestHandler.pushDeploymentJob, input)
 
     pushedJobInfo = input.toJson()
     pushedJobInfo['parJobId'] = parDjobId
@@ -134,4 +135,9 @@ async def main():
     return exitCode
 
 if __name__ == '__main__':
-    exit(asyncio.run(main()))
+    loop = asyncio.get_event_loop()
+    try:
+        exit_code = loop.run_until_complete(main())
+    finally:
+        loop.close()
+    exit(exit_code)

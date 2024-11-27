@@ -13,6 +13,8 @@ import requests
 from getpass import getpass
 from typing import List, Dict
 
+from dateutil.parser import isoparse
+
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
@@ -54,7 +56,7 @@ class BuildJob:
 
     def makeDateReadable(self):
 
-        date = datetime.fromisoformat(self.deployDate)
+        date = isoparse(self.deployDate)
         self.deployDate = date.strftime("%b %d %I:%M %p")
 
 class DeploymentJob:
@@ -89,7 +91,7 @@ class DeploymentJob:
 
     def makeDateReadable(self):
 
-        date = datetime.fromisoformat(self.pushDate)
+        date = isoparse(self.pushDate)
         self.pushDate = date.strftime("%b %d %I:%M %p")
 
     def isValid(self) -> bool:
@@ -442,6 +444,11 @@ class GqafRequestHandler:
 
         # for some reason, a job will sometimes appear as 2 jobs with buildIds that differ by 1
         # the one with the higher buildId is usually the correct one
+
+        def buildIdToInt(jobBuildId: str) -> int:
+            s = ''.join(c for c in jobBuildId if c.isdigit())
+            return int(s)
+
         toRemove: List[int] = []
 
         for i, job in enumerate(buildJobs):
@@ -458,10 +465,10 @@ class GqafRequestHandler:
             if currentOs != nextOs:
                 continue
 
-            currentBuildId = int(job.buildId.lower().replace('-', '').replace('shelve', ''))
-            nextBuildId = int(buildJobs[i+1].buildId.lower().replace('-', '').replace('shelve', ''))
+            currentBuildId = buildIdToInt(job.buildId)
+            nextBuildId = buildIdToInt(buildJobs[i+1].buildId)
 
-            if nextBuildId == currentBuildId - 1:
+            if nextBuildId - currentBuildId <= 1:
                 toRemove.append(i+1)
 
         for index in reversed(toRemove):
@@ -480,7 +487,7 @@ class GqafRequestHandler:
         buildJobs = json["productionJobs"]["productionJob"]
         buildJobs = [BuildJob(job) for job in buildJobs]
         buildJobs = [job for job in buildJobs if job.isValid()]
-        buildJobs.sort(key=lambda job: datetime.fromisoformat(job.deployDate), reverse=True) # sort by most recent
+        buildJobs.sort(key=lambda job: isoparse(job.deployDate), reverse=True) # sort by most recent
         GqafRequestHandler.removeDuplicates(buildJobs)
 
         if changelistFilter:
@@ -527,7 +534,7 @@ class GqafRequestHandler:
         deploymentJobs = json["deploymentJobDetails"]["deploymentJobDetail"]
         deploymentJobs = [DeploymentJob(job) for job in deploymentJobs]
         deploymentJobs = [job for job in deploymentJobs if job.isValid()]
-        deploymentJobs.sort(key=lambda job: datetime.fromisoformat(job.pushDate), reverse=True) # sort by most recent
+        deploymentJobs.sort(key=lambda job: isoparse(job.pushDate), reverse=True) # sort by most recent
 
         if changelistFilter:
             deploymentJobs = [job for job in deploymentJobs if job.buildId.startswith(str(changelistFilter))]
