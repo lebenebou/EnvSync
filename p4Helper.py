@@ -59,7 +59,15 @@ class Changelist:
 
         cl.description = re.sub(Changelist.defectPattern, '', cl.description) # remove defect from description
 
-        if not ((detail == ChangelistDetail.Full) or (detail == ChangelistDetail.Defect and not cl.defect)):
+        moreDetailsRequested: bool = False
+
+        if detail == ChangelistDetail.Full:
+            moreDetailsRequested = True # user always wants more detail
+
+        elif cl.defect is None and detail == ChangelistDetail.Defect:
+            moreDetailsRequested = True # user only wants more detail if defect is missing
+        
+        if not moreDetailsRequested:
             return cl
 
         cl.fetchInfoFromServer(verbose)
@@ -184,7 +192,7 @@ class P4Helper:
         result = cli.runCommand(command)
 
         if result.returncode != 0:
-            print(f'Failed to get changelists', file=sys.stderr)
+            print(f'Failed to get changelists on {version}', file=sys.stderr)
             return []
 
         output: List[str] = result.stdout.splitlines()
