@@ -24,11 +24,18 @@ from tabulate import tabulate
 import time
 
 import base64
-def decrypt(encoded_message: str) -> str:
+def tryDecrypt(encoded_message: str) -> str | None:
 
-    base64_bytes = encoded_message.encode('utf-8')
-    message_bytes = base64.b64decode(base64_bytes)
-    return message_bytes.decode('utf-8')
+    if not encoded_message:
+        return None
+
+    try:
+        base64_bytes = encoded_message.encode('utf-8')
+        message_bytes = base64.b64decode(base64_bytes, validate=True)
+        return message_bytes.decode('utf-8')
+
+    except (ValueError, UnicodeDecodeError):
+        return None
 
 class BuildJob:
     def __init__(self, data: dict):
@@ -285,7 +292,7 @@ class GqafRequestHandler:
     def authenticateUserThroughSettings() -> str:
 
         username: str = settings.getUsername()
-        password: str = decrypt(settings.getEncryptedPassword())
+        password: str = tryDecrypt(settings.getEncryptedPassword())
 
         if not username or not password:
             print(f'Failed to authenticate using settings JSON. Please authenticate through CMD', file=sys.stderr)
