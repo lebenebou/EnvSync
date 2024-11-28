@@ -11,16 +11,25 @@ try:
     import requests
 except ImportError:
     print(f'requests is not installed. Try: pip install requests', file=sys.stderr)
+    exit(1)
 
 try:
     import tabulate
 except ImportError:
     print(f'tabulate is not installed. Try: pip install tabulate', file=sys.stderr)
+    exit(1)
 
 try:
     import urllib3
 except ImportError:
     print(f'urllib3 is not installed. Try: pip install urllib3', file=sys.stderr)
+    exit(1)
+
+try:
+    from dateutil.parser import isoparse
+except ImportError:
+    print(f'dateutil is not installed. Try: pip install python-dateutil', file=sys.stderr)
+    exit(1)
 # --- Sanity Checks
 
 import re
