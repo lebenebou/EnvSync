@@ -14,7 +14,9 @@ class SessionInfo:
         
         parser = argparse.ArgumentParser(description='Parse the arguments of a Murex SessionInfo', add_help=True)
 
-        parser.add_argument("-v", "--version", type=str, required=False)
+        versionArg = parser.add_mutually_exclusive_group(required=False)
+        versionArg.add_argument("-v", "--version", type=str, required=False)
+        versionArg.add_argument("--build", action="store_true", required=False)
 
         usernameArg = parser.add_mutually_exclusive_group(required=False)
         usernameArg.add_argument("-u", "--username", type=str)
@@ -35,7 +37,13 @@ class SessionInfo:
             self.verbose = True
 
         # Version
-        self.version = args.version if args.version else settings.getCurrentVersion()
+        self.version = settings.getCurrentVersion()
+
+        if args.version:
+            self.version = args.version
+
+        if args.build:
+            self.version = P4Helper.Build
 
         # Changelist
         self.changelist: int = None
