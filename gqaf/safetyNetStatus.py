@@ -90,10 +90,16 @@ class TPK:
         if len(guiltyCls) == 0:
             return
 
-        print('-'*100, end='\n\n')
-        print(f'{self}:')
+        print('-'*100, end='\n\n', file=sys.stderr)
+        print(f'{self} is RED:')
         for cl in guiltyCls:
-            print(cl)
+
+            print(cl, end='')
+
+            if setupsPool and cl.value in setupsPool:
+                print(f'\t\t--> Setups Available: {setupsPool[cl.value][0].buildId}', end='')
+
+            print(end='\n')
 
         print(end='\n')
 
@@ -111,7 +117,7 @@ class TPK:
 
         lastGreenCl: int = self.lastGreenChangelist()
         firstRedCl: int = self.firstRedChangelist()
-        allCls = P4Helper.getChangelists(version, detail=2)
+        allCls = list(P4Helper.getChangelists(version, detail=2))
 
         if lastGreenCl is None:
             return []
@@ -141,6 +147,21 @@ def extractTpks(jobs: List[DeploymentJob]) -> Set[TPK]:
 
     return tpkSet
 
+def getSetupsPool(version: str) -> Dict[int, List[BuildJob]]:
+
+    buildJobs = GqafRequestHandler.fetchBuildJobs(version)
+    pool: Dict[int, List[BuildJob]] = {}
+
+    for build in buildJobs:
+
+        if build.status != 'DONE':
+            continue
+
+        pool.setdefault(build.changelist, []).append(build)
+        continue
+
+    return pool
+
 if __name__ == '__main__':
 
     session = SessionInfo()
@@ -150,8 +171,9 @@ if __name__ == '__main__':
 
     allDeploymentJobs = getAllDeploymentJobs(session.version)
     tpks = extractTpks(allDeploymentJobs)
+    setupsPool = getSetupsPool(session.version)
 
     for tpk in tpks:
-        tpk.printStatus(session.version)
+        tpk.printStatus(session.version, setupsPool)
 
     exit(0)
