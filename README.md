@@ -64,3 +64,29 @@ Setups pushed.
 Push setups at head: use `--head`
 Push setups at shelved changelist on top of main changelist: use `-cl <mainCL> --shelved-cl <shelvedCL>`
 Push windows setups: use `--windows`
+
+## Get Submitted Changelists
+`p4helper.py -v <version> -u <user>`
+
+Gets chagelists submitted by `user` on `srcVersion`
+### Example Output:
+```cmd
+CL 7403263 by yoyammine - [DEF0607259][BondsAndFuturesPri...
+CL 7396144 by yoyammine - [DEF0604080] [BondsAndFuturesPr...
+CL 7396146 by yoyammine - [DEF0604083] [BondsAndFuturesPr...
+...
+```
+
+### Other ways to do it:
+Get more detail and full description: use `--detail` (less performance)
+
+## Get Changelists Unmerged On Build
+`p4helper.py -u <user> -v <srcVersion> --unmerged`
+
+Gets chagelists submitted by `user` on `srcVersion`, but not merged on `v3.1.build` (by defectID)
+### Example Output:
+```cmd
+yoyammine's Cls on v3.1.build.dev.a7.li.200090.097 not yet on v3.1.build:
+CL 7403263 by yoyammine - [DEF0607259]  [BondsAndFuturesPrices][Refactoring] offline test Price Quotation column
+...
+```
