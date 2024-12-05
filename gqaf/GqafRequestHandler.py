@@ -18,8 +18,6 @@ from dateutil.parser import isoparse
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-from datetime import datetime
-
 from tabulate import tabulate
 import time
 
@@ -414,7 +412,7 @@ class GqafRequestHandler:
     @staticmethod
     def fetchVersionDetailsJson(version: str) -> dict:
 
-        print(f'Fetching details of {version}...', file=sys.stderr)
+        print(f'\nFetching details of {version}...', file=sys.stderr)
         response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/version/' + version)
 
         if response.status_code != 200:
@@ -437,7 +435,7 @@ class GqafRequestHandler:
     @staticmethod
     def fetchSetupsJson(version: str) -> dict:
 
-        print(f'Fetching setups on {version}...', file=sys.stderr)
+        print(f'\nFetching setups on {version}...', file=sys.stderr)
 
         response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/setup/jobs' + '?versions=' + version)
 
@@ -521,7 +519,7 @@ class GqafRequestHandler:
     @staticmethod
     def fetchDeploymentJobsJson(version: str) -> dict:
 
-        print(f'Fetching jobs on {version}...', file=sys.stderr)
+        print(f'\nFetching jobs on {version}...', file=sys.stderr)
         versionAtok = GqafRequestHandler.getVersionValidationAtok(version)
         response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/deployment' + f'?versionvalidationid={versionAtok}')
 
@@ -567,7 +565,7 @@ class GqafRequestHandler:
     @staticmethod
     def pushDeploymentJob(input: DeploymentJobInput) -> str: # returns PAR_DJOB_ID
 
-        print(f'Pushing: {input} on {input.version}, CL: {input.getChangelist()}', file=sys.stderr)
+        print(f'\nPushing: {input} on {input.version}, CL: {input.getChangelist()}', file=sys.stderr)
         response: requests.Response = GqafRequestHandler.postRequest("https://icarus:10113/pc/deployment", jsonData=input.toJson())
 
         if response.status_code != 201:
