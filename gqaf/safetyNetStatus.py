@@ -1,6 +1,6 @@
 
 from GqafRequestHandler import GqafRequestHandler, DeploymentJob, BuildJob
-from p4Helper import Changelist, P4Helper
+from p4Helper import P4Helper, Changelist, ChangelistDetail
 from SessionInfo import SessionInfo
 from typing import List, Set, Dict
 import sys
@@ -117,7 +117,7 @@ class TPK:
 
         lastGreenCl: int = self.lastGreenChangelist()
         firstRedCl: int = self.firstRedChangelist()
-        allCls = list(P4Helper.getChangelists(version, detail=2))
+        allCls = list(P4Helper.getChangelists(version, detail=ChangelistDetail.Defect))
 
         if lastGreenCl is None:
             return []
