@@ -62,6 +62,9 @@ class BuildJob:
     def isLinux(self) -> bool:
         return 'linux' in self.operatingSystem.lower()
 
+    def isWindows(self) -> bool:
+        return 'windows' in self.operatingSystem.lower()
+
     def isValid(self) -> bool:
         return all([self.deployer])
 

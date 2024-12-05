@@ -6,7 +6,7 @@ import sys
 import os
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-from p4Helper import P4Helper
+from p4Helper import P4Helper, Changelist
 from typing import Dict, List
 
 class SessionInfo:
@@ -33,6 +33,7 @@ class SessionInfo:
         args, _ = parser.parse_known_args()
 
         self.setupsPool: Dict[int, List] = None
+        self.changelistPool: List[Changelist] = None
 
         # Verbose
         self.verbose = args.verbose
@@ -79,10 +80,27 @@ class SessionInfo:
     def __str__(self) -> str:
 
         tmpDict = dict(self.__dict__)
+
         tmpDict.pop('setupsPool')
+        tmpDict.pop('changelistPool')
+
         tmpDict['hasSetupsPool'] = bool(self.setupsPool is not None)
+        tmpDict['hasChangelistPool'] = bool(self.changelistPool is not None)
+
         return tmpDict.__str__().replace('\n', ' ').replace('\'', '')
 
+    def fetchChangelistPool(self, lazy: bool = True) -> Dict[int, List]:
+
+        if lazy and self.changelistPool is not None:
+            return self.changelistPool
+
+        if not self.version:
+            print(f'Cannot get changelists without specifying version', file=sys.stderr)
+            self.changelistPool = None
+            return
+
+        self.changelistPool = list(P4Helper.getChangelists(version=self.version, verbose=self.verbose))
+        
     def fetchSetupsPool(self, lazy: bool = True) -> Dict[int, List]:
 
         from gqaf.GqafRequestHandler import GqafRequestHandler, BuildJob
@@ -106,10 +124,10 @@ class SessionInfo:
             return
 
         self.fetchSetupsPool(lazy=True)
-        from p4Helper import P4Helper
 
         # starting with most recent cl, find available setups
-        for cl in P4Helper.getChangelists(version=self.version, verbose=self.verbose):
+        self.fetchChangelistPool(lazy=True)
+        for cl in self.changelistPool:
 
             if cl.value not in self.setupsPool:
                 continue
@@ -124,5 +142,4 @@ class SessionInfo:
         return
 
 if __name__ == '__main__':
-
     session = SessionInfo(forceVerbose=True)
