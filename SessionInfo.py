@@ -7,6 +7,7 @@ import os
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 from p4Helper import P4Helper
+from typing import Dict, List
 
 class SessionInfo:
 
@@ -31,6 +32,8 @@ class SessionInfo:
 
         args, _ = parser.parse_known_args()
 
+        self.setupsPool: Dict[int, List] = None
+
         # Verbose
         self.verbose = args.verbose
         if forceVerbose:
@@ -54,23 +57,10 @@ class SessionInfo:
             self.changelist = P4Helper.getHeadChangelist(self.version, args.head, self.verbose)
 
         elif args.latest:
-            from gqaf.GqafRequestHandler import GqafRequestHandler
 
-            if self.verbose:
-                print(f'Getting latest linux setups for {self.version}...', file=sys.stderr)
-
-            if not self.version:
-                print(f'Cannot get latest setups without specifying version', file=sys.stderr)
-                self.changelist = None
-
-            else:
-                latestSetups = GqafRequestHandler.getLatestLinuxSetups(self.version)
-                self.changelist = latestSetups.changelist
-
-                if self.changelist:
-                    print(f'Latest linux setups are on {self.changelist}', file=sys.stderr)
-                else:
-                    print(f'No linux setups on {self.version}', file=sys.stderr)
+            self.setChangelistToLatestWithSetups()
+            if self.changelist is not None:
+                print(f'Latest linux setups are on {self.changelist}', file=sys.stderr)
 
         # Username
         self.username = settings.getUsername()
@@ -84,7 +74,54 @@ class SessionInfo:
 
         if self.verbose:
             print('\nParsed session info:', file=sys.stderr)
-            print(self.__dict__.__str__().replace('\n', ' ').replace('\'', ''))
+            print(self)
+
+    def __str__(self) -> str:
+
+        tmpDict = dict(self.__dict__)
+        tmpDict.pop('setupsPool')
+        tmpDict['hasSetupsPool'] = bool(self.setupsPool is not None)
+        return tmpDict.__str__().replace('\n', ' ').replace('\'', '')
+
+    def fetchSetupsPool(self, lazy: bool = True) -> Dict[int, List]:
+
+        from gqaf.GqafRequestHandler import GqafRequestHandler, BuildJob
+
+        if lazy and self.setupsPool is not None:
+            return self.setupsPool
+
+        buildJobs = GqafRequestHandler.fetchBuildJobs(self.version)
+        self.setupsPool: Dict[int, List[BuildJob]] = {}
+
+        for build in buildJobs:
+            self.setupsPool.setdefault(build.changelist, []).append(build)
+
+        return self.setupsPool
+
+    def setChangelistToLatestWithSetups(self):
+
+        if not self.version:
+            print(f'Cannot get latest setups without specifying version', file=sys.stderr)
+            self.changelist = None
+            return
+
+        self.fetchSetupsPool(lazy=True)
+        from p4Helper import P4Helper
+
+        # starting with most recent cl, find available setups
+        for cl in P4Helper.getChangelists(version=self.version, verbose=self.verbose):
+
+            if cl.value not in self.setupsPool:
+                continue
+
+            for build in self.setupsPool[cl.value]:
+
+                if build.isDone() and build.isLinux():
+                    self.changelist = cl.value
+                    return
+
+        self.changelist = None
+        return
 
 if __name__ == '__main__':
 

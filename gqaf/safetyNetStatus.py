@@ -96,7 +96,12 @@ class TPK:
 
             print(cl, end='')
 
-            if setupsPool and cl.value in setupsPool:
+            setupsAreAvailable: bool = (setupsPool is not None
+                    and cl.value in setupsPool
+                    and any(build.isDone() and build.isLinux() for build in setupsPool[cl.value])
+            )
+
+            if setupsAreAvailable:
                 print(f'\t\t--> Setups Available: {setupsPool[cl.value][0].buildId}', end='')
 
             print(end='\n')
@@ -170,10 +175,11 @@ if __name__ == '__main__':
         exit(1)
 
     allDeploymentJobs = getAllDeploymentJobs(session.version)
-    tpks = extractTpks(allDeploymentJobs)
-    setupsPool = getSetupsPool(session.version)
+    tpks: List[TPK] = extractTpks(allDeploymentJobs)
+
+    session.fetchSetupsPool(lazy=True)
 
     for tpk in tpks:
-        tpk.printStatus(session.version, setupsPool)
+        tpk.printStatus(session.version, session.setupsPool)
 
     exit(0)

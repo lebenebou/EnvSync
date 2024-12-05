@@ -47,7 +47,7 @@ class BuildJob:
 
         self.changelist: int = int(data.get('changelist'))
         self.buildId: str = data.get('buildId')
-        self.status = data.get('status')
+        self.status: str = data.get('status')
         self.customized: bool = data.get('customized')
         self.operatingSystem: str = data.get('operatingSystem')
         self.deployDate = data.get('startDate')
@@ -55,6 +55,12 @@ class BuildJob:
 
         if self.customized is not None:
             self.customized = 'custom' if self.customized else 'standard'
+
+    def isDone(self) -> bool:
+        return self.status.lower() == 'done'
+
+    def isLinux(self) -> bool:
+        return 'linux' in self.operatingSystem.lower()
 
     def isValid(self) -> bool:
         return all([self.deployer])
@@ -386,19 +392,6 @@ class GqafRequestHandler:
         return response
 
     @staticmethod
-    def filterOnLatestChangelist(valueObjects: List[object]) -> List[object]:
-
-        # keep the objects which have the latest changelist
-        if len(valueObjects) == 0:
-            return []
-
-        # object MUST have self.changelist attribute
-        assert valueObjects[0].changelist
-
-        latestCl: int = max(obj.changelist for obj in valueObjects)
-        return [obj for obj in valueObjects if obj.changelist == latestCl]
-
-    @staticmethod
     def getAllMxVersions() -> List[str]:
 
         response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/version/all/name')
@@ -504,17 +497,6 @@ class GqafRequestHandler:
         [job.makeDateReadable() for job in buildJobs]
 
         return buildJobs
-
-    @staticmethod
-    def getLatestLinuxSetups(version: str) -> BuildJob:
-
-        setups = GqafRequestHandler.fetchBuildJobs(version)
-        setups = [build for build in setups if 'linux' in build.operatingSystem.lower() and build.status == 'DONE']
-
-        if len(setups) == 0:
-            return None
-        
-        return max(setups, key=lambda b: b.changelist)
 
     @staticmethod
     def fetchDeploymentJobsJson(version: str) -> dict:
