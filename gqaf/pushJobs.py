@@ -122,7 +122,7 @@ async def main():
     [job.setBuildId(chosenBuildId) for job in jobsToPush]
 
     if len(jobsToPush) == 0:
-        print(f'No jobs were parsed. DISCLAMER: jobs are parsed line by line. Here are some examples:', file=sys.stderr)
+        print(f'\nNo jobs were parsed. DISCLAMER: jobs are parsed line by line. Here are some examples:', file=sys.stderr)
         print(f'PAR.TPK.0002077 - DEFAULT_1', file=sys.stderr)
         print(f'2077 DEFAULT_1', file=sys.stderr)
         exit(1)
@@ -135,9 +135,19 @@ async def main():
     return exitCode
 
 if __name__ == '__main__':
+
+    PYTHON_VERSION = sys.version_info
+
+    if PYTHON_VERSION >= (3, 7):
+        exitCode = asyncio.run(main())
+        exit(exitCode)
+
+    # for versions lower than 3.7:
     loop = asyncio.get_event_loop()
+
     try:
-        exit_code = loop.run_until_complete(main())
+        exitCode = loop.run_until_complete(main())
     finally:
         loop.close()
-    exit(exit_code)
+
+    exit(exitCode)
