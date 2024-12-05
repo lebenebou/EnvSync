@@ -58,6 +58,7 @@ class Changelist:
         cl.defect = m.group(1) if m else None
 
         cl.description = re.sub(Changelist.defectPattern, '', cl.description) # remove defect from description
+        cl.description = cl.description.strip()
 
         moreDetailsRequested: bool = False
 
@@ -122,6 +123,7 @@ class Changelist:
         m = re.search(Changelist.defectPattern, self.description)
         self.defect = m.group(1) if m else None
         self.description = re.sub(Changelist.defectPattern, '', self.description)
+        self.description = self.description.strip()
 
         self.developer = re.search(r'Change \d+.*by (\S+)@', output[0]).group(1)
         return self
