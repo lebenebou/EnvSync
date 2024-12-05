@@ -16,7 +16,7 @@ def readStdinLines() -> List[str]:
 
 def parseJobInputsFromLines(lines: List[str], verbose: bool = False) -> List[DeploymentJobInput]:
 
-    pattern = re.compile(r'PAR\STPK\S(\d+).*?(\S{3,})')
+    pattern = re.compile(r'PAR\STPK\S(\d+)\s.*?(\S{3,})')
 
     inputs: List[DeploymentJobInput] = []
 
@@ -124,7 +124,7 @@ async def main():
     if len(jobsToPush) == 0:
         print(f'\nNo jobs were parsed. DISCLAMER: jobs are parsed line by line. Here are some examples:', file=sys.stderr)
         print(f'PAR.TPK.0002077 - DEFAULT_1', file=sys.stderr)
-        print(f'2077 DEFAULT_1', file=sys.stderr)
+        print(f'PAR.TPK.0001681 BOND', file=sys.stderr)
         exit(1)
 
     fillJobInputs(jobsToPush, session, args)
