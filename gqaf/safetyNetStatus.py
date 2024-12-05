@@ -83,9 +83,9 @@ class TPK:
 
         return None
 
-    def printStatus(self, version: str, setupsPool: Dict[int, List[BuildJob]] = None):
+    def printStatus(self, version: str, setupsPool: Dict[int, List[BuildJob]] = None, changelistPool: List[Changelist] = None):
 
-        guiltyCls: List[Changelist] = self.getGuiltyChangelists(version)
+        guiltyCls: List[Changelist] = self.getGuiltyChangelists(version, changelistPool)
 
         if len(guiltyCls) == 0:
             return
@@ -108,7 +108,7 @@ class TPK:
 
         print(end='\n')
 
-    def getGuiltyChangelists(self, version: str) -> List[Changelist]:
+    def getGuiltyChangelists(self, version: str, changelistPool: List[Changelist]) -> List[Changelist]:
 
         if len(self.jobsDeployed) == 0:
             return []
@@ -122,12 +122,11 @@ class TPK:
 
         lastGreenCl: int = self.lastGreenChangelist()
         firstRedCl: int = self.firstRedChangelist()
-        allCls = list(P4Helper.getChangelists(version, detail=ChangelistDetail.Defect))
 
         if lastGreenCl is None:
             return []
 
-        guiltyCls = getChangelistsBetween(firstRedCl, lastGreenCl, allCls)
+        guiltyCls = getChangelistsBetween(firstRedCl, lastGreenCl, changelistPool)
         guiltyCls.remove(Changelist(lastGreenCl))
         return guiltyCls
 
@@ -178,8 +177,9 @@ if __name__ == '__main__':
     tpks: List[TPK] = extractTpks(allDeploymentJobs)
 
     session.fetchSetupsPool(lazy=True)
+    session.fetchChangelistPool(lazy=True)
 
     for tpk in tpks:
-        tpk.printStatus(session.version, session.setupsPool)
+        tpk.printStatus(session.version, session.setupsPool, session.changelistPool)
 
     exit(0)
