@@ -52,7 +52,7 @@ if __name__ == '__main__':
 
     if args.breakdown:
 
-        session.fetchChangelistPool(lazy=True)
+        session.fetchChangelistPool(lazy=True, limit=30)
         session.fetchSetupsPool(lazy=True)
 
         printBreakdownByChangelist(session.setupsPool, session.changelistPool)

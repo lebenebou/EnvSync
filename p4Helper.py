@@ -176,11 +176,15 @@ class P4Helper:
 
     from typing import Generator
     @staticmethod
-    def getChangelists(version: str, developer: str = None, detail = ChangelistDetail.Minimal, verbose: bool = False) -> Generator[Changelist, None, None]:
+    def getChangelists(version: str, developer: str = None, detail = ChangelistDetail.Minimal, limit: int = None, verbose: bool = False) -> Generator[Changelist, None, None]:
 
         print(f'\nGetting changelists on {version}...', file=sys.stderr)
 
         command = 'p4 changes -s submitted'
+
+        if limit:
+            command += f' -m {limit}'
+
         if developer:
             command += f' -u {developer}'
 
@@ -204,8 +208,8 @@ class P4Helper:
     def getUnmergredChangelists(src: str, dest: str, developer: str = None, detail = ChangelistDetail.Defect, verbose: bool = False) -> List[Changelist]:
 
         # returns changelists submitted by <developer> that are NOT merged from src to dest, based on defectID
-        srcCls = P4Helper.getChangelists(src, developer, ChangelistDetail.Defect, verbose)
-        destCls = P4Helper.getChangelists(dest, developer, ChangelistDetail.Defect, verbose)
+        srcCls = P4Helper.getChangelists(src, developer, ChangelistDetail.Defect, limit=None, verbose=verbose)
+        destCls = P4Helper.getChangelists(dest, developer, ChangelistDetail.Defect, limit=None, verbose=verbose)
 
         destDefects = set(cl.defect for cl in destCls)
 
@@ -235,6 +239,7 @@ if __name__ == '__main__':
     parser.add_argument('--unmerged', nargs='?', const=P4Helper.Build, default=None, type=str, help='only changelists which are unmerged (based on defectID)')
     parser.add_argument('--detail', nargs='?', const=ChangelistDetail.Full, default=ChangelistDetail.Minimal, type=int, help='1: Minimal, 2: Defect, 3: Full')
     parser.add_argument('--defects', action="store_true", help='display defects instead of changelists')
+    parser.add_argument('--limit', default=None, type=int, help='limit the output to a certain number of changelists')
 
     args, _ = parser.parse_known_args()
 
@@ -258,5 +263,5 @@ if __name__ == '__main__':
         exit(0)
 
     usernameFilter = (session.username if session.usernameSpecifiedThroughCmd else None)
-    [print(cl) for cl in P4Helper.getChangelists(session.version, usernameFilter, detail, session.verbose)]
+    [print(cl) for cl in P4Helper.getChangelists(session.version, usernameFilter, detail, args.limit, session.verbose)]
     exit(0)

@@ -89,7 +89,7 @@ class SessionInfo:
 
         return tmpDict.__str__().replace('\n', ' ').replace('\'', '')
 
-    def fetchChangelistPool(self, lazy: bool = True) -> Dict[int, List]:
+    def fetchChangelistPool(self, lazy: bool = True, limit: int = None) -> Dict[int, List]:
 
         if lazy and self.changelistPool is not None:
             return self.changelistPool
@@ -99,7 +99,7 @@ class SessionInfo:
             self.changelistPool = None
             return
 
-        self.changelistPool = list(P4Helper.getChangelists(version=self.version, verbose=self.verbose))
+        self.changelistPool = list(P4Helper.getChangelists(version=self.version, verbose=self.verbose, limit=limit))
         
     def fetchSetupsPool(self, lazy: bool = True) -> Dict[int, List]:
 
