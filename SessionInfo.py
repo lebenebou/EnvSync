@@ -9,6 +9,13 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 from p4Helper import P4Helper, Changelist
 from typing import Dict, List
 
+def isValidVersion(version: str) -> bool:
+
+    if not version.startswith('v3.1.'):
+        return False
+
+    return True
+
 class SessionInfo:
 
     def __init__(self, forceVerbose: bool = False):
@@ -64,7 +71,7 @@ class SessionInfo:
                 print(f'Latest linux setups are on {self.changelist}', file=sys.stderr)
 
         # Username
-        self.username = settings.getUsername()
+        self.username: str = settings.getUsername()
 
         if args.username:
             self.username = args.username
@@ -72,6 +79,8 @@ class SessionInfo:
             self.username = settings.getUsername()
 
         self.usernameSpecifiedThroughCmd = bool(args.username or args.me)
+
+        self.checkSanity()
 
         if self.verbose:
             print('\nParsed session info:', file=sys.stderr)
@@ -88,6 +97,15 @@ class SessionInfo:
         tmpDict['hasChangelistPool'] = bool(self.changelistPool is not None)
 
         return tmpDict.__str__().replace('\n', ' ').replace('\'', '')
+
+    def checkSanity(self):
+
+        assert isValidVersion(self.version), f'Invalid version name: {self.version}'
+
+        assert self.changelist is None or self.changelist > 100, f'Invalid changelist: {self.changelist}'
+
+        assert self.username is None or self.username != '', f'Username is empty'
+        assert all(not c.isdigit() for c in self.username), f'Username has numbers: {self.username}'
 
     def fetchChangelistPool(self, lazy: bool = True, limit: int = None) -> Dict[int, List]:
 
