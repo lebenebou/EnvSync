@@ -1,6 +1,7 @@
 
 import argparse
 import sys
+import os
 from typing import List
 import re
 
@@ -8,6 +9,13 @@ import asyncio
 
 from GqafRequestHandler import GqafRequestHandler, DeploymentJobInput, BuildJob
 from SessionInfo import SessionInfo
+
+def readFileLines(filePath: str) -> List[str]:
+
+    assert os.path.isfile(filePath), f'Not a file: {filePath}'
+
+    with open(filePath, 'r') as file:
+        return file.readlines()
 
 def readStdinLines() -> List[str]:
 
@@ -89,6 +97,8 @@ async def main():
 
     parser = argparse.ArgumentParser(description='Push deployment job(s) by reading from stdin')
 
+    parser.add_argument('file_to_parse', type=str, help='Path to the file which contains PAR.TPKs')
+
     parser.add_argument('--buildId', type=str, help='Build Id on which the job will be pushed', required=False)
     parser.add_argument('--wait', action='store_true', default=False, help='wait for the given buildId', required=False)
     parser.add_argument('--keep', action='store_true', default=False, help='keep job if failed', required=False)
@@ -118,7 +128,24 @@ async def main():
         print(f"Cannot push job without buildId or CL", file=sys.stderr)
         exit(1)
 
-    jobsToPush: List[DeploymentJobInput] = parseJobInputsFromLines(readStdinLines(), session.verbose)
+    linesToParse: List[str] = []
+    if args.file_to_parse:
+
+        fileToParse: str = args.file_to_parse.strip()
+
+        if not os.path.exists(fileToParse):
+            print(f'Path does not exist: {fileToParse}')
+            exit(1)
+
+        if not os.path.isfile(fileToParse):
+            print(f'Not a file: {fileToParse}')
+            exit(1)
+
+        linesToParse = readFileLines(fileToParse)
+    else:
+        linesToParse = readStdinLines()
+
+    jobsToPush: List[DeploymentJobInput] = parseJobInputsFromLines(linesToParse, session.verbose)
     [job.setBuildId(chosenBuildId) for job in jobsToPush]
 
     if len(jobsToPush) == 0:
