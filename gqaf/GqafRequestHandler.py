@@ -80,6 +80,7 @@ class DeploymentJob:
         self.nickname = data.get('nickname')
         self.id = data.get('id')
         self.status = data.get('analysisStatus')
+        self.state = data.get('status')
         self.owner = data.get('owner')
         self.buildId: str = data.get('buildId')
         self.feeder = data.get('feederGroup')
