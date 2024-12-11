@@ -24,7 +24,7 @@ def readStdinLines() -> List[str]:
 
 def parseJobInputsFromLines(lines: List[str], verbose: bool = False) -> List[DeploymentJobInput]:
 
-    pattern = re.compile(r'PAR\STPK\S(\d+)\s.*?(\S{3,})')
+    pattern = re.compile(r'TPK\S(\d+)\s.*?(\S{3,})')
 
     inputs: List[DeploymentJobInput] = []
 
