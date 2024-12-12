@@ -97,7 +97,7 @@ async def main():
 
     parser = argparse.ArgumentParser(description='Push deployment job(s) by reading from stdin')
 
-    parser.add_argument('file_to_parse', type=str, help='Path to the file which contains PAR.TPKs')
+    parser.add_argument('file_to_parse', nargs='?', default=None, help='File to parse PAR.TPKs from, otherwise parse from stdin')
 
     parser.add_argument('--buildId', type=str, help='Build Id on which the job will be pushed', required=False)
     parser.add_argument('--wait', action='store_true', default=False, help='wait for the given buildId', required=False)
