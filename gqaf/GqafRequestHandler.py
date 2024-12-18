@@ -297,20 +297,20 @@ class GqafRequestHandler:
         return accessToken
 
     @staticmethod
-    def authenticateUserThroughSettings() -> str:
+    def authenticateUserThroughSettings(cmdFallback: bool = True) -> str:
 
         username: str = settings.getUsername()
         password: str = tryDecrypt(settings.getEncryptedPassword())
 
         if not username or not password:
             print(f'Failed to authenticate using settings JSON. Please authenticate through CMD', file=sys.stderr)
-            return GqafRequestHandler.authenticateUserThroughCmd()
+            return GqafRequestHandler.authenticateUserThroughCmd() if cmdFallback else None
 
         accessToken: str = GqafRequestHandler.authenticate(username, password)
 
         if accessToken is None:
             print(f'Failed to authenticate using settings JSON. Please authenticate through CMD', file=sys.stderr)
-            return GqafRequestHandler.authenticateUserThroughCmd()
+            return GqafRequestHandler.authenticateUserThroughCmd() if cmdFallback else None
 
         settings.setSetting('gqaf_token', accessToken)
         return accessToken
