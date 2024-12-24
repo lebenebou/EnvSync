@@ -109,7 +109,7 @@ class SessionInfo:
 
     def fetchChangelistPool(self, lazy: bool = True, limit: int = None) -> Dict[int, List]:
 
-        if lazy and self.changelistPool is not None:
+        if lazy and self.changelistPool is not None and len(self.changelistPool) >= limit:
             return self.changelistPool
 
         if not self.version:
