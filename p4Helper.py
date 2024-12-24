@@ -180,7 +180,7 @@ class P4Helper:
     @staticmethod
     def getChangelists(version: str, developer: str = None, detail = ChangelistDetail.Minimal, limit: int = None, verbose: bool = False) -> Generator[Changelist, None, None]:
 
-        print(f'\nGetting changelists on {version}...', file=sys.stderr)
+        print(f'Getting changelists on {version}...', end='\n\n', file=sys.stderr)
 
         command = 'p4 changes -s submitted'
 

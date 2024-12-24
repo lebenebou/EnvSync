@@ -409,7 +409,7 @@ class GqafRequestHandler:
     @staticmethod
     def fetchVersionDetailsJson(version: str) -> dict:
 
-        print(f'\nFetching details of {version}...', file=sys.stderr)
+        print(f'Fetching details of {version}...', end='\n\n', file=sys.stderr)
         response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/version/' + version)
 
         if response.status_code != 200:
@@ -432,7 +432,7 @@ class GqafRequestHandler:
     @staticmethod
     def fetchSetupsJson(version: str) -> dict:
 
-        print(f'\nFetching setups on {version}...', file=sys.stderr)
+        print(f'Fetching setups on {version}...', end='\n\n', file=sys.stderr)
 
         response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/setup/jobs' + '?versions=' + version)
 
@@ -505,7 +505,7 @@ class GqafRequestHandler:
     @staticmethod
     def fetchDeploymentJobsJson(version: str) -> dict:
 
-        print(f'\nFetching jobs on {version}...', file=sys.stderr)
+        print(f'Fetching jobs on {version}...', end='\n\n', file=sys.stderr)
         versionAtok = GqafRequestHandler.getVersionValidationAtok(version)
         response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/deployment' + f'?versionvalidationid={versionAtok}')
 
