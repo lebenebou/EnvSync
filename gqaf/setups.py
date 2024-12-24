@@ -8,33 +8,45 @@ from GqafRequestHandler import GqafRequestHandler, printObjectList, BuildJob
 from SessionInfo import SessionInfo
 from p4Helper import Changelist
 
+class SetupsViewRow:
+
+    def __init__(self, changelist: Changelist, setupsPool: Dict[int, List[BuildJob]]):
+        
+        self.developer = changelist.developer
+        self.changelist = changelist.value
+        # self.description = changelist.description
+
+        self.windows = '-----'
+        self.linux = '-----'
+        
+        self.linuxBuildId = None
+        self.deployDate = None
+
+        for build in setupsPool.get(self.changelist, dict()):
+
+            self.deployDate = build.deployDate
+
+            if build.isLinux():
+                self.linux = build.status
+                self.linuxBuildId = build.buildId
+
+            elif build.isWindows():
+                self.windows = build.status
+
+            continue
+
+        return
+
 def printBreakdownByChangelist(setupsPool: Dict[int, List[BuildJob]], changelistPool: List[Changelist]):
 
-    seperator = 2*'\t'
+    setupsList: List[SetupsViewRow] = []
 
     for cl in changelistPool:
 
-        print(f'CL {cl.value} by {cl.developer}', end=seperator)
+        row = SetupsViewRow(cl, setupsPool)
+        setupsList.append(row)
 
-        hasLinuxSetups: bool = False
-        hasWindowsSetups: bool = False
-
-        for build in setupsPool.get(cl.value, []):
-
-            if not build.isDone():
-                continue
-
-            hasLinuxSetups = build.isLinux()
-            hasWindowsSetups = build.isWindows()
-            continue
-
-        linuxString = 'LINUX'
-        windowsString = 'WINDOWS'
-
-        print(windowsString if hasWindowsSetups else '-'*len(windowsString), end=seperator)
-        print(linuxString if hasLinuxSetups else '-'*len(linuxString), end=seperator)
-        print(end='\n')
-        continue
+    printObjectList(setupsList)
 
 if __name__ == '__main__':
 
