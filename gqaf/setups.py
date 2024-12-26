@@ -10,6 +10,17 @@ from p4Helper import Changelist
 
 class SetupsViewRow:
 
+    @staticmethod
+    def moreRelevantStatus(current: str, new: str):
+
+        if 'DONE' in [current, new]:
+            return 'DONE'
+
+        if 'TAKEN' in [current, new]:
+            return 'TAKEN'
+
+        return new
+
     def __init__(self, changelist: Changelist, setupsPool: Dict[int, List[BuildJob]]):
         
         self.developer = changelist.developer
@@ -27,11 +38,11 @@ class SetupsViewRow:
             self.deployDate = build.deployDate
 
             if build.isLinux():
-                self.linux = build.status
+                self.linux = SetupsViewRow.moreRelevantStatus(self.linux, build.status)
                 self.linuxBuildId = build.buildId
 
-            elif build.isWindows():
-                self.windows = build.status
+            if build.isWindows():
+                self.windows = SetupsViewRow.moreRelevantStatus(self.windows, build.status)
 
             continue
 
