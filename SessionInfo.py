@@ -84,7 +84,7 @@ class SessionInfo:
 
         if self.verbose:
             print('\nParsed session info:', file=sys.stderr)
-            print(self)
+            print(self, file=sys.stderr)
 
     def __str__(self) -> str:
 
