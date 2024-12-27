@@ -159,6 +159,7 @@ async def main():
     pushedJobs = await asyncio.gather(*(pushJob(j) for j in jobsToPush))
 
     exitCode = 0 if any(job.get('parJobId') for job in pushedJobs) else 1
+    session.close()
     return exitCode
 
 if __name__ == '__main__':

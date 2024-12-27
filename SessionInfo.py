@@ -2,6 +2,7 @@
 import argparse
 import settings
 import sys
+import time
 
 import os
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -38,6 +39,7 @@ class SessionInfo:
         parser.add_argument("--verbose", action="store_true", required=False)
 
         args, _ = parser.parse_known_args()
+        self.creationTime: float = time.perf_counter()
 
         self.setupsPool: Dict[int, List] = None
         self.changelistPool: List[Changelist] = None
@@ -97,6 +99,18 @@ class SessionInfo:
         tmpDict['ChangelistPool'] = 0 if self.changelistPool is None else len(self.changelistPool)
 
         return tmpDict.__str__().replace('\n', ' ').replace('\'', '')
+
+    def timeSinceCreationMs(self) -> int:
+
+        elapsed = (time.perf_counter() - self.creationTime)*1000
+        return int(elapsed)
+
+    def close(self, os=sys.stderr):
+
+        print(f'\n{self.timeSinceCreationMs()} ms', file=os)
+
+        del self.setupsPool
+        del self.changelistPool
 
     def checkSanity(self):
 
@@ -163,4 +177,6 @@ class SessionInfo:
         return
 
 if __name__ == '__main__':
+
     session = SessionInfo(forceVerbose=True)
+    session.close()

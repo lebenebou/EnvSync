@@ -99,3 +99,4 @@ if __name__ == '__main__':
         rows.append(SetupsViewRow(cl, session.setupsPool))
 
     printObjectList(rows)
+    session.close()

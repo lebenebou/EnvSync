@@ -38,4 +38,4 @@ if __name__ == '__main__':
         exit(1)
 
     printObjectList(jobs)
-    exit(0)
+    session.close()

@@ -64,4 +64,5 @@ if __name__ == '__main__':
     pushedSetupsInfo['commandId'] = commandId
 
     print(json.dumps(pushedSetupsInfo, indent=4), file=sys.stdout)
+    session.close()
     exit(0)
