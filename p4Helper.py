@@ -213,8 +213,11 @@ class P4Helper:
     def getUnmergredChangelists(src: str, dest: str, developer: str = None, detail = ChangelistDetail.Defect, verbose: bool = False) -> List[Changelist]:
 
         # returns changelists submitted by <developer> that are NOT merged from src to dest, based on defectID
-        srcCls = P4Helper.getChangelists(src, developer, ChangelistDetail.Defect, limit=None, verbose=verbose)
-        destCls = P4Helper.getChangelists(dest, developer, ChangelistDetail.Defect, limit=None, verbose=verbose)
+
+        srcCls = P4Helper.getChangelists(src, developer, detail=ChangelistDetail.Defect, limit=None, verbose=verbose)
+
+        destLimit = 200 if dest == P4Helper.Build else None # users might have a large number of changelists submitted to build, 200 should be enough
+        destCls = P4Helper.getChangelists(dest, developer, detail=ChangelistDetail.Defect, limit=destLimit, verbose=verbose)
 
         destDefects = set(cl.defect for cl in destCls)
 
