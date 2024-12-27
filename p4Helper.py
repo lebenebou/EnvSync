@@ -60,6 +60,7 @@ class Changelist:
         cl.description = re.sub(Changelist.defectPattern, '', cl.description) # remove defect from description
         cl.description = cl.description.strip()
 
+        detail = ChangelistDetail(detail) # in case `detail` is an integer
         moreDetailsRequested: bool = False
 
         if detail == ChangelistDetail.Full:
@@ -251,8 +252,6 @@ if __name__ == '__main__':
 
     args, _ = parser.parse_known_args()
 
-    detail = ChangelistDetail(args.detail)
-
     if args.unmerged is not None:
 
         unmergedCls = P4Helper.getUnmergredChangelists(session.version, args.unmerged, session.username, args.detail, session.verbose)
@@ -271,5 +270,5 @@ if __name__ == '__main__':
         exit(0)
 
     usernameFilter = (session.username if session.usernameSpecifiedThroughCmd else None)
-    [print(cl) for cl in P4Helper.getChangelists(session.version, usernameFilter, detail, args.limit, session.verbose)]
+    [print(cl) for cl in P4Helper.getChangelists(session.version, usernameFilter, args.detail, args.limit, session.verbose)]
     exit(0)
