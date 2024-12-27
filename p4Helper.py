@@ -180,12 +180,12 @@ class P4Helper:
     @staticmethod
     def getChangelists(version: str, developer: str = None, detail = ChangelistDetail.Minimal, limit: int = None, verbose: bool = False) -> Generator[Changelist, None, None]:
 
-        print(f'Getting changelists on {version}...', end='\n', file=sys.stderr)
+        print(f'Getting changelists on {version}...', end=' ', file=sys.stderr)
 
         command = 'p4 changes -s submitted'
 
         if limit:
-            print(f'(Limiting search to {limit} changelists)', end='\n', file=sys.stderr)
+            print(f'(Limiting search to {limit} changelists)', end='', file=sys.stderr)
             command += f' -m {limit}'
 
         print(end='\n', file=sys.stderr, flush=True)
