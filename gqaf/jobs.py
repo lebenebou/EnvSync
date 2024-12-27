@@ -17,7 +17,7 @@ if __name__ == '__main__':
     session = SessionInfo()
 
     if not session.version:
-        print('Cannot get deployment jobs without specifying version', file=sys.stderr)
+        print('Cannot get deployment jobs without specifying -v [VERSION]', file=sys.stderr)
         exit(1)
         
     if args.json:

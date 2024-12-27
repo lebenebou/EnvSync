@@ -108,7 +108,7 @@ async def main():
     session = SessionInfo()
 
     if session.version is None:
-        print(f"Cannot push job without a version", file=sys.stderr)
+        print(f"Cannot push job without a -v [VERSION]", file=sys.stderr)
         exit(1)
 
     chosenBuildId: str = None
@@ -125,7 +125,7 @@ async def main():
         chosenBuildId = latestSetups.buildId
 
     if not chosenBuildId:
-        print(f"Cannot push job without buildId or CL", file=sys.stderr)
+        print(f"Cannot push job without -cl [CHANGELIST] or --buildId [BUILD-ID]", file=sys.stderr)
         exit(1)
 
     linesToParse: List[str] = []

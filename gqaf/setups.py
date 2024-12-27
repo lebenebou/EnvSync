@@ -49,7 +49,7 @@ class SetupsViewRow:
             return b1 if b1 else b2
 
         if b1.status == b2.status:
-            return b1 if b1.deployDate > b2.deployDate else b2
+            return b1 if b1.deployDate > b2.deployDate else b2 # more recent build
 
         statusPriority = ('DONE', 'TAKEN', 'FAILED', 'STOPPED')
         for status in statusPriority:
@@ -71,7 +71,7 @@ if __name__ == '__main__':
     session = SessionInfo()
 
     if not session.version:
-        print('Cannot get setups without specifying version', file=sys.stderr)
+        print('Cannot get setups without specifying -v [VERSION]', file=sys.stderr)
         exit(1)
 
     if args.json:

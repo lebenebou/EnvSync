@@ -188,7 +188,7 @@ class P4Helper:
             print(f'(Limiting search to {limit} changelists)', end='', file=sys.stderr)
             command += f' -m {limit}'
 
-        print(end='\n', file=sys.stderr, flush=True)
+        print(end='\n\n', file=sys.stderr, flush=True)
 
         if developer:
             command += f' -u {developer}'

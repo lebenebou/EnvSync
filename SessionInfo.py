@@ -113,7 +113,7 @@ class SessionInfo:
             return self.changelistPool
 
         if not self.version:
-            print(f'Cannot get changelists without specifying version', file=sys.stderr)
+            print(f'Cannot get changelists without specifying -v [VERSION]', file=sys.stderr)
             self.changelistPool = None
             return
 
@@ -138,7 +138,7 @@ class SessionInfo:
     def setChangelistToLatestWithSetups(self, optimized: bool = True):
 
         if not self.version:
-            print(f'Cannot get latest setups without specifying version', file=sys.stderr)
+            print(f'Cannot get latest setups without specifying -v [VERSION]', file=sys.stderr)
             self.changelist = None
             return
 

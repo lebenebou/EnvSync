@@ -29,11 +29,11 @@ if __name__ == '__main__':
     session = SessionInfo()
 
     if session.changelist is None:
-        print(f"Cannot push setups without a base changelist", file=sys.stderr)
+        print(f"Cannot push setups without a -cl [CHANGELIST]", file=sys.stderr)
         exit(1)
 
     if args.linux==False and args.windows==False:
-        print(f"No operating system(s) chosen", file=sys.stderr)
+        print(f"No operating system(s) chosen: [--linux | --windows]", file=sys.stderr)
         exit(1)
 
     # Build input
