@@ -118,6 +118,7 @@ class SessionInfo:
             return
 
         self.changelistPool = list(P4Helper.getChangelists(version=self.version, verbose=self.verbose, limit=limit))
+        return self.changelistPool
         
     def fetchSetupsPool(self, lazy: bool = True) -> Dict[int, List]:
 
@@ -134,17 +135,17 @@ class SessionInfo:
 
         return self.setupsPool
 
-    def setChangelistToLatestWithSetups(self):
+    def setChangelistToLatestWithSetups(self, optimized: bool = True):
 
         if not self.version:
             print(f'Cannot get latest setups without specifying version', file=sys.stderr)
             self.changelist = None
             return
 
-        self.fetchSetupsPool(lazy=True)
-
         # starting with most recent cl, find available setups
-        self.fetchChangelistPool(lazy=True)
+        self.fetchSetupsPool(lazy=True)
+        self.fetchChangelistPool(lazy=optimized, limit=20 if optimized else None)
+
         for cl in self.changelistPool:
 
             if cl.value not in self.setupsPool:
@@ -156,7 +157,9 @@ class SessionInfo:
                     self.changelist = cl.value
                     return
 
-        self.changelist = None
+        if optimized and self.changelist is None:
+            self.setChangelistToLatestWithSetups(optimized=False) # search beyond 20 changelists
+
         return
 
 if __name__ == '__main__':
