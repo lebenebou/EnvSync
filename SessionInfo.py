@@ -93,8 +93,8 @@ class SessionInfo:
         tmpDict.pop('setupsPool')
         tmpDict.pop('changelistPool')
 
-        tmpDict['hasSetupsPool'] = bool(self.setupsPool is not None)
-        tmpDict['hasChangelistPool'] = bool(self.changelistPool is not None)
+        tmpDict['SetupsPool'] = 0 if self.setupsPool is None else len(self.setupsPool.keys())
+        tmpDict['ChangelistPool'] = 0 if self.changelistPool is None else len(self.changelistPool)
 
         return tmpDict.__str__().replace('\n', ' ').replace('\'', '')
 
