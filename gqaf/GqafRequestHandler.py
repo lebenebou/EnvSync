@@ -14,6 +14,7 @@ from getpass import getpass
 from typing import List, Dict
 
 from dateutil.parser import isoparse
+from datetime import datetime
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -50,11 +51,14 @@ class BuildJob:
         self.status: str = data.get('status')
         self.customized: bool = data.get('customized')
         self.operatingSystem: str = data.get('operatingSystem')
-        self.deployDate = data.get('startDate')
+        self.deployDate: datetime = data.get('startDate')
         self.version = data.get('version')
 
         if self.customized is not None:
             self.customized = 'custom' if self.customized else 'standard'
+
+        if self.deployDate:
+            self.deployDate = isoparse(self.deployDate)
 
     def isDone(self) -> bool:
         return self.status.lower() == 'done'
@@ -67,11 +71,6 @@ class BuildJob:
 
     def isValid(self) -> bool:
         return all([self.deployer])
-
-    def makeDateReadable(self):
-
-        date = isoparse(self.deployDate)
-        self.deployDate = date.strftime("%b %d %I:%M %p")
 
 class DeploymentJob:
     def __init__(self, data: dict):
@@ -493,7 +492,6 @@ class GqafRequestHandler:
         buildJobs = json["productionJobs"]["productionJob"]
         buildJobs = [BuildJob(job) for job in buildJobs]
         buildJobs = [job for job in buildJobs if job.isValid()]
-        buildJobs.sort(key=lambda job: isoparse(job.deployDate), reverse=True) # sort by most recent
         GqafRequestHandler.removeDuplicates(buildJobs)
 
         if changelistFilter:
@@ -501,8 +499,6 @@ class GqafRequestHandler:
 
         if ownerFilter:
             buildJobs = [job for job in buildJobs if job.deployer == ownerFilter]
-
-        [job.makeDateReadable() for job in buildJobs]
 
         return buildJobs
 
