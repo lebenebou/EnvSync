@@ -10,60 +10,61 @@ from p4Helper import Changelist
 
 class SetupsViewRow:
 
-    @staticmethod
-    def moreRelevantStatus(current: str, new: str):
-
-        if 'DONE' in [current, new]:
-            return 'DONE'
-
-        if 'TAKEN' in [current, new]:
-            return 'TAKEN'
-
-        return new
-
     def __init__(self, changelist: Changelist, setupsPool: Dict[int, List[BuildJob]]):
         
+        self.deployer = None
         self.developer = changelist.developer
         self.changelist = changelist.value
-        # self.description = changelist.description
 
         self.windows = '-----'
         self.linux = '-----'
-        
-        self.linuxBuildId = None
-        self.deployDate = None
+        self.linuxBuildId = '-----'
 
-        for build in setupsPool.get(self.changelist, dict()):
+        bestLinuxBuild: BuildJob = None
+        bestWindowsBuild: BuildJob = None
 
-            self.deployDate = build.deployDate
+        for build in setupsPool.get(changelist.value, dict()):
 
             if build.isLinux():
-                self.linux = SetupsViewRow.moreRelevantStatus(self.linux, build.status)
-                self.linuxBuildId = build.buildId
+                bestLinuxBuild = SetupsViewRow.moreRelevantBuild(bestLinuxBuild, build)
 
-            if build.isWindows():
-                self.windows = SetupsViewRow.moreRelevantStatus(self.windows, build.status)
+            elif build.isWindows():
+                bestWindowsBuild = SetupsViewRow.moreRelevantBuild(bestWindowsBuild, build)
 
-            continue
+        if bestLinuxBuild:
+            self.linux = bestLinuxBuild.status
+            self.linuxBuildId = bestLinuxBuild.buildId
+            self.deployer = bestLinuxBuild.deployer
 
+        if bestWindowsBuild:
+            self.windows = bestWindowsBuild.status
+
+        self.description = f'[{changelist.defect}]{changelist.description}'
         return
 
-def printBreakdownByChangelist(setupsPool: Dict[int, List[BuildJob]], changelistPool: List[Changelist]):
+    @staticmethod
+    def moreRelevantBuild(b1: BuildJob, b2: BuildJob):
 
-    setupsList: List[SetupsViewRow] = []
+        if b1 is None or b2 is None:
+            return b1 if b1 else b2
 
-    for cl in changelistPool:
+        if b1.status == b2.status:
+            return b1 if b1.deployDate > b2.deployDate else b2
 
-        row = SetupsViewRow(cl, setupsPool)
-        setupsList.append(row)
+        statusPriority = ('DONE', 'TAKEN', 'FAILED', 'STOPPED')
+        for status in statusPriority:
 
-    printObjectList(setupsList)
+            if status in (b1.status, b2.status):
+                return b1 if b1.status == status else b2
+
+        return b2
 
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser('Fetch setups')
+
     parser.add_argument('--json', action='store_true', default=False, help='Output in JSON format')
-    parser.add_argument('--breakdown', action='store_true', default=False, help='Breakdown the view by changelist')
+    parser.add_argument('--all', action='store_true', default=False, help='Show all changelists')
 
     args, _ = parser.parse_known_args()
 
@@ -73,14 +74,6 @@ if __name__ == '__main__':
         print('Cannot get setups without specifying version', file=sys.stderr)
         exit(1)
 
-    if args.breakdown:
-
-        session.fetchChangelistPool(lazy=True, limit=30)
-        session.fetchSetupsPool(lazy=True)
-
-        printBreakdownByChangelist(session.setupsPool, session.changelistPool)
-        exit(0)
-        
     if args.json:
         buildJobs: dict = GqafRequestHandler.fetchDeploymentJobsJson(session.version)
 
@@ -91,12 +84,18 @@ if __name__ == '__main__':
         print(json.dumps(buildJobs, indent=4), file=sys.stdout)
         exit(0)
 
-    ownerFilter = session.username if session.usernameSpecifiedThroughCmd else None
-    buildJobs: List[BuildJob] = GqafRequestHandler.fetchBuildJobs(session.version, session.changelist, ownerFilter)
+    session.fetchChangelistPool(lazy=True, limit = (20 if not args.all else None) )
+    session.fetchSetupsPool(lazy=True)
 
-    if buildJobs is None:
-        print('Failed to fetch setups', file=sys.stderr)
-        exit(1)
+    rows: List[SetupsViewRow] = [] # for each changelist in ascending order, get the most relevant build job and add it as a row
+    for cl in session.changelistPool:
+        
+        if session.usernameSpecifiedThroughCmd and cl.developer != session.username:
+            continue
 
-    printObjectList(buildJobs)
-    exit(0)
+        if session.changelist and cl.value != session.changelist:
+            continue
+
+        rows.append(SetupsViewRow(cl, session.setupsPool))
+
+    printObjectList(rows)
