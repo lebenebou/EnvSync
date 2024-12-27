@@ -299,6 +299,8 @@ class GqafRequestHandler:
     @staticmethod
     def authenticateUserThroughSettings(cmdFallback: bool = True) -> str:
 
+        print('Trying to authenticate GQAF using credentials from settings JSON...', file=sys.stderr)
+
         username: str = settings.getUsername()
         password: str = tryDecrypt(settings.getEncryptedPassword())
 
@@ -336,11 +338,9 @@ class GqafRequestHandler:
         return accessToken
 
     @staticmethod
-    def tryReauthenticate() -> str:
+    def tryAuthenticate(cmdFallback: bool = True) -> str:
 
-        print('GQAF Token expired', file=sys.stderr)
-        print('Re-authenticating using credentials from settings JSON...', file=sys.stderr)
-        return GqafRequestHandler.authenticateUserThroughSettings()
+        return GqafRequestHandler.authenticateUserThroughSettings(cmdFallback)
 
     @staticmethod
     def postRequest(endpoint: str, jsonData: dict) -> requests.Response:
@@ -358,7 +358,9 @@ class GqafRequestHandler:
                 exit(2)
 
         if response.status_code == 401:
-            GqafRequestHandler.tryReauthenticate()
+
+            print('GQAF Token expired', file=sys.stderr)
+            GqafRequestHandler.tryAuthenticate()
             return GqafRequestHandler.postRequest(endpoint, jsonData)
 
         if response.status_code >= 400:
@@ -383,7 +385,9 @@ class GqafRequestHandler:
                 exit(2)
 
         if response.status_code == 401:
-            GqafRequestHandler.tryReauthenticate()
+
+            print('GQAF Token expired', file=sys.stderr)
+            GqafRequestHandler.tryAuthenticate()
             return GqafRequestHandler.getRequest(endpoint)
 
         if response.status_code != 200:
