@@ -103,6 +103,9 @@ class DeploymentJob:
     def isPassed(self) -> bool:
         return self.status == 'PASSED'
 
+    def isKept(self) -> bool:
+        return self.state == 'KEPT'
+
     def makeDateReadable(self):
 
         date = isoparse(self.pushDate)
