@@ -473,8 +473,10 @@ class GqafRequestHandler:
             currentBuildId = buildIdToInt(job.buildId)
             nextBuildId = buildIdToInt(buildJobs[i+1].buildId)
 
-            if nextBuildId - currentBuildId <= 1:
-                toRemove.append(i+1)
+            if currentBuildId - 1 == nextBuildId:
+                toRemove.append(i+1) # remove the buildId with the lower value
+
+            continue
 
         for index in reversed(toRemove):
             buildJobs.pop(index)

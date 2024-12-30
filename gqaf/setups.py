@@ -51,7 +51,7 @@ class SetupsViewRow:
         if b1.status == b2.status:
             return b1 if b1.deployDate > b2.deployDate else b2 # more recent build
 
-        statusPriority = ('DONE', 'TAKEN', 'FAILED', 'STOPPED')
+        statusPriority = ('DONE', 'TAKEN', 'FAILED', 'STOPPED', 'PURGED')
         for status in statusPriority:
 
             if status in (b1.status, b2.status):
