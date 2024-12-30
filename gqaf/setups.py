@@ -75,7 +75,7 @@ if __name__ == '__main__':
         exit(1)
 
     if args.json:
-        buildJobs: dict = GqafRequestHandler.fetchDeploymentJobsJson(session.version)
+        buildJobs: dict = GqafRequestHandler.fetchSetupsJson(session.version)
 
         if buildJobs is None:
             print('Failed to fetch setups', file=sys.stderr)
