@@ -180,3 +180,4 @@ if __name__ == '__main__':
 
     session = SessionInfo(forceVerbose=True)
     session.close()
+    exit(0)

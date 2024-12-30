@@ -258,17 +258,21 @@ if __name__ == '__main__':
 
         if len(unmergedCls) == 0:
             print(f'{session.username} has merged all his defects from {session.version} to {args.unmerged}', file=sys.stderr)
+            session.close()
             exit(0)
 
         if args.defects:
             print(f'{session.username}\'s defects on {session.version} not yet on {args.unmerged}:', file=sys.stderr)
             print(', '.join(set(cl.defect for cl in unmergedCls)))
+            session.close()
             exit(0)
 
         print(f'{session.username}\'s Cls on {session.version} not yet on {args.unmerged}:', file=sys.stderr)
         [print(cl) for cl in unmergedCls]
+        session.close()
         exit(0)
 
     usernameFilter = (session.username if session.usernameSpecifiedThroughCmd else None)
     [print(cl) for cl in P4Helper.getChangelists(session.version, usernameFilter, args.detail, args.limit, session.verbose)]
+    session.close()
     exit(0)

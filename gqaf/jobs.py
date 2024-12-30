@@ -28,6 +28,7 @@ if __name__ == '__main__':
             exit(1)
 
         print(json.dumps(jobs, indent=4), file=sys.stdout)
+        session.close()
         exit(0)
 
     ownerFilter = session.username if session.usernameSpecifiedThroughCmd else None
@@ -39,3 +40,4 @@ if __name__ == '__main__':
 
     printObjectList(jobs)
     session.close()
+    exit(0)

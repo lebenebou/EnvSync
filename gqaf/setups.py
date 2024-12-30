@@ -82,6 +82,7 @@ if __name__ == '__main__':
             exit(1)
 
         print(json.dumps(buildJobs, indent=4), file=sys.stdout)
+        session.close()
         exit(0)
 
     session.fetchChangelistPool(lazy=True, limit = (20 if not args.all else None) )
@@ -100,3 +101,4 @@ if __name__ == '__main__':
 
     printObjectList(rows)
     session.close()
+    exit(0)
