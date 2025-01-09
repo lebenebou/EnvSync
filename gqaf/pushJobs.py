@@ -56,16 +56,6 @@ def parseJobInputsFromLines(lines: List[str], verbose: bool = False) -> List[Dep
 
     return inputs
 
-def getLinuxSetupsAtCl(version: str, changelist: int) -> BuildJob:
-
-    validSetups = GqafRequestHandler.fetchBuildJobs(version, changelist)
-    validSetups = [b for b in validSetups if 'linux' in b.operatingSystem.lower() and b.status == 'DONE']
-
-    if len(validSetups) == 0:
-        return None
-
-    return validSetups[0]
-
 def fillJobInputs(inputs: List[DeploymentJobInput], session: SessionInfo, cliArgs: any):
 
     for input in inputs:
@@ -117,12 +107,12 @@ async def main():
 
     elif session.changelist:
 
-        latestSetups = getLinuxSetupsAtCl(session.version, session.changelist)
+        latestSetups = session.fetchSetupsPool(lazy=True).get(session.changelist, None)
         if latestSetups is None:
             print(f"No setups on changelist {session.changelist}.", file=sys.stderr)
             exit(1)
 
-        chosenBuildId = latestSetups.buildId
+        chosenBuildId = latestSetups[0].buildId
 
     if not chosenBuildId:
         print(f"Cannot push job without -cl [CHANGELIST] or --buildId [BUILD-ID]", file=sys.stderr)
