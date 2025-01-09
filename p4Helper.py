@@ -12,13 +12,8 @@ from typing import List
 import argparse
 from enum import Enum
 
-class ChangelistDetail(Enum):
-    Minimal = 1 # only fetch info provided by 'p4 changes' command
-    Defect = 2 # only fetch more info if defect is missing (p4 describe)
-    Full = 3 # always fetch more info (p4 describe)
-
 class Changelist:
-    pattern = r"^Change (\d+).*by (.*)@.* '(.*)'"
+    pattern = r'^Change\s+(\d+).*\s+by\s+(\S+)@\S+$'
     defectPattern = r"\[(DEF\d+)\]"
 
     def __init__(self, value: int):
@@ -43,46 +38,23 @@ class Changelist:
 
         return self.value == other.value
         
-    @staticmethod
-    def fromP4ChangesOutputLine(line: str, detail = ChangelistDetail.Defect, verbose: bool = False):
+    def parseDescription(self, verbose: bool = False):
 
-        m = re.search(Changelist.pattern, line)
+        assert self.description, f'No description to parse for CL: {self.value}'
+        self.description = self.description.strip()
 
-        assert m, 'not a p4 changelist output line'
+        if '<mxp4Root>' in self.description:
+            return self.parseXmlDescription(verbose)
 
-        cl = Changelist(m.group(1))
-        cl.developer = m.group(2)
-        cl.description = m.group(3) # truncated description
+        m = re.match(Changelist.defectPattern, self.description)
+        if m is None:
+            return self
 
-        m = re.search(Changelist.defectPattern, cl.description)
-        cl.defect = m.group(1) if m else None
-
-        cl.description = re.sub(Changelist.defectPattern, '', cl.description) # remove defect from description
-        cl.description = cl.description.strip()
-
-        detail = ChangelistDetail(detail) # in case `detail` is an integer
-        moreDetailsRequested: bool = False
-
-        if detail == ChangelistDetail.Full:
-            moreDetailsRequested = True # user always wants more detail
-
-        elif cl.defect is None and detail == ChangelistDetail.Defect:
-            moreDetailsRequested = True # user only wants more detail if defect is missing
-        
-        if not moreDetailsRequested:
-            return cl
-
-        cl.fetchInfoFromServer(verbose)
-
-        if '<mxp4Root>' not in cl.description:
-            return cl
-
-        cl.parseXmlDescription(verbose)
-        return cl
+        self.defect = m.group(1)
+        self.description = re.sub(Changelist.defectPattern, '', self.description).strip()
+        return self
 
     def parseXmlDescription(self, verbose: bool = False):
-
-        assert '<mxp4Root>' in self.description, 'Trying to parse non-xml description'
 
         if verbose:
             print(f'Parsing XML for changelist {self.value}...', end=' ', file=sys.stderr)
@@ -179,11 +151,11 @@ class P4Helper:
 
     from typing import Generator
     @staticmethod
-    def getChangelists(version: str, developer: str = None, detail = ChangelistDetail.Minimal, limit: int = None, verbose: bool = False) -> Generator[Changelist, None, None]:
+    def getChangelists(version: str, developer: str = None, limit: int = None, verbose: bool = False) -> Generator[Changelist, None, None]:
 
         print(f'Getting changelists on {version}...', end=' ', file=sys.stderr)
 
-        command = 'p4 changes -s submitted'
+        command = 'p4 changes -l -s submitted'
 
         if limit:
             print(f'(Limiting search to {limit} changelists)', end='', file=sys.stderr)
@@ -207,32 +179,42 @@ class P4Helper:
 
         output: List[str] = result.stdout.splitlines()
 
-        for line in output:
-            yield Changelist.fromP4ChangesOutputLine(line, detail, verbose)
+        i = 0
+        while i < len(output):
+
+            m = re.match(Changelist.pattern, output[i])
+
+            assert m is not None, 'Couldnt match changelist regex pattern'
+            cl = Changelist(m.group(1).strip())
+            cl.developer = m.group(2).strip()
+
+            cl.description = output[i+2].strip()
+
+            cl.parseDescription()
+
+            yield cl
+            i += 4
 
     @staticmethod
-    def getUnmergredChangelists(src: str, dest: str, developer: str = None, detail = ChangelistDetail.Defect, verbose: bool = False) -> List[Changelist]:
+    def getUnmergredChangelists(src: str, dest: str, developer: str = None, verbose: bool = False) -> List[Changelist]:
 
         # returns changelists submitted by <developer> that are NOT merged from src to dest, based on defectID
 
-        srcCls = P4Helper.getChangelists(src, developer, detail=ChangelistDetail.Defect, limit=None, verbose=verbose)
+        srcCls = P4Helper.getChangelists(src, developer, limit=None, verbose=verbose)
 
         destLimit = 200 if dest == P4Helper.Build else None # users might have a large number of changelists submitted to build, 200 should be enough
-        destCls = P4Helper.getChangelists(dest, developer, detail=ChangelistDetail.Defect, limit=destLimit, verbose=verbose)
+        destCls = P4Helper.getChangelists(dest, developer, limit=destLimit, verbose=verbose)
 
         destDefects = set(cl.defect for cl in destCls)
 
         unmergedCls = [cl for cl in srcCls if cl.defect is not None and cl.defect not in destDefects]
 
-        if detail == ChangelistDetail.Full:
-            [cl.fetchInfoFromServer(verbose) for cl in unmergedCls]
-
         return unmergedCls
 
     @staticmethod
-    def getUnmergredDefects(src: str, dest: str, developer: str = None, detail = ChangelistDetail.Defect, verbose: bool = False) -> List[str]:
+    def getUnmergredDefects(src: str, dest: str, developer: str = None, verbose: bool = False) -> List[str]:
         # returns defects submitted by <developer> that are NOT merged from src to dest
-        return [cl.defect for cl in P4Helper.getUnmergredChangelists(src, dest, developer, detail, verbose)]
+        return [cl.defect for cl in P4Helper.getUnmergredChangelists(src, dest, developer, verbose)]
 
 if __name__ == '__main__':
 
@@ -246,15 +228,14 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Display changelists')
 
     parser.add_argument('--unmerged', nargs='?', const=P4Helper.Build, default=None, type=str, help='only changelists which are unmerged (based on defectID)')
-    parser.add_argument('--detail', nargs='?', const=ChangelistDetail.Full, default=ChangelistDetail.Minimal, type=int, help='1: Minimal, 2: Defect, 3: Full')
     parser.add_argument('--defects', action="store_true", help='display defects instead of changelists')
-    parser.add_argument('--limit', default=None, type=int, help='limit the output to a certain number of changelists')
+    parser.add_argument('-l', '--limit', default=None, type=int, help='limit the output to a certain number of changelists')
 
     args, _ = parser.parse_known_args()
 
     if args.unmerged is not None:
 
-        unmergedCls = P4Helper.getUnmergredChangelists(session.version, args.unmerged, session.username, args.detail, session.verbose)
+        unmergedCls = P4Helper.getUnmergredChangelists(session.version, args.unmerged, session.username, session.verbose)
 
         if len(unmergedCls) == 0:
             print(f'{session.username} has merged all his defects from {session.version} to {args.unmerged}', file=sys.stderr)
@@ -273,6 +254,6 @@ if __name__ == '__main__':
         exit(0)
 
     usernameFilter = (session.username if session.usernameSpecifiedThroughCmd else None)
-    [print(cl) for cl in P4Helper.getChangelists(session.version, usernameFilter, args.detail, args.limit, session.verbose)]
+    [print(cl) for cl in P4Helper.getChangelists(session.version, usernameFilter, args.limit, session.verbose)]
     session.close()
     exit(0)

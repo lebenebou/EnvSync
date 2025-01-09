@@ -77,9 +77,6 @@ CL 7396146 by yoyammine - [DEF0604083] [BondsAndFuturesPr...
 ...
 ```
 
-### Other ways to do it:
-Get more detail and full description: use `--detail` (less performance)
-
 ## Get Changelists Unmerged On Build
 `p4helper.py -u <user> -v <srcVersion> --unmerged`
 
