@@ -107,7 +107,12 @@ class SessionInfo:
 
     def close(self, os=sys.stderr):
 
-        print(f'\n{self.timeSinceCreationMs()} ms', file=os)
+        timeSinceCreation = self.timeSinceCreationMs()
+
+        if timeSinceCreation < 10**3:
+            print(f'\n{timeSinceCreation} ms', file=os)
+        else:
+            print(f'\n{round(timeSinceCreation/1000, 1)} s', file=os)
 
         del self.setupsPool
         del self.changelistPool
