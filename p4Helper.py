@@ -188,12 +188,18 @@ class P4Helper:
             cl = Changelist(m.group(1).strip())
             cl.developer = m.group(2).strip()
 
-            cl.description = output[i+2].strip()
+            i+=1
+            while output[i].strip() == '': i+=1
+            cl.description = output[i].strip()
 
             cl.parseDescription()
 
+            i+=1
+            if i >= len(output):
+                break
+            while output[i].strip() == '': i+=1
+
             yield cl
-            i += 4
 
     @staticmethod
     def getUnmergredChangelists(src: str, dest: str, developer: str = None, verbose: bool = False) -> List[Changelist]:
