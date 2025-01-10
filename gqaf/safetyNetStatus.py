@@ -1,6 +1,6 @@
 
 from GqafRequestHandler import GqafRequestHandler, DeploymentJob, BuildJob
-from p4Helper import P4Helper, Changelist, ChangelistDetail
+from p4Helper import P4Helper, Changelist
 from SessionInfo import SessionInfo
 from typing import List, Set, Dict
 import sys

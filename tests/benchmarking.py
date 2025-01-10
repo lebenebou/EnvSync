@@ -25,31 +25,19 @@ def benchmarkFunction(f: callable):
 VERSION = settings.getCurrentVersion()
 
 # P4Helper
-from p4Helper import P4Helper, ChangelistDetail
+from p4Helper import P4Helper
 
 def get100ChangelistsOnBuild():
-    list(P4Helper.getChangelists(P4Helper.Build, developer=None, detail=ChangelistDetail.Minimal, limit=100))
-
-def get100ChangelistsOnBuildWithDefects():
-    list(P4Helper.getChangelists(P4Helper.Build, developer=None, detail=ChangelistDetail.Defect, limit=100))
-
-def get100ChangelistsOnBuildWithDetails():
-    list(P4Helper.getChangelists(P4Helper.Build, developer=None, detail=ChangelistDetail.Full, limit=100))
+    list(P4Helper.getChangelists(P4Helper.Build, developer=None, limit=100))
 
 def getUsersChangelistsOnBuild():
-    list(P4Helper.getChangelists(P4Helper.Build, developer=settings.getUsername(), detail=ChangelistDetail.Full, limit=100))
+    list(P4Helper.getChangelists(P4Helper.Build, developer=settings.getUsername(), limit=100))
 
 def getChangelistsOnCurrentVersion():
     list(P4Helper.getChangelists(VERSION))
 
 def getUserChangelistsOnCurrentVersion():
     list(P4Helper.getChangelists(VERSION, developer=settings.getUsername()))
-
-def getChangelistsOnCurrentVersionWithDefects():
-    list(P4Helper.getChangelists(VERSION, detail=ChangelistDetail.Defect))
-
-def getChangelistsOnCurrentVersionWithDetails():
-    list(P4Helper.getChangelists(VERSION, detail=ChangelistDetail.Full))
 
 # GQAF API
 from gqaf.GqafRequestHandler import GqafRequestHandler
@@ -64,13 +52,9 @@ if __name__ == '__main__':
 
     print('P4Helper' + 20*'-')
     benchmarkFunction(get100ChangelistsOnBuild)
-    benchmarkFunction(get100ChangelistsOnBuildWithDefects)
-    benchmarkFunction(get100ChangelistsOnBuildWithDetails)
     print()
     benchmarkFunction(getUserChangelistsOnCurrentVersion)
     benchmarkFunction(getChangelistsOnCurrentVersion)
-    benchmarkFunction(getChangelistsOnCurrentVersionWithDefects)
-    benchmarkFunction(getChangelistsOnCurrentVersionWithDetails)
     print()
     print('GQAF API' + 20*'-')
     benchmarkFunction(GqafRequestHandler.getAllMxVersions)
