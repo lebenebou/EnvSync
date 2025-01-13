@@ -39,7 +39,7 @@ class SetupsViewRow:
         if bestWindowsBuild:
             self.windows = bestWindowsBuild.status
 
-        self.description = f'[{changelist.defect}]{changelist.description}'
+        self.description = f'[{changelist.defect}]{changelist.description[:50]}'
         return
 
     @staticmethod
