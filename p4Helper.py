@@ -10,13 +10,12 @@ import xml.etree.ElementTree as xmlParser
 from typing import List
 
 import argparse
-from enum import Enum
 
 class Changelist:
-    pattern = r'^Change\s+(\d+).*\s+by\s+(\S+)@\S+$'
+    pattern = r'^Change\s+(\d+).*\s+by\s+(\S+)@\S+\s*\n\s+(.*)$'
     defectPattern = r"\[(DEF\d+)\]"
 
-    def __init__(self, value: int):
+    def __init__(self, value: int = 0):
         self.value = int(value)
         self.defect = None
         self.description = None
@@ -46,7 +45,7 @@ class Changelist:
         if '<mxp4Root>' in self.description:
             return self.parseXmlDescription(verbose)
 
-        m = re.match(Changelist.defectPattern, self.description)
+        m = re.search(Changelist.defectPattern, self.description)
         if m is None:
             return self
 
@@ -177,28 +176,15 @@ class P4Helper:
             print(f'Failed to get changelists on {version}', file=sys.stderr)
             return []
 
-        output: List[str] = result.stdout.splitlines()
+        output: List[str] = result.stdout
 
-        i = 0
-        while i < len(output):
+        for i, dev, desc in re.findall(Changelist.pattern, output, re.MULTILINE):
 
-            m = re.match(Changelist.pattern, output[i])
-
-            assert m is not None, 'Couldnt match changelist regex pattern'
-            cl = Changelist(m.group(1).strip())
-            cl.developer = m.group(2).strip()
-
-            i+=1
-            while output[i].strip() == '': i+=1
-            cl.description = output[i].strip()
+            cl = Changelist(i)
+            cl.developer = dev
+            cl.description = desc
 
             cl.parseDescription()
-
-            i+=1
-            if i >= len(output):
-                break
-            while output[i].strip() == '': i+=1
-
             yield cl
 
     @staticmethod
