@@ -12,7 +12,7 @@ class SetupsViewRow:
 
     def __init__(self, changelist: Changelist, setupsPool: Dict[int, List[BuildJob]]):
         
-        self.deployer = None
+        # self.deployer = None
         self.developer = changelist.developer
         self.changelist = changelist.value
 
@@ -34,7 +34,7 @@ class SetupsViewRow:
         if bestLinuxBuild:
             self.linux = bestLinuxBuild.status
             self.linuxBuildId = bestLinuxBuild.buildId
-            self.deployer = bestLinuxBuild.deployer
+            # self.deployer = bestLinuxBuild.deployer
 
         if bestWindowsBuild:
             self.windows = bestWindowsBuild.status
