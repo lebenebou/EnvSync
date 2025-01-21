@@ -2,6 +2,7 @@
 import argparse
 import sys
 import json
+import re
 
 from typing import List, Dict
 from GqafRequestHandler import GqafRequestHandler, printObjectList, BuildJob
@@ -18,7 +19,7 @@ class SetupsViewRow:
 
         self.windows = '-----'
         self.linux = '-----'
-        self.linuxBuildId = '-----'
+        self.buildId = '-----'
 
         bestLinuxBuild: BuildJob = None
         bestWindowsBuild: BuildJob = None
@@ -33,7 +34,7 @@ class SetupsViewRow:
 
         if bestLinuxBuild:
             self.linux = bestLinuxBuild.status
-            self.linuxBuildId = bestLinuxBuild.buildId
+            self.buildId = bestLinuxBuild.buildId
             # self.deployer = bestLinuxBuild.deployer
 
         if bestWindowsBuild:
@@ -41,6 +42,16 @@ class SetupsViewRow:
 
         self.description = f'[{changelist.defect}]{changelist.description[:50]}'
         return
+
+    def addInfoAttribute(self):
+        
+        assert self.description
+
+        bracketPattern = r'\[\S+\]'
+
+        self.info = ''
+        for m in re.findall(bracketPattern, self.description):
+            self.info += m
 
     @staticmethod
     def moreRelevantBuild(b1: BuildJob, b2: BuildJob):
@@ -63,7 +74,10 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser('Fetch setups')
 
-    parser.add_argument('--json', action='store_true', default=False, help='Output in JSON format')
+    formatArg = parser.add_mutually_exclusive_group()
+    formatArg.add_argument('--json', action='store_true', default=False, help='Output in JSON format')
+    formatArg.add_argument('--csv', action='store_true', default=False, help='Output in CSV format')
+
     parser.add_argument('--all', action='store_true', default=False, help='Show all changelists')
 
     args, _ = parser.parse_known_args()
@@ -99,6 +113,10 @@ if __name__ == '__main__':
 
         rows.append(SetupsViewRow(cl, session.setupsPool))
 
-    printObjectList(rows)
+    if args.csv:
+        [r.addInfoAttribute() for r in rows]
+        [delattr(r, 'description') for r in rows]
+
+    printObjectList(rows, csv=args.csv)
     session.close()
     exit(0)
