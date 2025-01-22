@@ -12,17 +12,32 @@ from typing import List
 import argparse
 
 class Changelist:
-    pattern = r'^Change\s+(\d+).*\s+by\s+(\S+)@\S+\s*\n\s+(.*)$'
-    defectPattern = r"\[(DEF\d+)\]"
+    pattern = r'^Change\s+(\d+).*\s+by\s+(\S+)@\S+\s*\n(.*)$'
+    tagPattern = r"\[(.*?)\]"
 
     def __init__(self, value: int = 0):
         self.value = int(value)
         self.defect = None
         self.description = None
+        self.tags: List[str] = []
         self.developer = None
 
+    def toString(self, onlyTags: bool = False) -> str:
+
+        s: str = f'CL {self.value} by {self.developer}'
+        s += ' - '
+        s += f'[{self.defect}]'
+
+        for tag in self.tags:
+            s += f'[{tag}]'
+
+        if not onlyTags:
+            s += f'{self.description}'
+
+        return s
+
     def __str__(self) -> str:
-        return f'CL {self.value} by {self.developer} - [{self.defect}]{self.description}'
+        return self.toString()
 
     def __repr__(self) -> str:
         return str(self.value)
@@ -42,62 +57,31 @@ class Changelist:
         assert self.description, f'No description to parse for CL: {self.value}'
         self.description = self.description.strip()
 
-        if '<mxp4Root>' in self.description:
-            return self.parseXmlDescription(verbose)
+        if self.description.startswith('<mxp4Root>'):
+            self.parseXmlDescription(verbose)
 
-        m = re.search(Changelist.defectPattern, self.description)
-        if m is None:
-            return self
+        for m in re.finditer(Changelist.tagPattern, self.description):
 
-        self.defect = m.group(1)
-        self.description = re.sub(Changelist.defectPattern, '', self.description).strip()
+            matchstr = m.group(1)
+
+            if matchstr.startswith('DEF'):
+                self.defect = matchstr
+            else:
+                self.tags.append(matchstr)
+
+        self.description = re.sub(Changelist.tagPattern, '', self.description).strip()
         return self
 
     def parseXmlDescription(self, verbose: bool = False):
 
         if verbose:
-            print(f'Parsing XML for changelist {self.value}...', end=' ', file=sys.stderr)
+            print(f'Parsing XML for changelist {self.value}...', end='\n', file=sys.stderr)
  
         root = xmlParser.fromstring(self.description)
         self.description = root.find(".//mxp4description").text.strip()
-        self.description = re.sub(r'\s+', ' ', self.description)
+        self.description = re.sub(r'\s+', ' ', self.description) # remove double spaces
         self.defect = root.find(".//mxp4defectID").text.strip()
 
-        return self
-
-    def fetchInfoFromServer(self, verbose: bool = False):
-        
-        assert self.value, 'cannot fetch info without changelist value'
-
-        command: str = f'p4 describe {self.value}'
-        result = cli.runCommand(command)
-
-        if verbose:
-            print(f'Fetching info for changelist {self.value}.', end=' ', file=sys.stderr)
-            print(f'Running command: {command}', file=sys.stderr)
-
-        assert result.returncode == 0
-
-        output: List[str] = result.stdout.splitlines()
-
-        self.description = ''
-        startIndex = 0
-        while output[startIndex].startswith('Change'):
-            startIndex += 1
-
-        endIndex = startIndex
-        while not output[endIndex].startswith('Affected files'):
-            endIndex += 1
-
-        for i in range(startIndex, endIndex):
-            self.description += output[i]
-
-        m = re.search(Changelist.defectPattern, self.description)
-        self.defect = m.group(1) if m else None
-        self.description = re.sub(Changelist.defectPattern, '', self.description)
-        self.description = self.description.strip()
-
-        self.developer = re.search(r'Change \d+.*by (\S+)@', output[0]).group(1)
         return self
 
 class P4Helper:
@@ -184,7 +168,7 @@ class P4Helper:
             cl.developer = dev
             cl.description = desc
 
-            cl.parseDescription()
+            cl.parseDescription(verbose)
             yield cl
 
     @staticmethod
