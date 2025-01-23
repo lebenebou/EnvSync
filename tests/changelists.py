@@ -14,5 +14,11 @@ if __name__ == '__main__':
 
     VERSION = settings.getCurrentVersion()
 
-    assert 2 == len(list(P4Helper.getChangelists(version=VERSION, limit=2))), 'Specifying limit yields wrong number of changelists'
-    assert len(list(P4Helper.getChangelists(version=P4Helper.Build, limit=300))), 'Failed to fetch 300 changelists on build'
+    versionCls = list(P4Helper.getChangelists(version=VERSION, limit=2))
+    buildCls = list(P4Helper.getChangelists(version=P4Helper.Build, limit=300))
+
+    assert 2 == len(versionCls), 'Specifying limit yields wrong number of changelists'
+    assert all(not 'mxp4root' in cl.description for cl in buildCls), 'Some changelist xmls were not parsed'
+    assert all(int(cl.value) for cl in buildCls), 'Some changelist values are not integers'
+
+    print('All tests passed')

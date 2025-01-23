@@ -175,13 +175,11 @@ class P4Helper:
 
             line = output[i]
             m = re.search(Changelist.pattern, line)
-            val, dev = m.groups()
 
             cl = Changelist()
-            cl.value = val
-            cl.developer = dev
-
+            cl.value, cl.developer = m.groups()
             cl.description = ''
+
             i += 2
             while i < len(output) and not output[i].startswith('Change'):
                 cl.description += output[i] 
