@@ -65,6 +65,8 @@ class Changelist:
         self.description = self.description.strip()
         self.description = self.description.replace('\n', ' ')
 
+        self.value = int(self.value)
+
         if self.description.startswith('<mxp4Root>'):
             self.parseXmlDescription(verbose)
 
