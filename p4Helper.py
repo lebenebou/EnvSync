@@ -12,7 +12,7 @@ from typing import List
 import argparse
 
 class Changelist:
-    pattern = r'^Change\s+(\d+).*\s+by\s+(\S+)@\S+\s*\n(.*)$'
+    pattern = r'^Change\s+(\d+).*\s+by\s+(\S+)@'
     tagPattern = r"\[(.*?)\]"
 
     def __init__(self, value: int = 0):
@@ -63,6 +63,7 @@ class Changelist:
 
         assert self.description, f'No description to parse for CL: {self.value}'
         self.description = self.description.strip()
+        self.description = self.description.replace('\n', ' ')
 
         if self.description.startswith('<mxp4Root>'):
             self.parseXmlDescription(verbose)
@@ -167,13 +168,24 @@ class P4Helper:
             print(f'Failed to get changelists on {version}', file=sys.stderr)
             return []
 
-        output: List[str] = result.stdout
+        output: List[str] = result.stdout.splitlines()
 
-        for i, dev, desc in re.findall(Changelist.pattern, output, re.MULTILINE):
+        i: int = 0
+        while i < len(output):
 
-            cl = Changelist(i)
+            line = output[i]
+            m = re.search(Changelist.pattern, line)
+            val, dev = m.groups()
+
+            cl = Changelist()
+            cl.value = val
             cl.developer = dev
-            cl.description = desc
+
+            cl.description = ''
+            i += 2
+            while i < len(output) and not output[i].startswith('Change'):
+                cl.description += output[i] 
+                i+=1
 
             cl.parseDescription(verbose)
             yield cl
