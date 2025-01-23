@@ -28,11 +28,18 @@ class Changelist:
         s += ' - '
         s += f'[{self.defect}]'
 
-        for tag in self.tags:
-            s += f'[{tag}]'
+        s += self.allTags()
 
         if not onlyTags:
             s += f'{self.description}'
+
+        return s
+
+    def allTags(self) -> str:
+
+        s = str()
+        for tag in self.tags:
+            s += f'[{tag}]'
 
         return s
 
