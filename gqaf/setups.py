@@ -40,18 +40,8 @@ class SetupsViewRow:
         if bestWindowsBuild:
             self.windows = bestWindowsBuild.status
 
-        self.description = f'[{changelist.defect}]{changelist.description[:50]}'
+        self.description = f'[{changelist.defect}]{changelist.allTags()}{changelist.description[:30]}'
         return
-
-    def addInfoAttribute(self):
-        
-        assert self.description
-
-        bracketPattern = r'\[\S+\]'
-
-        self.info = ''
-        for m in re.findall(bracketPattern, self.description):
-            self.info += m
 
     @staticmethod
     def moreRelevantBuild(b1: BuildJob, b2: BuildJob):
@@ -69,6 +59,24 @@ class SetupsViewRow:
                 return b1 if b1.status == status else b2
 
         return b2
+
+def setupsRowFromSession(session: SessionInfo, limit: int = 20) -> List[SetupsViewRow]:
+
+    session.fetchChangelistPool(lazy=True, limit=limit)
+    session.fetchSetupsPool(lazy=True)
+
+    rows: List[SetupsViewRow] = [] # for each changelist in ascending order, get the most relevant build job and add it as a row
+    for cl in session.changelistPool:
+        
+        if session.usernameSpecifiedThroughCmd and cl.developer != session.username:
+            continue
+
+        if session.changelist and cl.value != session.changelist:
+            continue
+
+        rows.append(SetupsViewRow(cl, session.setupsPool))
+
+    return rows
 
 if __name__ == '__main__':
 
@@ -99,24 +107,7 @@ if __name__ == '__main__':
         session.close()
         exit(0)
 
-    session.fetchChangelistPool(lazy=True, limit = (20 if not args.all else None) )
-    session.fetchSetupsPool(lazy=True)
-
-    rows: List[SetupsViewRow] = [] # for each changelist in ascending order, get the most relevant build job and add it as a row
-    for cl in session.changelistPool:
-        
-        if session.usernameSpecifiedThroughCmd and cl.developer != session.username:
-            continue
-
-        if session.changelist and cl.value != session.changelist:
-            continue
-
-        rows.append(SetupsViewRow(cl, session.setupsPool))
-
-    if args.csv:
-        [r.addInfoAttribute() for r in rows]
-        [delattr(r, 'description') for r in rows]
-
+    rows: List[SetupsViewRow] = setupsRowFromSession(session, (20 if not args.all else None))
     printObjectList(rows, csv=args.csv)
     session.close()
     exit(0)
