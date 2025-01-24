@@ -42,6 +42,7 @@ class SessionInfo:
         self.creationTime: float = time.perf_counter()
 
         self.setupsPool: Dict[int, List] = None
+        self.jobsPool: Dict[int, List] = None
         self.changelistPool: List[Changelist] = None
 
         # Verbose
@@ -153,6 +154,21 @@ class SessionInfo:
             self.setupsPool.setdefault(build.changelist, []).append(build)
 
         return self.setupsPool
+
+    def fetchJobsPool(self, lazy: bool = True) -> Dict[int, List]:
+
+        from gqaf.GqafRequestHandler import GqafRequestHandler, DeploymentJob
+
+        if lazy and self.jobsPool is not None:
+            return self.jobsPool
+
+        self.jobsPool: Dict[int, List[DeploymentJob]] = {}
+
+        deploymentJobs = GqafRequestHandler.fetchDeploymentJobs(self.version)
+        for job in deploymentJobs:
+            self.jobsPool.setdefault(job.changelist, []).append(job)
+
+        return self.jobsPool
 
     def setChangelistToLatestWithSetups(self, optimized: bool = True):
 
