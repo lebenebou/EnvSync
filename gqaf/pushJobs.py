@@ -112,7 +112,10 @@ async def main():
             print(f"No setups on changelist {session.changelist}.", file=sys.stderr)
             exit(1)
 
-        chosenBuildId = latestSetups[0].buildId
+        for build in latestSetups:
+            if build.isLinux():
+                chosenBuildId = build.buildId
+                break
 
     if not chosenBuildId:
         print(f"Cannot push job without -cl [CHANGELIST] or --buildId [BUILD-ID]", file=sys.stderr)
