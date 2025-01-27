@@ -94,15 +94,15 @@ class TPK:
         print(f'{self} is RED:')
         for cl in guiltyCls:
 
-            print(cl, end='')
+            print(cl.toString(onlyTags=1), end='')
 
             setupsAreAvailable: bool = (setupsPool is not None
                     and cl.value in setupsPool
                     and any(build.isDone() and build.isLinux() for build in setupsPool[cl.value])
             )
 
-            if setupsAreAvailable:
-                print(f'\t\t--> Setups Available: {setupsPool[cl.value][0].buildId}', end='')
+            # if setupsAreAvailable:
+            #     print(f'\t\t--> Setups Available: {setupsPool[cl.value][0].buildId}', end='')
 
             print(end='\n')
 

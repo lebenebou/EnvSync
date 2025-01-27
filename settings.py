@@ -79,6 +79,9 @@ def initSettingsFile(filePath: str) -> dict:
 
     return settings
 
+def getSettingsFilePath() -> str:
+    return SETTINGS_FILE
+
 def getSetting(settingName: str) -> any:
 
     settings = loadSettings(SETTINGS_FILE)
