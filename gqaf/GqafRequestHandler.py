@@ -585,7 +585,7 @@ def printObjectList(objects: List[object], csv: bool = False):
     if not len(tableContent):
         return
 
-    print(headerContent, file=sys.stderr, end='\n\n')
+    print(headerContent, file=sys.stdout if csv else sys.stderr, end='\n\n')
     time.sleep(0.005) # this is to avoid stderr getting mixed with stdout, force headers to first line
 
     try:
