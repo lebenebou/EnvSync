@@ -22,6 +22,8 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 from tabulate import tabulate
 import time
 
+import re
+
 import base64
 def tryDecrypt(encoded_message: str) -> str | None:
 
@@ -575,6 +577,7 @@ def printObjectList(objects: List[object], csv: bool = False):
 
     if csv:
         fullTable: str = tabulate(tableContent, headers=headers, tablefmt='tsv').replace('\t', ',')
+        fullTable = re.sub(r'\s*,\s*', r',', fullTable)
     else:
         fullTable: str = tabulate(tableContent, headers=headers)
 
