@@ -16,11 +16,17 @@ class Changelist:
     tagPattern = r"\[(.*?)\]"
 
     def __init__(self, value: int = 0):
+
         self.value = int(value)
         self.defect = None
         self.description = None
         self.tags: List[str] = []
         self.developer = None
+
+        self.gitCommit: str = None
+
+    def isCherryPickedFromGit(self) -> bool:
+        return self.gitCommit is not None
 
     def toString(self, onlyTags: bool = False) -> str:
 
@@ -70,16 +76,29 @@ class Changelist:
         if self.description.startswith('<mxp4Root>'):
             self.parseXmlDescription(verbose)
 
+        # parse [tags]
         for m in re.finditer(Changelist.tagPattern, self.description):
 
-            matchstr = m.group(1)
+            matchstr = m.group(1).strip()
 
             if matchstr.startswith('DEF'):
                 self.defect = matchstr
             else:
                 self.tags.append(matchstr)
 
+        # remove [tags]
         self.description = re.sub(Changelist.tagPattern, '', self.description).strip()
+
+        # remove (cherry picked from commit X)...
+        cherryPickPattern: str = r'\(cherry\s+picked\s+from\s+commit\s+(\S+)\).*'
+        m = re.search(cherryPickPattern, self.description)
+        if m:
+            self.gitCommit = m.group(1)
+            self.description = re.sub(cherryPickPattern, '', self.description).strip()
+
+        # remove double spaces
+        self.description = self.description.replace('  ', ' ')
+
         return self
 
     def parseXmlDescription(self, verbose: bool = False):
