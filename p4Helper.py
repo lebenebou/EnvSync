@@ -11,6 +11,17 @@ from typing import List
 
 import argparse
 
+def parseVersionFile(path: str) -> str:
+
+    pattern = r'depot/v3\.1\.\S+?/(\S+)#'
+    m = re.search(pattern, path)
+
+    if not m:
+        return None
+
+    file = m.group(1)
+    return file
+
 class Changelist:
     pattern = r'^Change\s+(\d+).*\s+by\s+(\S+)@'
     tagPattern = r"\[(.*?)\]"
@@ -23,7 +34,32 @@ class Changelist:
         self.tags: List[str] = []
         self.developer = None
 
+        self.files: List[str] = []
+
         self.gitCommit: str = None
+
+    def fetchAffectedFiles(self):
+
+        result = cli.runCommand(f'p4 describe {self.value}')
+        assert result.returncode == 0, f'p4 describe {self.value} failed'
+
+        output: List[str] = result.stdout.splitlines()
+        i: int = 0
+        while True:
+            i+=1
+            if output[i].lower().count('affected files'):
+                break
+        i+=2
+
+        self.files: List[str] = []
+        while True:
+            self.files.append(output[i].strip(' ').strip('.'))
+            i+=1
+            if output[i].strip(' ') == '':
+                break
+
+        self.files = [parseVersionFile(f) for f in self.files]
+        return
 
     def isCherryPickedFromGit(self) -> bool:
         return self.gitCommit is not None
@@ -268,6 +304,9 @@ if __name__ == '__main__':
         exit(0)
 
     usernameFilter = (session.username if session.usernameSpecifiedThroughCmd else None)
-    [print(cl) for cl in P4Helper.getChangelists(session.version, usernameFilter, args.limit, session.verbose)]
+
+    for cl in P4Helper.getChangelists(session.version, usernameFilter, args.limit, session.verbose):
+        print(cl)
+
     session.close()
     exit(0)
