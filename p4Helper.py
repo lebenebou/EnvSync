@@ -37,7 +37,7 @@ class Changelist:
         s += self.allTags()
 
         if not onlyTags:
-            s += f'{self.description}'
+            s += f' {self.description}'
 
         return s
 
