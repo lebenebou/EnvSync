@@ -1,5 +1,6 @@
 
 import settings
+import SessionInfo
 
 import json
 import re
@@ -191,7 +192,8 @@ def getPipelineBuildsByChangelist(pipeline: PipelineInfo) -> Dict[int, JenkinsBu
 if __name__ == '__main__':
 
     # example usage
-    version = settings.getCurrentVersion()
+
+    version = SessionInfo.SessionInfo().version
     alienCppValidation = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/CppValidation/'
     pipeline: PipelineInfo = JenkinsRequestHandler.getPipelineInfo(alienCppValidation)
 
