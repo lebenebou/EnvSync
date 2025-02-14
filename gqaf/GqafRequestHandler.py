@@ -74,6 +74,20 @@ class BuildJob:
     def isValid(self) -> bool:
         return all([self.deployer])
 
+    def relevancy(self) -> int:
+
+        statusPriority = ('DONE', 'TAKEN', 'FAILED', 'STOPPED', 'PURGED')
+        toReturn = len(statusPriority)
+
+        for s in statusPriority:
+
+            if self.status.lower() == s.lower():
+                break
+            
+            toReturn -= 1
+
+        return toReturn
+
 class DeploymentJob:
     def __init__(self, data: dict):
 
