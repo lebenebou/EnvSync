@@ -182,6 +182,9 @@ class JenkinsRequestHandler:
 
 def getPipelineBuildsByChangelist(pipeline: PipelineInfo) -> Dict[int, JenkinsBuild]:
 
+    if pipeline is None:
+        return None
+
     builds: Dict[int, JenkinsBuild] = {}
     for build in reversed(pipeline.builds):
         if build.changelist:
