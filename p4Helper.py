@@ -77,9 +77,13 @@ class Changelist:
 
         return s
 
-    def allTags(self) -> str:
+    def allTags(self, withDefect: bool = False) -> str:
 
         s = str()
+
+        if withDefect and self.defect:
+            s += f'[{self.defect}]'
+
         for tag in self.tags:
             s += f'[{tag}]'
 
