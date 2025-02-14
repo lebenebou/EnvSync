@@ -144,7 +144,7 @@ class Changelist:
     def parseXmlDescription(self, verbose: bool = False):
 
         if verbose:
-            print(f'Parsing XML for changelist {self.value}...', end='\n', file=sys.stderr)
+            print(f'Parsing XML for changelist {self.value}...', file=sys.stderr)
  
         root = xmlParser.fromstring(self.description)
         self.description = root.find(".//mxp4description").text.strip()
@@ -205,15 +205,15 @@ class P4Helper:
     @staticmethod
     def getChangelists(version: str, developer: str = None, limit: int = None, verbose: bool = False) -> Generator[Changelist, None, None]:
 
-        print(f'Getting changelists on {version}...', end=' ', file=sys.stderr)
+        print(f'Getting changelists on {version}...', end='', file=sys.stderr)
 
         command = 'p4 changes -l -s submitted'
 
         if limit:
-            print(f'(Limiting search to {limit} changelists)', end='', file=sys.stderr)
+            print(f' (Limiting search to {limit} changelists)', end='', file=sys.stderr)
             command += f' -m {limit}'
 
-        print(end='\n\n', file=sys.stderr, flush=True)
+        print(end='\n', file=sys.stderr, flush=True)
 
         if developer:
             command += f' -u {developer}'

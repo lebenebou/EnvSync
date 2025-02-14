@@ -169,7 +169,7 @@ class JenkinsRequestHandler:
     def getPipelineInfo(pipelineLink: str) -> PipelineInfo:
 
         version = re.search(r'/(v3.1.build.*?)/', pipelineLink).group(1)
-        print(f'Fetching a pipeline on {version}...', end='\n\n', file=sys.stderr)
+        print(f'Fetching a pipeline on {version}...', file=sys.stderr)
 
         pipelineLink = pipelineLink.strip('/') + '/api/json'
         response = JenkinsRequestHandler.getRequest(pipelineLink)

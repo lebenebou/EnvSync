@@ -431,7 +431,7 @@ class GqafRequestHandler:
     @staticmethod
     def fetchVersionDetailsJson(version: str) -> dict:
 
-        print(f'Fetching details of {version}...', end='\n\n', file=sys.stderr)
+        print(f'Fetching details of {version}...', file=sys.stderr)
         response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/version/' + version)
 
         if response.status_code != 200:
@@ -454,7 +454,7 @@ class GqafRequestHandler:
     @staticmethod
     def fetchSetupsJson(version: str) -> dict:
 
-        print(f'Fetching setups on {version}...', end='\n\n', file=sys.stderr)
+        print(f'Fetching setups on {version}...', file=sys.stderr)
 
         response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/setup/jobs' + '?versions=' + version)
 
@@ -526,7 +526,7 @@ class GqafRequestHandler:
     @staticmethod
     def fetchDeploymentJobsJson(version: str) -> dict:
 
-        print(f'Fetching jobs on {version}...', end='\n\n', file=sys.stderr)
+        print(f'Fetching jobs on {version}...', file=sys.stderr)
         versionAtok = GqafRequestHandler.getVersionValidationAtok(version)
         response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/deployment' + f'?versionvalidationid={versionAtok}')
 
@@ -585,6 +585,8 @@ def printObjectList(objects: List[object], csv: bool = False):
 
     if len(objects) == 0:
         return
+
+    print(end='\n', file=sys.stderr)
 
     tableContent = [obj.__dict__.values() for obj in objects]
     headers = [key.capitalize() for key in objects[0].__dict__.keys()]
