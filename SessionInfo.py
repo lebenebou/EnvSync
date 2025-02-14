@@ -127,7 +127,7 @@ class SessionInfo:
         assert self.username is None or self.username != '', f'Username is empty'
         assert all(not c.isdigit() for c in self.username), f'Username has numbers: {self.username}'
 
-    def fetchChangelistPool(self, lazy: bool = True, limit: int = None) -> Dict[int, List]:
+    def fetchChangelistPool(self, lazy: bool = True, limit: int = None) -> List[Changelist]:
 
         if lazy and self.changelistPool is not None and len(self.changelistPool) >= limit:
             return self.changelistPool

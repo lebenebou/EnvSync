@@ -24,7 +24,7 @@ class SetupsViewRow:
         bestLinuxBuild: BuildJob = None
         bestWindowsBuild: BuildJob = None
 
-        for build in setupsPool.get(changelist.value, dict()):
+        for build in setupsPool.get(changelist.value, []):
 
             if build.isLinux():
                 bestLinuxBuild = SetupsViewRow.moreRelevantBuild(bestLinuxBuild, build)
