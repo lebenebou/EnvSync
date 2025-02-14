@@ -60,7 +60,7 @@ class SetupsViewRow:
 
         return b2
 
-def setupsRowFromSession(session: SessionInfo, limit: int = 20) -> List[SetupsViewRow]:
+def setupsRowsFromSession(session: SessionInfo, limit: int = 20) -> List[SetupsViewRow]:
 
     session.fetchChangelistPool(lazy=True, limit=limit)
     session.fetchSetupsPool(lazy=True)
@@ -107,7 +107,7 @@ if __name__ == '__main__':
         session.close()
         exit(0)
 
-    rows: List[SetupsViewRow] = setupsRowFromSession(session, (20 if not args.all else None))
+    rows: List[SetupsViewRow] = setupsRowsFromSession(session, (20 if not args.all else None))
     printObjectList(rows, csv=args.csv)
     session.close()
     exit(0)
