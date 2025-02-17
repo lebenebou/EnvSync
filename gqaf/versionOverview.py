@@ -24,7 +24,7 @@ class RichChangelistRow:
 
         self.info: str = None
 
-def getRichRows(session: SessionInfo, limit: int = None):
+def getRichRows(session: SessionInfo, limit: int = None) -> List[RichChangelistRow]:
 
     toReturn: List[RichChangelistRow] = []
 
@@ -60,17 +60,16 @@ def getRichRows(session: SessionInfo, limit: int = None):
         richRow.jobsPushed = len(jobsPool.get(cl.value, []))
 
         richRow.cpp = '----'
-        if cppPool:
-            richRow.cpp = cppPool.get(cl.value).status() if cl.value in cppPool else richRow.cpp
+        if cppPool and cl.value in cppPool:
+            richRow.cpp = cppPool.get(cl.value).status()
 
         richRow.asan = '----'
-        if asanPool:
-            richRow.asan = asanPool.get(cl.value).status() if cl.value in asanPool else richRow.asan
+        if asanPool and cl.value in asanPool:
+            richRow.asan = asanPool.get(cl.value).status()
 
         richRow.info = cl.allTags(withDefect=True)
 
         toReturn.append(richRow)
-        continue
 
     return toReturn
 
