@@ -38,7 +38,6 @@ class SessionInfo:
 
         parser.add_argument("--verbose", action="store_true", required=False)
 
-        print(f'\nParsing session...', file=sys.stderr)
         args, _ = parser.parse_known_args()
         self.creationTime: float = time.perf_counter()
 
