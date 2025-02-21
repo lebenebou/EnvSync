@@ -11,10 +11,10 @@ from typing import List
 
 import argparse
 
-def parseVersionFile(path: str) -> str:
+def parsePathFromDepoPath(depoPath: str) -> str:
 
-    pattern = r'depot/v3\.1\.\S+?/(\S+)#'
-    m = re.search(pattern, path)
+    pattern = r'depot/v3\.1\.\S+?/(.*)#'
+    m = re.search(pattern, depoPath)
 
     if not m:
         return None
@@ -61,14 +61,14 @@ class Changelist:
         self.files: List[str] = []
         while True:
 
-            file = output[i].strip(' ').strip('.')
+            file = output[i].strip(' ').strip('.').strip(' ')
             self.files.append(file)
 
             i+=1
             if output[i].strip(' ') == '':
                 break
 
-        self.files = [parseVersionFile(f) for f in self.files]
+        self.files = [parsePathFromDepoPath(f) for f in self.files]
         return
 
     def isCherryPickedFromGit(self) -> bool:
@@ -311,7 +311,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--unmerged', nargs='?', const=P4Helper.Build, default=None, type=str, help='only changelists which are unmerged (based on defectID)')
     parser.add_argument('-l', '--limit', default=None, type=int, help='limit the output to a certain number of changelists')
-    parser.add_argument('-f', '--file', type=str, nargs='?', const=True, default=None, help='output changelit files. if value is given, filter on matching files by substring')
+    parser.add_argument('-f', '--file', type=str, nargs='?', const='*', default=None, help='output changelit files. if value is given, filter on matching files by substring')
 
     args, _ = parser.parse_known_args()
 
@@ -339,7 +339,7 @@ if __name__ == '__main__':
 
         cl.fetchAffectedFiles(session.verbose)
 
-        if args.file is True:
+        if args.file == '*':
             print(cl.toString(withFiles=True))
             continue
 
