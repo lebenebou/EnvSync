@@ -38,12 +38,16 @@ class Changelist:
 
         self.gitCommit: str = None
 
-    def fetchAffectedFiles(self):
+    def fetchAffectedFiles(self, verbose: bool = False):
 
         if self.files:
             return
 
-        result = cli.runCommand(f'p4 describe {self.value}')
+        command = f'p4 describe {self.value}'
+        if verbose:
+            print(f'Fetching affected files for changelist {self.value} (command: {command})', file=sys.stderr)
+
+        result = cli.runCommand(command)
         assert result.returncode == 0, f'p4 describe {self.value} failed'
 
         output: List[str] = result.stdout.splitlines()
@@ -122,6 +126,10 @@ class Changelist:
     def parseDescription(self, verbose: bool = False):
 
         assert self.description, f'No description to parse for CL: {self.value}'
+
+        if verbose:
+            print(f'Parsing description for changelist {self.value}...', file=sys.stderr)
+
         self.description = self.description.strip()
         self.description = self.description.replace('\n', ' ')
 
@@ -329,7 +337,7 @@ if __name__ == '__main__':
             print(cl)
             continue
 
-        cl.fetchAffectedFiles()
+        cl.fetchAffectedFiles(session.verbose)
 
         if args.file is True:
             print(cl.toString(withFiles=True))
@@ -338,7 +346,7 @@ if __name__ == '__main__':
         if any(file.lower().count(args.file.lower()) for file in cl.files):
             print(cl.toString(withFiles=True))
 
-        cl.fetchAffectedFiles()
+        cl.fetchAffectedFiles(session.verbose)
 
         if args.file is True:
             print(cl.toString(withFiles=True))
