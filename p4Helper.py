@@ -40,6 +40,9 @@ class Changelist:
 
     def fetchAffectedFiles(self):
 
+        if self.files:
+            return
+
         result = cli.runCommand(f'p4 describe {self.value}')
         assert result.returncode == 0, f'p4 describe {self.value} failed'
 
@@ -53,7 +56,10 @@ class Changelist:
 
         self.files: List[str] = []
         while True:
-            self.files.append(output[i].strip(' ').strip('.'))
+
+            file = output[i].strip(' ').strip('.')
+            self.files.append(file)
+
             i+=1
             if output[i].strip(' ') == '':
                 break
@@ -64,7 +70,7 @@ class Changelist:
     def isCherryPickedFromGit(self) -> bool:
         return self.gitCommit is not None
 
-    def toString(self, onlyTags: bool = False) -> str:
+    def toString(self, onlyTags: bool = False, withFiles: bool = False) -> str:
 
         s: str = f'CL {self.value} by {self.developer}'
         s += ' - '
@@ -74,6 +80,14 @@ class Changelist:
 
         if not onlyTags:
             s += f' {self.description}'
+
+        if not withFiles:
+            return s
+
+        self.fetchAffectedFiles()
+        s += '\n\t'
+        s += '\n\t'.join(self.files)
+        s += '\n'
 
         return s
 
@@ -288,8 +302,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Display changelists')
 
     parser.add_argument('--unmerged', nargs='?', const=P4Helper.Build, default=None, type=str, help='only changelists which are unmerged (based on defectID)')
-    parser.add_argument('--defects', action="store_true", help='display defects instead of changelists')
     parser.add_argument('-l', '--limit', default=None, type=int, help='limit the output to a certain number of changelists')
+    parser.add_argument('-f', '--file', type=str, nargs='?', const=True, default=None, help='output changelit files. if value is given, filter on matching files by substring')
 
     args, _ = parser.parse_known_args()
 
@@ -302,12 +316,6 @@ if __name__ == '__main__':
             session.close()
             exit(0)
 
-        if args.defects:
-            print(f'{session.username}\'s defects on {session.version} not yet on {args.unmerged}:', file=sys.stderr)
-            print(', '.join(set(cl.defect for cl in unmergedCls)))
-            session.close()
-            exit(0)
-
         print(f'{session.username}\'s Cls on {session.version} not yet on {args.unmerged}:', file=sys.stderr)
         [print(cl) for cl in unmergedCls]
         session.close()
@@ -316,7 +324,28 @@ if __name__ == '__main__':
     usernameFilter = (session.username if session.usernameSpecifiedThroughCmd else None)
 
     for cl in P4Helper.getChangelists(session.version, usernameFilter, args.limit, session.changelist, session.verbose):
-        print(cl)
+
+        if not args.file:
+            print(cl)
+            continue
+
+        cl.fetchAffectedFiles()
+
+        if args.file is True:
+            print(cl.toString(withFiles=True))
+            continue
+
+        if any(file.lower().count(args.file.lower()) for file in cl.files):
+            print(cl.toString(withFiles=True))
+
+        cl.fetchAffectedFiles()
+
+        if args.file is True:
+            print(cl.toString(withFiles=True))
+            continue
+
+        if any(file.lower().count(args.file.lower()) for file in cl.files):
+            print(cl.toString(withFiles=True))
 
     session.close()
     exit(0)
