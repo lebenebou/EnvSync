@@ -48,7 +48,9 @@ class Changelist:
             print(f'Fetching affected files for changelist {self.value} (command: {command})', file=sys.stderr)
 
         result = cli.runCommand(command)
-        assert result.returncode == 0, f'p4 describe {self.value} failed'
+        if result.returncode != 0:
+            print(f'p4 describe {self.value} failed, could not retrieve files for this changelist', file=sys.stderr)
+            return
 
         output: List[str] = result.stdout.splitlines()
         i: int = 0
