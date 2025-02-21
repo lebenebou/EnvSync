@@ -203,7 +203,7 @@ class P4Helper:
 
     from typing import Generator
     @staticmethod
-    def getChangelists(version: str, developer: str = None, limit: int = None, verbose: bool = False) -> Generator[Changelist, None, None]:
+    def getChangelists(version: str, developer: str = None, limit: int = None, specificChangelist: int = None, verbose: bool = False) -> Generator[Changelist, None, None]:
 
         print(f'Getting changelists on {version}...', end='', file=sys.stderr)
 
@@ -219,6 +219,9 @@ class P4Helper:
             command += f' -u {developer}'
 
         command += f' {P4Helper.depoVersion(version)}'
+
+        if specificChangelist:
+            command += f'@{specificChangelist},{specificChangelist}' # @123,123 (this filters on an inclusive range, it's a hack to filter on a specific changelist)
 
         if verbose:
             print(f'Running command: {command}', file=sys.stderr)
@@ -309,7 +312,7 @@ if __name__ == '__main__':
 
     usernameFilter = (session.username if session.usernameSpecifiedThroughCmd else None)
 
-    for cl in P4Helper.getChangelists(session.version, usernameFilter, args.limit, session.verbose):
+    for cl in P4Helper.getChangelists(session.version, usernameFilter, args.limit, session.changelist, session.verbose):
         print(cl)
 
     session.close()
