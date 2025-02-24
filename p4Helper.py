@@ -286,8 +286,7 @@ class P4Helper:
 
         srcCls = P4Helper.getChangelists(src, developer, limit=None, verbose=verbose)
 
-        destLimit = 200 if dest == P4Helper.Build else None # users might have a large number of changelists submitted to build, 200 should be enough
-        destCls = P4Helper.getChangelists(dest, developer, limit=destLimit, verbose=verbose)
+        destCls = P4Helper.getChangelists(dest, developer, limit=None, verbose=verbose)
 
         destDefects = set(cl.defect for cl in destCls)
 
