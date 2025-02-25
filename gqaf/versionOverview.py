@@ -21,6 +21,7 @@ class RichChangelistRow:
 
         self.cpp: str = None
         self.asan: str = None
+        self.freyja: str = None
 
         self.info: str = None
 
@@ -40,6 +41,10 @@ def getRichRows(session: SessionInfo, limit: int = None) -> List[RichChangelistR
     asanLink = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{session.version}/job/AsanValidation/'
     asanPipeline = JenkinsRequestHandler.getPipelineInfo(asanLink)
     asanPool = getPipelineBuildsByChangelist(asanPipeline)
+
+    freyjaLink = f'https://cje-core.fr.murex.com/assets/job/FreyjaAlien/job/{session.version}/'
+    freyjaPipeline = JenkinsRequestHandler.getPipelineInfo(freyjaLink)
+    freyjaPool = getPipelineBuildsByChangelist(freyjaPipeline)
 
     for i, cl in enumerate(chaneglistPool):
 
@@ -66,6 +71,10 @@ def getRichRows(session: SessionInfo, limit: int = None) -> List[RichChangelistR
         richRow.asan = '----'
         if asanPool and cl.value in asanPool:
             richRow.asan = asanPool.get(cl.value).status()
+
+        richRow.freyja = '----'
+        if freyjaPool and cl.value in freyjaPool:
+            richRow.freyja = freyjaPool.get(cl.value).status()
 
         richRow.info = cl.allTags(withDefect=True)
 
