@@ -112,8 +112,11 @@ def getUsername() -> int:
 def getEncryptedPassword() -> str:
     return getSetting("password")
 
-def getAuthToken() -> str:
+def getGqafApiToken() -> str:
     return getSetting("gqaf_token")
+
+def getJenkinsApiToken() -> str:
+    return getSetting("jenkins_token")
 
 def getMxBotNotificationList() -> str:
     return getSetting("mxbot_notification_list")

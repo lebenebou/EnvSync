@@ -38,11 +38,19 @@ class JenkinsBuild:
         self.url = data.get('url')
 
         self.displayName = data.get('displayName')
+        self.description = data.get('description')
+
+        self.changelist = None
+        # Parse CL from display name
         m = re.search(r'CL\s*(\d+)', self.displayName)
         if m:
             self.changelist: int = int(m.group(1))
-        else:
-            self.changelist = None
+
+        # Parse CL from description
+        if self.description:
+            m = re.search(r'CL\s*(\d+)', self.description)
+        if m and not self.changelist:
+            self.changelist: int = int(m.group(1))
 
         self.building: bool = data.get('building')
         self.result: str = data.get('result')
@@ -120,17 +128,14 @@ class JenkinsRequestHandler:
     def buildAuth() -> tuple:
 
         username = settings.getUsername()
-        password = tryDecrypt(settings.getEncryptedPassword())
-        
-        if not password:
-            password: str = getpass(f'{username} password for jenkins API: ')
+        token = settings.getJenkinsApiToken()
 
-        return (username, password)
+        return (username, token)
 
     @staticmethod
     def buildParams() -> dict:
 
-        return {'tree': 'displayName,description,builds[number,status,displayName,url,result,building]'}
+        return {'tree': 'displayName,description,builds[number,status,displayName,description,url,result,building]'}
 
     @staticmethod
     def getRequest(endpoint: str) -> requests.Response:

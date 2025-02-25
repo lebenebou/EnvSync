@@ -301,7 +301,7 @@ class DeploymentJobInput(GqafApiInput):
 class GqafRequestHandler:
     @staticmethod
     def buildDefaultHeaders() -> dict:
-        return {'Authorization': f'Bearer {settings.getAuthToken()}', 'Accept': 'application/json'}
+        return {'Authorization': f'Bearer {settings.getGqafApiToken()}', 'Accept': 'application/json'}
 
     @staticmethod
     def authenticate(username: str, password: str) -> str:
