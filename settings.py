@@ -72,6 +72,7 @@ def initSettingsFile(filePath: str) -> dict:
     settings['password'] = None
     settings['version'] = None
     settings['gqaf_token'] = None
+    settings['jenkins_token'] = None
     settings['version_id_cache'] = {}
 
     with open(SETTINGS_FILE, 'w') as file:

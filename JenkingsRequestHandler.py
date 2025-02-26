@@ -130,6 +130,9 @@ class JenkinsRequestHandler:
         username = settings.getUsername()
         token = settings.getJenkinsApiToken()
 
+        if not token:
+            print(f'Jenkinds API token not found. Please set it in your settings JSON file as "jenkins_token"', file=sys.stderr)
+
         return (username, token)
 
     @staticmethod
