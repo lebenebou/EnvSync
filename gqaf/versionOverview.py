@@ -2,7 +2,7 @@
 import argparse
 
 from typing import List, Dict
-from GqafRequestHandler import printObjectList
+from GqafRequestHandler import printObjectList, DeploymentJob
 from JenkingsRequestHandler import JenkinsRequestHandler, getPipelineBuildsByChangelist
 from SessionInfo import SessionInfo
 
@@ -62,7 +62,11 @@ def getRichRows(session: SessionInfo, limit: int = None) -> List[RichChangelistR
             bestLinuxBuild = max(linuxBuilds, key=lambda b: b.relevancy())
             richRow.linux = bestLinuxBuild.status
 
-        richRow.jobsPushed = len(jobsPool.get(cl.value, []))
+        clJobs: List[DeploymentJob] = jobsPool.get(cl.value, [])
+        richRow.jobsPushed = len(clJobs)
+
+        redJobs = len([j for j in clJobs if j.isFailed()])
+        greenJobs = len([j for j in clJobs if j.isPassed()])
 
         richRow.cpp = '----'
         if cppPool and cl.value in cppPool:
