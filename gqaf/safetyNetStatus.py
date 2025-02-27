@@ -91,7 +91,7 @@ class TPK:
             return
 
         print('-'*100, end='\n\n', file=sys.stderr)
-        print(f'{self}:')
+        print(self)
         for cl in guiltyCls:
 
             print(cl.toString(onlyTags=1), end='')
