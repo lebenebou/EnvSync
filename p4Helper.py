@@ -38,10 +38,10 @@ class Changelist:
 
         self.gitCommit: str = None
 
-    def fetchAffectedFiles(self, verbose: bool = False):
+    def fetchAffectedFiles(self, verbose: bool = False) -> List[str]:
 
         if self.files:
-            return
+            return self.files
 
         command = f'p4 describe {self.value}'
         if verbose:
@@ -50,7 +50,7 @@ class Changelist:
         result = cli.runCommand(command)
         if result.returncode != 0:
             print(f'p4 describe {self.value} failed, could not retrieve files for this changelist', file=sys.stderr)
-            return
+            return []
 
         output: List[str] = result.stdout.splitlines()
         i: int = 0
@@ -71,7 +71,7 @@ class Changelist:
                 break
 
         self.files = [parsePathFromDepoPath(f) for f in self.files]
-        return
+        return self.files
 
     def isCherryPickedFromGit(self) -> bool:
         return self.gitCommit is not None
@@ -227,7 +227,7 @@ class P4Helper:
 
     from typing import Generator
     @staticmethod
-    def getChangelists(version: str, developer: str = None, limit: int = None, specificChangelist: int = None, verbose: bool = False) -> Generator[Changelist, None, None]:
+    def getChangelists(version: str, *, developer: str = None, limit: int = None, specificChangelist: int = None, fileRegex: str = None, verbose: bool = False) -> Generator[Changelist, None, None]:
 
         print(f'Getting changelists on {version}...', end='', file=sys.stderr)
 
@@ -259,8 +259,10 @@ class P4Helper:
             print(f'Failed to get changelists on {version}', file=sys.stderr)
             return []
 
-        output: List[str] = result.stdout.splitlines()
+        changelists: List[Changelist] = []
 
+        # Parse the output for changelists and descriptions
+        output: List[str] = result.stdout.splitlines()
         i: int = 0
         while i < len(output):
 
@@ -277,6 +279,19 @@ class P4Helper:
                 i+=1
 
             cl.parseDescription(verbose)
+            changelists.append(cl)
+
+        # at this point we have the chaneglists and their parsed descriptions
+
+        for cl in changelists:
+
+            noFilesMatchRegex: bool = fileRegex and not any(re.search(fileRegex, f, re.IGNORECASE) for f in cl.fetchAffectedFiles())
+            if noFilesMatchRegex:
+                continue
+
+            if False: # extensible for more filters in the future
+                continue
+
             yield cl
 
     @staticmethod
@@ -284,9 +299,8 @@ class P4Helper:
 
         # returns changelists submitted by <developer> that are NOT merged from src to dest, based on defectID
 
-        srcCls = P4Helper.getChangelists(src, developer, limit=None, verbose=verbose)
-
-        destCls = P4Helper.getChangelists(dest, developer, limit=None, verbose=verbose)
+        srcCls = P4Helper.getChangelists(version=src, developer=developer, verbose=verbose)
+        destCls = P4Helper.getChangelists(version=dest, developer=developer, verbose=verbose)
 
         destDefects = set(cl.defect for cl in destCls)
 
@@ -312,7 +326,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--unmerged', nargs='?', const=P4Helper.Build, default=None, type=str, help='only changelists which are unmerged (based on defectID)')
     parser.add_argument('-l', '--limit', default=None, type=int, help='limit the output to a certain number of changelists')
-    parser.add_argument('-f', '--file', type=str, nargs='?', const='*', default=None, help='output changelit files. if value is given, filter on matching files by substring')
+    parser.add_argument('-f', '--file', type=str, nargs='?', const='*', default=None, help='output changelit files. if value is given, filter on matching files by regex')
 
     args, _ = parser.parse_known_args()
 
@@ -332,29 +346,17 @@ if __name__ == '__main__':
 
     usernameFilter = (session.username if session.usernameSpecifiedThroughCmd else None)
 
-    for cl in P4Helper.getChangelists(session.version, usernameFilter, args.limit, session.changelist, session.verbose):
+    cls = P4Helper.getChangelists(
+                                session.version,
+                                developer=usernameFilter if usernameFilter else None,
+                                limit=args.limit if args.limit else None,
+                                specificChangelist=session.changelist if session.changelist else None,
+                                verbose=session.verbose)
 
-        if not args.file:
-            print(cl)
-            continue
+    for cl in cls:
 
-        cl.fetchAffectedFiles(session.verbose)
-
-        if args.file == '*':
-            print(cl.toString(withFiles=True))
-            continue
-
-        if any(file.lower().count(args.file.lower()) for file in cl.files):
-            print(cl.toString(withFiles=True))
-
-        cl.fetchAffectedFiles(session.verbose)
-
-        if args.file is True:
-            print(cl.toString(withFiles=True))
-            continue
-
-        if any(file.lower().count(args.file.lower()) for file in cl.files):
-            print(cl.toString(withFiles=True))
+        showFiles: bool = args.file is not None
+        print(cl.toString(withFiles=showFiles))
 
     session.close()
     exit(0)
