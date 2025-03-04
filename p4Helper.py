@@ -351,6 +351,7 @@ if __name__ == '__main__':
                                 developer=usernameFilter if usernameFilter else None,
                                 limit=args.limit if args.limit else None,
                                 specificChangelist=session.changelist if session.changelist else None,
+                                fileRegex=args.file if args.file else None,
                                 verbose=session.verbose)
 
     for cl in cls:
