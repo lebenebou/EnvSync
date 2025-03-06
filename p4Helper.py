@@ -329,7 +329,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--unmerged', nargs='?', const=P4Helper.Build, default=None, type=str, help='only changelists which are unmerged (based on defectID)')
     parser.add_argument('-l', '--limit', default=None, type=int, help='limit the output to a certain number of changelists')
-    parser.add_argument('-f', '--file', type=str, nargs='?', const='*', default=None, help='output changelit files. if value is given, filter on matching files by regex')
+    parser.add_argument('-f', '--file', type=str, nargs='?', const='', default=None, help='output changelit files. if value is given, filter on matching files by regex')
 
     args, _ = parser.parse_known_args()
 
