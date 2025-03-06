@@ -40,6 +40,9 @@ class Changelist:
 
     def fetchAffectedFiles(self, verbose: bool = False) -> List[str]:
 
+        if self.developer == 'builder':
+            return []
+
         if self.files:
             return self.files
 
