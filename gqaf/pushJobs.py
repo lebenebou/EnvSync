@@ -115,6 +115,7 @@ async def main():
         for build in latestSetups:
             if build.isLinux():
                 chosenBuildId = build.buildId
+                print(f'Found setups: {chosenBuildId}', file=sys.stderr)
                 break
 
     if not chosenBuildId:
