@@ -65,7 +65,9 @@ class SessionInfo:
             self.changelist = args.changelist
 
         elif args.head is not None:
-            self.changelist = P4Helper.getHeadChangelist(self.version, args.head, self.verbose)
+
+            self.fetchChangelistPool(lazy=True, limit=(args.head+1))
+            self.changelist = self.changelistPool[args.head].value
 
         elif args.latest:
 

@@ -184,43 +184,6 @@ class P4Helper:
     Build: str = 'v3.1.build'
 
     @staticmethod
-    def getHeadChangelist(version: str, n: int = 0, verbose: bool = False) -> int:
-
-        if version == None:
-            print(f'Can\'t get changelists without specifying version', file=sys.stderr)
-            return None
-
-        n = max(0, n)
-
-        command = f'p4 changes -s submitted -m {n+1} {P4Helper.depoVersion(version)}' # limit output to n+1 lines
-
-        if verbose:
-            print(f'Getting head changelists for {version}...', end= ' ', file=sys.stderr)
-            print(f'Running command: {command}', file=sys.stderr)
-
-        result = cli.runCommand(command)
-
-        if result.returncode != 0 or not result.stdout:
-            print(f'Failed to retrieve changelists for version: {version}. Are you sure this is a valid version?', file=sys.stderr)
-            return None
-
-        outputLines: str = result.stdout.splitlines()
-        clResult: int = None
-        for i, line in enumerate(outputLines):
-
-            regexMatch = re.search(r'^change (\d+)', line, re.IGNORECASE)
-            assert regexMatch is not None, f'not a "p4 changes" output, CL regex did not match in: {line}'
-
-            clResult = int(regexMatch.group(1))
-            if i == 0:
-                print(f'Head CL: {clResult}', file=sys.stderr)
-                continue
-
-            print(f'Then CL: {clResult}', file=sys.stderr)
-
-        return clResult
-
-    @staticmethod
     def depoVersion(rawVersion: str) -> str:
 
         if "depot" in rawVersion:
@@ -311,11 +274,6 @@ class P4Helper:
 
         return unmergedCls
 
-    @staticmethod
-    def getUnmergredDefects(src: str, dest: str, developer: str = None, verbose: bool = False) -> List[str]:
-        # returns defects submitted by <developer> that are NOT merged from src to dest
-        return [cl.defect for cl in P4Helper.getUnmergredChangelists(src, dest, developer, verbose)]
-
 if __name__ == '__main__':
 
     from SessionInfo import SessionInfo
@@ -357,9 +315,8 @@ if __name__ == '__main__':
                                 fileRegex=args.file if args.file else None,
                                 verbose=session.verbose)
 
+    showFiles: bool = args.file is not None
     for cl in cls:
-
-        showFiles: bool = args.file is not None
         print(cl.toString(withFiles=showFiles))
 
     session.close()
