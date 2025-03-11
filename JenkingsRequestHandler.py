@@ -35,7 +35,7 @@ class JenkinsBuild:
     def __init__(self, data: dict):
 
         self.number = data.get('number')
-        self.url = data.get('url')
+        self.url: str = data.get('url')
 
         self.displayName = data.get('displayName')
         self.description = data.get('description')
@@ -54,6 +54,17 @@ class JenkinsBuild:
 
         self.building: bool = data.get('building')
         self.result: str = data.get('result')
+
+        self.artifactUrls: List[str] = []
+        for artifact in data.get('artifacts', []):
+
+            relativeUrl: str = artifact.get('relativePath')
+            fullUrl: str = self.url.strip('/')
+            fullUrl += '/artifact/'
+            fullUrl += relativeUrl
+
+            self.artifactUrls.append(fullUrl)
+            continue
 
     def __str__(self) -> str:
 
@@ -104,6 +115,21 @@ class JenkinsBuild:
 
         return self.result == 'FAILURE'
 
+    def fetchLogs(self, artifactRegex: str) -> str:
+
+        for url in self.artifactUrls:
+
+            if not re.search(artifactRegex, url):
+                continue
+
+            response = JenkinsRequestHandler.getRequest(url)
+            if response.status_code != 200:
+                continue
+
+            return response.text
+
+        return None
+
 class PipelineInfo:
 
     def __init__(self, data: dict):
@@ -138,7 +164,7 @@ class JenkinsRequestHandler:
     @staticmethod
     def buildParams() -> dict:
 
-        return {'tree': 'displayName,description,builds[number,status,displayName,description,url,result,building]'}
+        return {'tree': 'displayName,description,builds[number,status,displayName,description,url,result,building,artifacts[relativePath]]'}
 
     @staticmethod
     def getRequest(endpoint: str) -> requests.Response:
