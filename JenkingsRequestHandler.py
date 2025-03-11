@@ -2,17 +2,17 @@
 import settings
 import SessionInfo
 
-import json
 import re
 
 import requests
-from getpass import getpass
 from typing import List, Dict
 
 import sys
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+from enum import Enum
 
 import base64
 def tryDecrypt(encoded_message: str) -> str | None:
@@ -29,6 +29,20 @@ def tryDecrypt(encoded_message: str) -> str | None:
         return None
 
 from getpass import getpass
+
+class FailureReason(Enum):
+
+    Unknown = 0
+    CompileFailed = 1
+    FailedTest = 2
+    MemoryLeak = 3
+    HeapUseAfterFree = 4
+
+    def __str__(self):
+        return self.name
+
+    def __repr__(self):
+        return self.name
 
 class JenkinsBuild:
 
@@ -65,6 +79,8 @@ class JenkinsBuild:
 
             self.artifactUrls.append(fullUrl)
             continue
+
+        self.artifactUrls.sort(key=lambda name: 'test' not in name.split('/')[-1].lower())
 
     def __str__(self) -> str:
 
@@ -115,11 +131,11 @@ class JenkinsBuild:
 
         return self.result == 'FAILURE'
 
-    def fetchLogs(self, artifactRegex: str) -> str:
+    def fetchLogs(self, artifactName: str) -> str:
 
         for url in self.artifactUrls:
 
-            if not re.search(artifactRegex, url):
+            if not re.search(artifactName, url):
                 continue
 
             response = JenkinsRequestHandler.getRequest(url)
@@ -129,6 +145,56 @@ class JenkinsBuild:
             return response.text
 
         return None
+
+    @staticmethod
+    def guessFailureReasonFromLogs(logLines: List[str]) -> tuple[FailureReason, str]:
+
+        if isinstance(logLines, str):
+            logLines = logLines.splitlines()
+
+        # returns the possible failure reason with an error message as hint
+        for i, line in enumerate(logLines):
+
+            # Compile Error
+            m = re.search(r'^\[ERROR\](.*?)error:(.*)$', line)
+            if m:
+                guiltyFile: re.Match = re.search(r'([^/]*\.(c|cpp))', m.group(1))
+                errorMessage: str = m.group(2) if not guiltyFile else guiltyFile.group(1)
+                return (FailureReason.CompileFailed, errorMessage)
+
+            # Failed GTest(s)
+            m = re.search(r'\[\s*FAILED\s*\]\s*(\d+)\s*test.*listed\s*below', line)
+            if m:
+                numberOfFailedTests = int(m.group(1))
+                failedTests: str = ' | '.join([re.search(r'\[\s*FAILED\s*\]\s*(\S+)', l).group(1) for l in logLines[i+1: i+numberOfFailedTests+1]])
+                return (FailureReason.FailedTest, failedTests)
+
+            # Memory Leaks
+            m = re.search(r'detected memory leaks', line, re.IGNORECASE)
+            if m:
+                return (FailureReason.MemoryLeak, 'Memory Leaks')
+
+            # Use After Free
+            m = re.search(r'use.after.free', line, re.IGNORECASE)
+            if m:
+                return (FailureReason.HeapUseAfterFree, 'Use After Free')
+
+        return (FailureReason.Unknown, 'Unknown Failure')
+
+    def guessFailureReason(self) -> tuple[FailureReason, str]:
+
+        for artifactUrl in self.artifactUrls:
+
+            artifactBaseName: str = artifactUrl.split('/')[-1]
+            logs: str = self.fetchLogs(artifactBaseName)
+            if logs is None:
+                continue
+
+            reason, errorMessage = JenkinsBuild.guessFailureReasonFromLogs(logs)
+            if reason != FailureReason.Unknown:
+                return (reason, errorMessage)
+
+        return (FailureReason.Unknown, 'Unkown Failure')
 
 class PipelineInfo:
 
@@ -231,7 +297,7 @@ if __name__ == '__main__':
     # example usage
 
     version = SessionInfo.SessionInfo().version
-    alienCppValidation = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/CppValidation/'
+    alienCppValidation = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/v3.1.build.dev.a7.li.208262.017/job/AsanValidation/'
     pipeline: PipelineInfo = JenkinsRequestHandler.getPipelineInfo(alienCppValidation)
 
     if not pipeline:
@@ -243,4 +309,8 @@ if __name__ == '__main__':
     for cl in sorted(builds.keys(), reverse=True):
 
         build = builds.get(cl)
-        print(build)
+        print(build, end='\t')
+        if build.isFailed():
+            print(build.guessFailureReason(), end='')
+
+        print(flush=True)

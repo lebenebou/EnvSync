@@ -3,7 +3,7 @@ import argparse
 
 from typing import List, Dict
 from GqafRequestHandler import printObjectList, DeploymentJob
-from JenkingsRequestHandler import JenkinsRequestHandler, getPipelineBuildsByChangelist
+from JenkingsRequestHandler import JenkinsRequestHandler, getPipelineBuildsByChangelist, FailureReason
 from SessionInfo import SessionInfo
 
 class RichChangelistRow:
@@ -70,11 +70,23 @@ def getRichRows(session: SessionInfo, limit: int = None) -> List[RichChangelistR
 
         richRow.cpp = '----'
         if cppPool and cl.value in cppPool:
-            richRow.cpp = cppPool.get(cl.value).status()
+
+            build = cppPool.get(cl.value)
+            richRow.cpp = build.status()
+
+            if build.isFailed():
+                reason, _ = build.guessFailureReason()
+                richRow.cpp = reason.name
 
         richRow.asan = '----'
         if asanPool and cl.value in asanPool:
-            richRow.asan = asanPool.get(cl.value).status()
+
+            build = asanPool.get(cl.value)
+            richRow.asan = build.status()
+
+            if build.isFailed():
+                reason, _ = build.guessFailureReason()
+                richRow.asan = reason.name
 
         richRow.freyja = '----'
         if freyjaPool and cl.value in freyjaPool:
