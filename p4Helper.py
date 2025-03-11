@@ -251,7 +251,7 @@ class P4Helper:
 
         for cl in changelists:
 
-            noFilesMatchRegex: bool = fileRegex and not any(re.search(fileRegex, f, re.IGNORECASE) for f in cl.fetchAffectedFiles())
+            noFilesMatchRegex: bool = fileRegex and not any(re.search(fileRegex, f, re.IGNORECASE) for f in cl.fetchAffectedFiles(verbose))
             if noFilesMatchRegex:
                 continue
 
@@ -287,7 +287,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--unmerged', nargs='?', const=P4Helper.Build, default=None, type=str, help='only changelists which are unmerged (based on defectID)')
     parser.add_argument('-l', '--limit', default=None, type=int, help='limit the output to a certain number of changelists')
-    parser.add_argument('-f', '--file', type=str, nargs='?', const='', default=None, help='output changelit files. if value is given, filter on matching files by regex')
+    parser.add_argument('-f', '--file', type=str, nargs='?', const='.*', default=None, help='output changelit files. if value is given, filter on matching files by regex')
 
     args, _ = parser.parse_known_args()
 
@@ -309,10 +309,10 @@ if __name__ == '__main__':
 
     cls = P4Helper.getChangelists(
                                 session.version,
-                                developer=usernameFilter if usernameFilter else None,
-                                limit=args.limit if args.limit else None,
-                                specificChangelist=session.changelist if session.changelist else None,
-                                fileRegex=args.file if args.file else None,
+                                developer=usernameFilter,
+                                limit=args.limit,
+                                specificChangelist=session.changelist,
+                                fileRegex=args.file,
                                 verbose=session.verbose)
 
     showFiles: bool = args.file is not None
