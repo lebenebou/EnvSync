@@ -297,7 +297,7 @@ if __name__ == '__main__':
     # example usage
 
     version = SessionInfo.SessionInfo().version
-    alienCppValidation = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/v3.1.build.dev.a7.li.208262.017/job/AsanValidation/'
+    alienCppValidation = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/CppValidation/'
     pipeline: PipelineInfo = JenkinsRequestHandler.getPipelineInfo(alienCppValidation)
 
     if not pipeline:
