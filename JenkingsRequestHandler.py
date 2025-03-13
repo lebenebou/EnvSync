@@ -36,7 +36,7 @@ class FailureReason(Enum):
     CompileFailed = 1
     FailedTest = 2
     MemoryLeak = 3
-    HeapUseAfterFree = 4
+    UseAfterFree = 4
 
     def __str__(self):
         return self.name
@@ -177,7 +177,7 @@ class JenkinsBuild:
             # Use After Free
             m = re.search(r'use.after.free', line, re.IGNORECASE)
             if m:
-                return (FailureReason.HeapUseAfterFree, 'Use After Free')
+                return (FailureReason.UseAfterFree, 'Use After Free')
 
         return (FailureReason.Unknown, 'Unknown Failure')
 
