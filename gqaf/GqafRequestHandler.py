@@ -51,7 +51,7 @@ class BuildJob:
         self.changelist: int = int(data.get('changelist'))
         self.buildId: str = data.get('buildId')
         self.status: str = data.get('status')
-        self.customized: bool = data.get('customized')
+        self.customized: str = data.get('customized')
         self.operatingSystem: str = data.get('operatingSystem')
         self.deployDate: datetime = data.get('startDate')
         self.version = data.get('version')
@@ -71,8 +71,11 @@ class BuildJob:
     def isWindows(self) -> bool:
         return 'windows' in self.operatingSystem.lower()
 
+    def isCustomized(self) -> bool:
+        return self.customized != 'standard'
+
     def isValid(self) -> bool:
-        return all([self.deployer])
+        return all([self.deployer, self.buildId])
 
     def relevancy(self) -> int:
 

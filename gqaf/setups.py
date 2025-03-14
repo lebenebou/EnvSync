@@ -49,6 +49,9 @@ class SetupsViewRow:
         if b1 is None or b2 is None:
             return b1 if b1 else b2
 
+        if b1.isCustomized() != b2.isCustomized():
+            return b1 if b2.isCustomized() else b2
+
         if b1.status == b2.status:
             return b1 if b1.deployDate > b2.deployDate else b2 # more recent build
 
