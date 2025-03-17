@@ -9,6 +9,8 @@ import re
 import xml.etree.ElementTree as xmlParser
 from typing import List
 
+import unicodedata
+
 import argparse
 
 def parsePathFromDepoPath(depoPath: str) -> str:
@@ -90,15 +92,13 @@ class Changelist:
         if not onlyTags:
             s += f' {self.description}'
 
-        if not withFiles:
-            return s
+        if withFiles:
+            self.fetchAffectedFiles()
+            s += '\n\t'
+            s += '\n\t'.join(self.files)
+            s += '\n'
 
-        self.fetchAffectedFiles()
-        s += '\n\t'
-        s += '\n\t'.join(self.files)
-        s += '\n'
-
-        return s
+        return s.encode('ascii', errors='ignore').decode('ascii')
 
     def allTags(self, withDefect: bool = False) -> str:
 
