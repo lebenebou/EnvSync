@@ -76,7 +76,7 @@ def getRichRows(session: SessionInfo, limit: int = None) -> List[RichChangelistR
 
             if build.isFailed():
                 reason, _ = build.guessFailureReason()
-                richRow.cpp = reason.name
+                richRow.cpp = 'RED' if reason.name == 'Unknown' else reason.name
 
         richRow.asan = '----'
         if asanPool and cl.value in asanPool:
@@ -86,7 +86,7 @@ def getRichRows(session: SessionInfo, limit: int = None) -> List[RichChangelistR
 
             if build.isFailed():
                 reason, _ = build.guessFailureReason()
-                richRow.asan = reason.name
+                richRow.asan = 'RED' if reason.name == 'Unknown' else reason.name
 
         richRow.freyja = '----'
         if freyjaPool and cl.value in freyjaPool:
