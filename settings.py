@@ -86,7 +86,7 @@ def getSettingsFilePath() -> str:
 def getSetting(settingName: str) -> any:
 
     settings = loadSettings(SETTINGS_FILE)
-    return settings[settingName]
+    return settings.get(settingName, None)
 
 def setSetting(settingName: str, newValue: any):
 
