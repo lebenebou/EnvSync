@@ -157,11 +157,17 @@ class Changelist:
         self.description = re.sub(Changelist.tagPattern, '', self.description).strip()
 
         # remove (cherry picked from commit X)...
-        cherryPickPattern: str = r'\(cherry\s+picked\s+from\s+commit\s+(\S+)\).*'
-        m = re.search(cherryPickPattern, self.description)
+        gitCommitPattern: str = r'\(cherry\s+picked\s+from\s+commit\s+(\S+)\).*'
+        m = re.search(gitCommitPattern, self.description)
         if m:
             self.gitCommit = m.group(1)
-            self.description = re.sub(cherryPickPattern, '', self.description).strip()
+            self.description = re.sub(gitCommitPattern, '', self.description).strip()
+
+        gitCommitPattern: str = r'Changelist\s*generated\s*by.*Git.*Commit-id:\s*(\S+).*'
+        m = re.search(gitCommitPattern, self.description)
+        if m:
+            self.gitCommit = m.group(1)
+            self.description = re.sub(gitCommitPattern, '', self.description).strip()
 
         # remove double spaces
         self.description = self.description.replace('  ', ' ')
