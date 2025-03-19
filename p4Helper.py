@@ -148,7 +148,7 @@ class Changelist:
 
             matchstr = m.group(1).strip()
 
-            if matchstr.startswith('DEF'):
+            if re.search(P4Helper.DefectRegex, matchstr):
                 self.defect = matchstr
             else:
                 self.tags.append(matchstr)
@@ -188,6 +188,7 @@ class Changelist:
 
 class P4Helper:
     Build: str = 'v3.1.build'
+    DefectRegex: str = r'DEF\d+'
 
     @staticmethod
     def depoVersion(rawVersion: str) -> str:
