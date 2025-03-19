@@ -133,7 +133,7 @@ class DeploymentJob:
     def isValid(self) -> bool:
         return all([self.id, self.pushDate, self.status])
 
-class GqafApiInput:
+class ApiJsonInput:
     def __init__(self):
         self.alreadyPrepared = False # can only prepare an input ONCE
 
@@ -145,7 +145,7 @@ class GqafApiInput:
         if self.alreadyPrepared:
             return
         
-        assert self.isValid(), f'GQAF {self.__class__.__name__} is invalid'
+        assert self.isValid(), f'API input {self.__class__.__name__} is invalid'
 
         noneAttributes: List[str] = [attr for attr, value in self.__dict__.items() if value is None]
 
@@ -164,7 +164,7 @@ class GqafApiInput:
 
         return data
 
-class BuildJobInput(GqafApiInput):
+class BuildJobInput(ApiJsonInput):
 
     osMap = {
         "linux" : "Linux-rhel-8.6-x86_64",
@@ -234,7 +234,7 @@ class BuildJobInput(GqafApiInput):
 
         return all([self.version, self.changelist]) and isinstance(self.changelist, str) # required inputs
 
-class DeploymentJobInput(GqafApiInput):
+class DeploymentJobInput(ApiJsonInput):
 
     def __init__(self):
 
