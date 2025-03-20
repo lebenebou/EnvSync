@@ -300,6 +300,10 @@ if __name__ == '__main__':
 
     if args.unmerged is not None:
 
+        if not session.username:
+            print(f'Username is required to fetch unmerged changelists', file=sys.stderr)
+            exit(1)
+
         unmergedCls = P4Helper.getUnmergredChangelists(session.version, args.unmerged, session.username, session.verbose)
 
         if len(unmergedCls) == 0:
