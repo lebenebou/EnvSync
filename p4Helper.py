@@ -9,8 +9,6 @@ import re
 import xml.etree.ElementTree as xmlParser
 from typing import List
 
-import unicodedata
-
 import argparse
 
 def parsePathFromDepoPath(depoPath: str) -> str:
@@ -43,6 +41,7 @@ class Changelist:
     def fetchAffectedFiles(self, verbose: bool = False) -> List[str]:
 
         if self.developer == 'builder':
+            print(f'Files do not get fetched for "builder" user', file=sys.stderr)
             return []
 
         if self.files:
@@ -198,15 +197,49 @@ class P4Helper:
 
         return f"//depot/{rawVersion}/..."
 
+    @staticmethod
+    def _getChangelist(changelist: int, verbose: bool = False) -> Changelist:
+
+        command = f'p4 describe -s {changelist}'
+
+        if verbose:
+            print(f'Running command: {command}', file=sys.stderr)
+
+        result = cli.runCommand(command)
+
+        if result.returncode != 0:
+            print(f'Failed to get changelist: {changelist}', file=sys.stderr)
+            return None
+
+        if not result.stdout:
+            print(result.stderr, file=sys.stderr)
+            return None
+
+        output: List[str] = result.stdout.splitlines()
+        i: int = 0
+        m = re.search(Changelist.pattern, output[i])
+
+        cl = Changelist()
+        cl.value, cl.developer = m.groups()
+        cl.description = ''
+
+        i += 2
+        while i < len(output) and not output[i].startswith('Affected'):
+            cl.description += output[i] 
+            i+=1
+
+        cl.parseDescription(verbose)
+        return cl
+        
     from typing import Generator
     @staticmethod
-    def getChangelists(version: str, *, developer: str = None, limit: int = None, specificChangelist: int = None, fileRegex: str = None, verbose: bool = False) -> Generator[Changelist, None, None]:
+    def getChangelists(version: str, *, developer: str = None, limit: int = None, fileRegex: str = None, verbose: bool = False) -> Generator[Changelist, None, None]:
 
         print(f'Getting changelists on {version}...', end='', file=sys.stderr)
 
         command = 'p4 changes -l -s submitted'
 
-        if version == P4Helper.Build and not limit and not developer and not specificChangelist: # getting all changelists on build takes a lot of time
+        if version == P4Helper.Build and not limit and not developer: # getting all changelists on build takes a lot of time
             limit = 500
 
         if limit:
@@ -219,9 +252,6 @@ class P4Helper:
             command += f' -u {developer}'
 
         command += f' {P4Helper.depoVersion(version)}'
-
-        if specificChangelist:
-            command += f'@{specificChangelist},{specificChangelist}' # @123,123 (this filters on an inclusive range, it's a hack to filter on a specific changelist)
 
         if verbose:
             print(f'Running command: {command}', file=sys.stderr)
@@ -298,6 +328,17 @@ if __name__ == '__main__':
 
     args, _ = parser.parse_known_args()
 
+    if session.changelist:
+
+        cl = P4Helper._getChangelist(session.changelist, session.verbose)
+
+        if not cl:
+            print(f'Could not get changelist: {session.changelist}', file=sys.stderr)
+            exit(1)
+
+        print(cl.toString(withFiles=args.file))
+        exit(0)
+
     if args.unmerged is not None:
 
         if not session.username:
@@ -322,7 +363,6 @@ if __name__ == '__main__':
                                 session.version,
                                 developer=usernameFilter,
                                 limit=args.limit,
-                                specificChangelist=session.changelist,
                                 fileRegex=args.file,
                                 verbose=session.verbose)
 
