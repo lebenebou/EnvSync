@@ -26,5 +26,9 @@ if __name__ == '__main__':
     print(f'Fetching affected files for some changelists on {P4Helper.Build}...', file=sys.stderr)
     [cl.fetchAffectedFiles() for cl in buildCls]
 
+    print(f'Checking if any files are empty...', file=sys.stderr)
+    for cl in buildCls:
+        assert all(file for file in cl.files), 'Some fetched affected files are empty or null!'
+
     print('All tests passed')
     session.close()

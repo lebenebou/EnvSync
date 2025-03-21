@@ -11,17 +11,6 @@ from typing import List
 
 import argparse
 
-def parsePathFromDepoPath(depoPath: str) -> str:
-
-    pattern = r'depot/v3\.1\.\S+?/(.*)#'
-    m = re.search(pattern, depoPath)
-
-    if not m:
-        return None
-
-    file = m.group(1)
-    return file
-
 class Changelist:
     pattern = r'^Change\s+(\d+).*\s+by\s+(\S+)@'
     tagPattern = r"\[(.*?)\]"
@@ -37,6 +26,45 @@ class Changelist:
         self.files: List[str] = []
 
         self.gitCommit: str = None
+
+    @staticmethod
+    def fromP4CmdOutput(outputLines: List[str], startIndex: int = 0):
+
+        # INPUT: p4 command output, and a start index
+        # OUTPUT: tuple of (parsed Changelist , index of next changelist in the output)
+
+        i: int = startIndex
+        m = re.match(Changelist.pattern, outputLines[i])
+        assert m, f'Line did not match changelist regex: {outputLines[i]}'
+
+        cl = Changelist()
+        cl.value, cl.developer = m.groups()
+
+        i += 2
+        cl.description = ''
+
+        while True:
+
+            cl.description += outputLines[i] 
+            i+=1
+
+            endOfOutput: bool = (i >= len(outputLines))
+            if endOfOutput:
+                return (cl, -1)
+
+            atNextClOutput: bool = outputLines[i].startswith('Change')
+            if atNextClOutput:
+                return (cl, i)
+
+            if outputLines[i].startswith('Affected'):
+
+                i += 2
+                while i < len(outputLines) and not re.match(r'^\s*$', outputLines[i]):
+                    file: str = P4Helper.parsePathFromDepoPath(outputLines[i])
+                    cl.files.append(file)
+                    i += 1
+
+                return (cl, -1)
 
     def fetchAffectedFiles(self, verbose: bool = False) -> List[str]:
 
@@ -57,24 +85,9 @@ class Changelist:
             return []
 
         output: List[str] = result.stdout.splitlines()
-        i: int = 0
-        while True:
-            i+=1
-            if output[i].lower().count('affected files'):
-                break
-        i+=2
+        tmpCL, _ = Changelist.fromP4CmdOutput(output)
 
-        self.files: List[str] = []
-        while True:
-
-            file = output[i].strip(' ').strip('.').strip(' ')
-            self.files.append(file)
-
-            i+=1
-            if output[i].strip(' ') == '':
-                break
-
-        self.files = [parsePathFromDepoPath(f) for f in self.files]
+        self.files = list(tmpCL.files)
         return self.files
 
     def isCherryPickedFromGit(self) -> bool:
@@ -127,7 +140,7 @@ class Changelist:
 
         return self.value == other.value
         
-    def parseDescription(self, verbose: bool = False):
+    def parseAndCleanDescription(self, verbose: bool = False):
 
         assert self.description, f'No description to parse for CL: {self.value}'
 
@@ -198,6 +211,19 @@ class P4Helper:
         return f"//depot/{rawVersion}/..."
 
     @staticmethod
+    def parsePathFromDepoPath(depoPath: str) -> str:
+
+        depoPath = depoPath.strip(' ').strip('.').strip(' ')
+        pattern = r'depot/v3\.1\.\S+?/(.*)#'
+        m = re.search(pattern, depoPath)
+
+        if not m:
+            return None
+
+        file = m.group(1)
+        return file
+
+    @staticmethod
     def _getChangelist(changelist: int, verbose: bool = False) -> Changelist:
 
         command = f'p4 describe -s {changelist}'
@@ -215,20 +241,8 @@ class P4Helper:
             print(result.stderr, file=sys.stderr)
             return None
 
-        output: List[str] = result.stdout.splitlines()
-        i: int = 0
-        m = re.search(Changelist.pattern, output[i])
-
-        cl = Changelist()
-        cl.value, cl.developer = m.groups()
-        cl.description = ''
-
-        i += 2
-        while i < len(output) and not output[i].startswith('Affected'):
-            cl.description += output[i] 
-            i+=1
-
-        cl.parseDescription(verbose)
+        cl, _ = Changelist.fromP4CmdOutput(result.stdout.splitlines())
+        cl.parseAndCleanDescription(verbose)
         return cl
         
     from typing import Generator
@@ -263,25 +277,14 @@ class P4Helper:
             return []
 
         changelists: List[Changelist] = []
+        outputLines: List[str] = result.stdout.splitlines()
 
         # Parse the output for changelists and descriptions
-        output: List[str] = result.stdout.splitlines()
-        i: int = 0
-        while i < len(output):
+        nextClIndex = 0
+        while nextClIndex != -1:
 
-            line = output[i]
-            m = re.search(Changelist.pattern, line)
-
-            cl = Changelist()
-            cl.value, cl.developer = m.groups()
-            cl.description = ''
-
-            i += 2
-            while i < len(output) and not output[i].startswith('Change'):
-                cl.description += output[i] 
-                i+=1
-
-            cl.parseDescription(verbose)
+            cl, nextClIndex = Changelist.fromP4CmdOutput(outputLines, nextClIndex)
+            cl.parseAndCleanDescription()
             changelists.append(cl)
 
         # at this point we have the chaneglists and their parsed descriptions
