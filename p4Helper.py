@@ -69,7 +69,7 @@ class Changelist:
     def fetchAffectedFiles(self, verbose: bool = False) -> List[str]:
 
         if self.developer == 'builder':
-            print(f'Files do not get fetched for "builder" user', file=sys.stderr)
+            print(f'Skipped fetching files for "builder" user: CL {self.value}', file=sys.stderr)
             return []
 
         if self.files:
