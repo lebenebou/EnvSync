@@ -13,7 +13,7 @@ import argparse
 
 class Changelist:
     pattern = r'^Change\s+(\d+).*\s+by\s+(\S+)@'
-    tagPattern = r"\[(.*?)\]"
+    tagPattern = r"\[\s*(.*?)\s*]"
 
     def __init__(self, value: int = 0):
 
@@ -160,7 +160,7 @@ class Changelist:
 
             matchstr = m.group(1).strip()
 
-            if re.search(P4Helper.DefectRegex, matchstr):
+            if re.match(P4Helper.DefectRegex, matchstr):
                 self.defect = matchstr
             else:
                 self.tags.append(matchstr)
