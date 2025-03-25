@@ -7,7 +7,7 @@ import cli
 import re
 
 import xml.etree.ElementTree as xmlParser
-from typing import List
+from typing import List, Dict
 
 import argparse
 
@@ -245,6 +245,29 @@ class P4Helper:
         cl.parseAndCleanDescription(verbose)
         return cl
         
+    @staticmethod
+    def extractMainstreamDefects(defects: List[str], possibleSubmitters: List[str]) -> Dict[str, Changelist]:
+
+        # INPUT
+        # Defects: list of defects
+        # PossibleSubmitters: list of users
+
+        # OUTPUT
+        # dictionary containing the defects as key, and the FIRST changelist which submitted them on v3.1.build as value
+        # if the defect is NOT submitted on build by any of the given users, it will NOT be present in the dictionary
+
+        mainstreamDefects: Dict[str, Changelist] = {}
+        for dev in possibleSubmitters:
+
+            for cl in P4Helper.getChangelists(P4Helper.Build, developer=dev):
+
+                if cl.defect not in defects:
+                    continue
+
+                mainstreamDefects[cl.defect] = cl
+
+        return mainstreamDefects
+
     from typing import Generator
     @staticmethod
     def getChangelists(version: str, *, developer: str = None, limit: int = None, fileRegex: str = None, verbose: bool = False) -> Generator[Changelist, None, None]:
