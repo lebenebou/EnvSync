@@ -467,7 +467,7 @@ class GqafRequestHandler:
         return response.json()
 
     @staticmethod
-    def removeDuplicates(buildJobs: List[BuildJob]):
+    def _removeDuplicates(buildJobs: List[BuildJob]):
 
         # for some reason, a job will sometimes appear as 2 jobs with buildIds that differ by 1
         # the one with the higher buildId is usually the correct one
@@ -506,6 +506,18 @@ class GqafRequestHandler:
         return
 
     @staticmethod
+    def fetchVersionOwners(version: str) -> List[str]:
+
+        print(f'Fetching owners of {version}...', file=sys.stderr)
+        response: requests.Response = GqafRequestHandler.getRequest('https://icarus:10113/pc/version/' + version)
+
+        if response.status_code != 200:
+            return None
+
+        data: dict = response.json()
+        return data['version']['owners']
+
+    @staticmethod
     def fetchBuildJobs(version: str, changelistFilter: int = None, ownerFilter: str = None) -> List[BuildJob]:
 
         json = GqafRequestHandler.fetchSetupsJson(version)
@@ -516,7 +528,7 @@ class GqafRequestHandler:
         buildJobs = json["productionJobs"]["productionJob"]
         buildJobs = [BuildJob(job) for job in buildJobs]
         buildJobs = [job for job in buildJobs if job.isValid()]
-        GqafRequestHandler.removeDuplicates(buildJobs)
+        GqafRequestHandler._removeDuplicates(buildJobs)
 
         if changelistFilter:
             buildJobs = [job for job in buildJobs if job.changelist == changelistFilter]
