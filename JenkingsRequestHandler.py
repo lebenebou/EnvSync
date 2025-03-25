@@ -81,6 +81,7 @@ class JenkinsBuild:
             continue
 
         self.artifactUrls.sort(key=lambda name: 'test' not in name.split('/')[-1].lower())
+        self.logs: Dict[str, str] = {}
 
     def __str__(self) -> str:
 
@@ -131,18 +132,25 @@ class JenkinsBuild:
 
         return self.result == 'FAILURE'
 
-    def fetchLogs(self, artifactName: str) -> str:
+    def getLogs(self, artifactName: str) -> str:
+
+        if artifactName in self.logs:
+            return self.logs.get(artifactName)
 
         for url in self.artifactUrls:
 
-            if not re.search(artifactName, url):
+            m = re.search(artifactName, url)
+            if not m:
                 continue
+
+            artifactName: str = m.group()
 
             response = JenkinsRequestHandler.getRequest(url)
             if response.status_code != 200:
                 continue
 
-            return response.text
+            self.logs[artifactName] = response.text
+            return self.logs.get(artifactName)
 
         return None
 
@@ -186,7 +194,7 @@ class JenkinsBuild:
         for artifactUrl in self.artifactUrls:
 
             artifactBaseName: str = artifactUrl.split('/')[-1]
-            logs: str = self.fetchLogs(artifactBaseName)
+            logs: str = self.getLogs(artifactBaseName)
             if logs is None:
                 continue
 
@@ -297,7 +305,7 @@ if __name__ == '__main__':
     # example usage
 
     version = SessionInfo.SessionInfo().version
-    alienCppValidation = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/CppValidation/'
+    alienCppValidation = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/AsanValidation/'
     pipeline: PipelineInfo = JenkinsRequestHandler.getPipelineInfo(alienCppValidation)
 
     if not pipeline:
