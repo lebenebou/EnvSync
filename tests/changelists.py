@@ -12,6 +12,9 @@ from p4Helper import P4Helper
 
 if __name__ == '__main__':
 
+    emptyCls = list(P4Helper.getChangelists(P4Helper.Build, developer='non_existant'))
+    assert len(emptyCls) == 0, 'non_existant user has changelists on build'
+
     session = SessionInfo()
     VERSION = session.version
 
