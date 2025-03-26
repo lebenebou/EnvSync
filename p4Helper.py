@@ -302,6 +302,9 @@ class P4Helper:
         changelists: List[Changelist] = []
         outputLines: List[str] = result.stdout.splitlines()
 
+        if len(outputLines) == 0:
+            return []
+
         # Parse the output for changelists and descriptions
         nextClIndex = 0
         while nextClIndex != -1:
