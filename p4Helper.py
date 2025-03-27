@@ -6,8 +6,10 @@ CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 import cli
 import re
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 import xml.etree.ElementTree as xmlParser
-from typing import List, Dict
+from typing import List, Dict, Callable
 
 import argparse
 
@@ -244,12 +246,12 @@ class P4Helper:
         cl, _ = Changelist.fromP4CmdOutput(result.stdout.splitlines())
         cl.parseAndCleanDescription(verbose)
         return cl
-        
+
     @staticmethod
-    def extractMainstreamDefects(defects: List[str], possibleSubmitters: List[str]) -> Dict[str, Changelist]:
+    def extractMainstreamDefects(inputDefects: List[str], possibleSubmitters: List[str]) -> Dict[str, Changelist]:
 
         # INPUT
-        # Defects: list of defects
+        # inputDefects: list of defects
         # PossibleSubmitters: list of users
 
         # OUTPUT
@@ -257,14 +259,19 @@ class P4Helper:
         # if the defect is NOT submitted on build by any of the given users, it will NOT be present in the dictionary
 
         mainstreamDefects: Dict[str, Changelist] = {}
-        for dev in possibleSubmitters:
+        with ThreadPoolExecutor() as executor:
 
-            for cl in P4Helper.getChangelists(P4Helper.Build, developer=dev):
+            fetchDevMainstreamCls: Callable[[str], List[Changelist]] = lambda dev: list(P4Helper.getChangelists(P4Helper.Build, developer=dev))
+            clFutures = {executor.submit(fetchDevMainstreamCls, dev): dev for dev in possibleSubmitters}
 
-                if cl.defect not in defects:
-                    continue
+            for clFuture in as_completed(clFutures):
 
-                mainstreamDefects[cl.defect] = cl
+                developer = clFutures[clFuture]
+                hisMainstreamCls = clFuture.result()
+
+                submittedCl: Changelist = next((cl for cl in hisMainstreamCls if cl.defect in inputDefects), None)
+                if submittedCl:
+                    mainstreamDefects[submittedCl.defect] = submittedCl
 
         return mainstreamDefects
 
