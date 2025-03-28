@@ -37,6 +37,7 @@ class FailureReason(Enum):
     FailedTest = 2
     MemoryLeak = 3
     UseAfterFree = 4
+    TestCrash = 5
 
     def __str__(self):
         return self.name
@@ -186,6 +187,12 @@ class JenkinsBuild:
             m = re.search(r'use.after.free', line, re.IGNORECASE)
             if m:
                 return (FailureReason.UseAfterFree, 'Use After Free')
+
+            # Test Crash
+            m = re.search(r'test crash detected', line, re.IGNORECASE)
+            if m:
+                testThatCrashed: str = re.search(r'RUN\s*\]\s*(\S+)', logLines[i-1]).group(1)
+                return (FailureReason.TestCrash, testThatCrashed)
 
         return (FailureReason.Unknown, 'Unknown Failure')
 
