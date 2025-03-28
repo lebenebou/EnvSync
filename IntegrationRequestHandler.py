@@ -96,7 +96,7 @@ if __name__ == '__main__':
     version: str = session.version
 
     recentDefects: List[str] = [cl.defect for cl in P4Helper.getChangelists(version, limit=15)]
-    mainstreamDefects = P4Helper.extractMainstreamDefects(recentDefects, GqafRequestHandler.fetchVersionOwners(version))
+    mainstreamDefects = P4Helper.extractMergedDefects(recentDefects, GqafRequestHandler.fetchVersionOwners(version))
 
     for defect, cl in mainstreamDefects.items():
         print(f'[WARN] {defect} was submitted on {cl}')

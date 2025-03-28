@@ -9,7 +9,7 @@ import re
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import xml.etree.ElementTree as xmlParser
-from typing import List, Dict, Callable
+from typing import List, Dict, Set, Callable
 
 import argparse
 
@@ -248,7 +248,7 @@ class P4Helper:
         return cl
 
     @staticmethod
-    def extractMainstreamDefects(inputDefects: List[str], possibleSubmitters: List[str]) -> Dict[str, Changelist]:
+    def extractMergedDefects(inputDefects: List[str] | Set[str], possibleSubmitters: List[str] | Set[str]) -> Dict[str, Changelist]:
 
         # INPUT
         # inputDefects: list of defects
@@ -257,6 +257,10 @@ class P4Helper:
         # OUTPUT
         # dictionary containing the defects as key, and the FIRST changelist which submitted them on v3.1.build as value
         # if the defect is NOT submitted on build by any of the given users, it will NOT be present in the dictionary
+        inputDefects = set(defect for defect in inputDefects if defect)
+
+        invalidDefect: str = next((d for d in inputDefects if not re.match('DEF\d+', d)), None)
+        assert not invalidDefect, f'Not a defect ID: {invalidDefect}'
 
         mainstreamDefects: Dict[str, Changelist] = {}
         with ThreadPoolExecutor() as executor:
