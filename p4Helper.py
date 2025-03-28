@@ -193,7 +193,11 @@ class Changelist:
         if verbose:
             print(f'Parsing XML for changelist {self.value}...', file=sys.stderr)
  
+        self.description = self.description.replace('&', '&amp;')
+        self.description = self.description.split('</mxp4Root>')[0] + '</mxp4Root>'
+
         root = xmlParser.fromstring(self.description)
+
         self.description = root.find(".//mxp4description").text.strip()
         self.description = re.sub(r'\s+', ' ', self.description) # remove double spaces
         self.defect = root.find(".//mxp4defectID").text.strip()
