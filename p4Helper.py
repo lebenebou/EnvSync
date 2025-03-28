@@ -252,15 +252,16 @@ class P4Helper:
         return cl
 
     @staticmethod
-    def extractMergedDefects(inputDefects: List[str] | Set[str], possibleSubmitters: List[str] | Set[str]) -> Dict[str, Changelist]:
+    def extractMergedDefects(version: str, inputDefects: List[str] | Set[str], possibleSubmitters: List[str] | Set[str]) -> Dict[str, Changelist]:
 
         # INPUT
         # inputDefects: list of defects
         # PossibleSubmitters: list of users
 
         # OUTPUT
-        # dictionary containing the defects as key, and the FIRST changelist which submitted them on v3.1.build as value
-        # if the defect is NOT submitted on build by any of the given users, it will NOT be present in the dictionary
+        # dictionary containing the defects as key, and the FIRST changelist which submitted them on <version> as value
+        # if the defect is NOT submitted on <version> by any of the given users, it will NOT be present in the dictionary
+
         inputDefects = set(defect for defect in inputDefects if defect)
 
         invalidDefect: str = next((d for d in inputDefects if not re.match('DEF\d+', d)), None)
@@ -269,7 +270,7 @@ class P4Helper:
         mainstreamDefects: Dict[str, Changelist] = {}
         with ThreadPoolExecutor() as executor:
 
-            fetchDevMainstreamCls: Callable[[str], List[Changelist]] = lambda dev: list(P4Helper.getChangelists(P4Helper.Build, developer=dev))
+            fetchDevMainstreamCls: Callable[[str], List[Changelist]] = lambda dev: list(P4Helper.getChangelists(version, developer=dev))
             clFutures = {executor.submit(fetchDevMainstreamCls, dev): dev for dev in possibleSubmitters}
 
             for clFuture in as_completed(clFutures):
@@ -287,12 +288,11 @@ class P4Helper:
     @staticmethod
     def getChangelists(version: str, *, developer: str = None, limit: int = None, fileRegex: str = None, verbose: bool = False) -> Generator[Changelist, None, None]:
 
-        print(f'Getting changelists on {version}...', end='', file=sys.stderr)
-
-        command = 'p4 changes -l -s submitted'
-
         if version == P4Helper.Build and not limit and not developer: # getting all changelists on build takes a lot of time
             limit = 1000
+
+        command = 'p4 changes -l -s submitted'
+        print(f'Getting changelists on {version}...', end='', file=sys.stderr)
 
         if limit:
             print(f' (Limiting search to {limit} changelists)', end='', file=sys.stderr)
@@ -342,18 +342,24 @@ class P4Helper:
             yield cl
 
     @staticmethod
-    def getUnmergredChangelists(src: str, dest: str, developer: str = None, verbose: bool = False) -> List[Changelist]:
+    def getUnmergredChangelists(src: str, dest: str, dev: str = None, verbose: bool = False) -> List[Changelist]:
 
-        # returns changelists submitted by <developer> that are NOT merged from src to dest, based on defectID
+        # returns changelists submitted by <dev> that are NOT merged from src to dest, based on defectID
 
-        srcCls = P4Helper.getChangelists(version=src, developer=developer, verbose=verbose)
-        destCls = P4Helper.getChangelists(version=dest, developer=developer, verbose=verbose)
+        srcDevs: Set[str] = set()
+        srcDefects : Set[str] = set()
 
-        destDefects = set(cl.defect for cl in destCls)
+        srcCls: List[Changelist] = list(P4Helper.getChangelists(src, verbose=verbose))
+        for cl in srcCls:
 
-        unmergedCls = [cl for cl in srcCls if cl.defect is not None and cl.defect not in destDefects]
+            srcDevs.add(cl.developer)
+            if cl.developer == dev:
+                srcDefects.add(cl.defect)
 
-        return unmergedCls
+            continue
+
+        mergedDefects: Dict[str, Changelist] = P4Helper.extractMergedDefects(dest, srcDefects, srcDevs)
+        return [cl for cl in srcCls if cl.developer == dev and cl.defect not in mergedDefects]
 
 if __name__ == '__main__':
 
