@@ -292,7 +292,7 @@ class P4Helper:
         command = 'p4 changes -l -s submitted'
 
         if version == P4Helper.Build and not limit and not developer: # getting all changelists on build takes a lot of time
-            limit = 500
+            limit = 1000
 
         if limit:
             print(f' (Limiting search to {limit} changelists)', end='', file=sys.stderr)
