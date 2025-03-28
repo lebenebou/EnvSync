@@ -278,9 +278,10 @@ class P4Helper:
                 developer = clFutures[clFuture]
                 hisMainstreamCls = clFuture.result()
 
-                submittedCl: Changelist = next((cl for cl in hisMainstreamCls if cl.defect in inputDefects), None)
-                if submittedCl:
-                    mainstreamDefects[submittedCl.defect] = submittedCl
+                for cl in hisMainstreamCls:
+
+                    if cl.defect in inputDefects:
+                        mainstreamDefects[cl.defect] = cl
 
         return mainstreamDefects
 
