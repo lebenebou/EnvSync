@@ -312,15 +312,30 @@ if __name__ == '__main__':
     # example usage
 
     version = SessionInfo.SessionInfo().version
-    alienCppValidation = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/AsanValidation/'
-    pipeline: PipelineInfo = JenkinsRequestHandler.getPipelineInfo(alienCppValidation)
+    alienAsan = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/AsanValidation/'
+    alienCpp = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/CppValidation/'
 
-    if not pipeline:
+    asanPipeline: PipelineInfo = JenkinsRequestHandler.getPipelineInfo(alienAsan)
+    cppPipeline: PipelineInfo = JenkinsRequestHandler.getPipelineInfo(alienCpp)
+
+    if not asanPipeline:
         print(f'Couldn\'t get pipeline info')
         exit(1)
 
-    print(pipeline.name)
-    builds = getPipelineBuildsByChangelist(pipeline)
+    print(cppPipeline.name)
+    builds = getPipelineBuildsByChangelist(cppPipeline)
+    for cl in sorted(builds.keys(), reverse=True):
+
+        build = builds.get(cl)
+        print(build, end='\t')
+        if build.isFailed():
+            print(build.guessFailureReason(), end='')
+
+        print(flush=True)
+
+    print()
+    print(asanPipeline.name)
+    builds = getPipelineBuildsByChangelist(asanPipeline)
     for cl in sorted(builds.keys(), reverse=True):
 
         build = builds.get(cl)
