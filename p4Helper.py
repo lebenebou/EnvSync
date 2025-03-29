@@ -14,7 +14,7 @@ from typing import List, Dict, Set, Callable
 import argparse
 
 class Changelist:
-    pattern = r'^Change\s+(\d+).*\s+by\s+(\S+)@'
+    p4Pattern = r'^Change\s+(\d+).*\s+by\s+(\S+)@'
     tagPattern = r"\[\s*(.*?)\s*]"
 
     def __init__(self, value: int = 0):
@@ -25,6 +25,7 @@ class Changelist:
         self.tags: List[str] = []
         self.developer = None
 
+        self.fullInfoFetched: bool = False
         self.files: List[str] = []
 
         self.gitCommit: str = None
@@ -36,7 +37,7 @@ class Changelist:
         # OUTPUT: tuple of (parsed Changelist , index of next changelist in the output)
 
         i: int = startIndex
-        m = re.match(Changelist.pattern, outputLines[i])
+        m = re.match(Changelist.p4Pattern, outputLines[i])
         assert m, f'Line did not match changelist regex: {outputLines[i]}'
 
         cl = Changelist()
@@ -68,14 +69,14 @@ class Changelist:
 
                 return (cl, -1)
 
-    def fetchAffectedFiles(self, verbose: bool = False) -> List[str]:
+    def fetchFullInfo(self, verbose: bool = False):
 
         if self.developer == 'builder':
-            print(f'Skipped fetching files for "builder" user: CL {self.value}', file=sys.stderr)
-            return []
+            print(f'Skipped fetching info for "builder" user: CL {self.value}', file=sys.stderr)
+            return
 
-        if self.files:
-            return self.files
+        if self.fullInfoFetched:
+            return
 
         command = f'p4 describe -s {self.value}'
         if verbose:
@@ -83,14 +84,16 @@ class Changelist:
 
         result = cli.runCommand(command)
         if result.returncode != 0:
-            print(f'{command} failed, could not retrieve files for this changelist', file=sys.stderr)
-            return []
+            print(f'{command} failed, could not retrieve info for this changelist', file=sys.stderr)
+            return
 
         output: List[str] = result.stdout.splitlines()
         tmpCL, _ = Changelist.fromP4CmdOutput(output)
 
         self.files = list(tmpCL.files)
-        return self.files
+
+        self.fullInfoFetched = True
+        return
 
     def isCherryPickedFromGit(self) -> bool:
         return self.gitCommit is not None
@@ -107,7 +110,7 @@ class Changelist:
             s += f' {self.description}'
 
         if withFiles:
-            self.fetchAffectedFiles()
+            self.fetchFullInfo()
             s += '\n\t'
             s += '\n\t'.join(self.files)
             s += '\n'
@@ -249,6 +252,7 @@ class P4Helper:
 
         cl, _ = Changelist.fromP4CmdOutput(result.stdout.splitlines())
         cl.parseAndCleanDescription(verbose)
+        cl.fullInfoFetched = True
         return cl
 
     @staticmethod
@@ -339,7 +343,10 @@ class P4Helper:
 
         for cl in changelists:
 
-            noFilesMatchRegex: bool = fileRegex and not any(re.search(fileRegex, f, re.IGNORECASE) for f in cl.fetchAffectedFiles(verbose))
+            if fileRegex:
+                cl.fetchFullInfo(verbose)
+
+            noFilesMatchRegex: bool = fileRegex and not any(re.search(fileRegex, f, re.IGNORECASE) for f in cl.files)
             if noFilesMatchRegex:
                 continue
 

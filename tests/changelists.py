@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     # check if fetching files crashes
     print(f'Fetching affected files for some changelists on {P4Helper.Build}...', file=sys.stderr)
-    [cl.fetchAffectedFiles() for cl in buildCls]
+    [cl.fetchFullInfo() for cl in buildCls]
 
     print(f'Checking if any files are empty...', file=sys.stderr)
     for cl in buildCls:
