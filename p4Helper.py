@@ -252,7 +252,7 @@ class P4Helper:
         return cl
 
     @staticmethod
-    def extractMergedDefects(inputDefects: Set[str], destVersion: str, destDevs: Set[str]) -> Dict[str, Changelist]:
+    def extractMergedDefects(inputDefects: Set[str], destVersion: str, destDevs: Set[str], verbose: bool = None) -> Dict[str, Changelist]:
 
         # OUTPUT
         # The defects out of <inputDefects> which were merged on <destVersion> by ANY of the <destDevs>
@@ -262,8 +262,9 @@ class P4Helper:
         assert not invalidDefect, f'Not a defect ID: {invalidDefect}'
 
         destDevs: Set[str] = set(destDevs)
+        destDevs.discard('builder')
 
-        fetchDevDestCls: Callable[[str], List[Changelist]] = lambda dev: list(P4Helper.getChangelists(destVersion, developer=dev)) # verbosity should be mute
+        fetchDevDestCls: Callable[[str], List[Changelist]] = lambda dev: list(P4Helper.getChangelists(destVersion, developer=dev, verbose=verbose))
 
         mergedDefects: Dict[str, Changelist] = {}
         with ThreadPoolExecutor() as executor:
@@ -289,18 +290,27 @@ class P4Helper:
             limit = 1000
 
         command = 'p4 changes -l -s submitted'
-        print(f'Getting changelists on {version}...', end='', file=sys.stderr)
-
-        if limit:
-            print(f' (Limiting search to {limit} changelists)', end='', file=sys.stderr)
-            command += f' -m {limit}'
-
-        print(end='\n', file=sys.stderr, flush=True)
 
         if developer:
             command += f' -u {developer}'
 
+        if limit:
+            command += f' -m {limit}'
+
         command += f' {P4Helper.depoVersion(version)}'
+
+        if verbose is not None:
+            logMessage: str = 'Getting'
+
+            if developer:
+                logMessage += f' {developer}'
+
+            logMessage += f' changelists on {version}...'
+
+            if limit:
+                logMessage += f' (Limiting to {limit} changelists)'
+
+            print(logMessage, file=sys.stderr, flush=True)
 
         if verbose:
             print(f'Running command: {command}', file=sys.stderr)
@@ -355,7 +365,7 @@ class P4Helper:
 
             continue
 
-        mergedDefects: Dict[str, Changelist] = P4Helper.extractMergedDefects(srcDefects, dest, srcDevs)
+        mergedDefects: Dict[str, Changelist] = P4Helper.extractMergedDefects(srcDefects, dest, srcDevs, verbose if verbose else None)
         return [cl for cl in srcCls if cl.developer == dev and cl.defect not in mergedDefects]
 
 if __name__ == '__main__':
