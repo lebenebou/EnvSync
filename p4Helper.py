@@ -362,22 +362,14 @@ class P4Helper:
     @staticmethod
     def getUnmergredChangelists(src: str, dest: str, dev: str = None, verbose: bool = False) -> List[Changelist]:
 
-        # returns changelists submitted by <dev> that are NOT merged from src to dest, based on defectID
+        srcCls = P4Helper.getChangelists(version=src, developer=dev, verbose=verbose)
+        destCls = P4Helper.getChangelists(version=dest, developer=dev, verbose=verbose)
 
-        srcDevs: Set[str] = set()
-        srcDefects : Set[str] = set()
+        destDefects = set(cl.defect for cl in destCls)
+        unmergedCls = [cl for cl in srcCls if cl.defect is not None and cl.defect not in destDefects]
 
-        srcCls: List[Changelist] = list(P4Helper.getChangelists(src, verbose=verbose))
-        for cl in srcCls:
+        return unmergedCls
 
-            srcDevs.add(cl.developer)
-            if cl.developer == dev:
-                srcDefects.add(cl.defect)
-
-            continue
-
-        mergedDefects: Dict[str, Changelist] = P4Helper.extractMergedDefects(srcDefects, dest, srcDevs, verbose if verbose else None)
-        return [cl for cl in srcCls if cl.developer == dev and cl.defect not in mergedDefects]
 
 if __name__ == '__main__':
 
