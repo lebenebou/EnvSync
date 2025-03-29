@@ -119,8 +119,8 @@ def getGqafApiToken() -> str:
 def getJenkinsApiToken() -> str:
     return getSetting("jenkins_token")
 
-def getMxBotNotificationList() -> str:
-    return getSetting("mxbot_notification_list")
+def getDefaultNotificationList() -> str:
+    return getSetting("notification_list")
 
 def getVersionIdCache() -> Dict[str, str]:
     return getSetting("version_id_cache")
