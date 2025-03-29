@@ -47,6 +47,9 @@ class IntegrationInput(ApiJsonInput):
         s += ', '.join(self.defectIds)
         s += f'\nSource version: {self.sourceVersion}'
         s += f'\nNotification list: {",".join(self.notificationList)}'
+        s += f'\n-f: {self.integrateWithForce}'
+        s += f'\n-d: {self.integrateWithDelete}'
+        s += f'\nQuality gate build: {self.fullQualityGateBuild}'
 
         return s
 
@@ -146,8 +149,7 @@ def parseIntegrationInputFromLines(changelistLines: List[str], verbose: bool = F
             print(f'[WARN] Changelist has no defect: {cl}', file=sys.stderr)
             continue
 
-        if verbose:
-            print(f'Parsed: {cl}', file=sys.stderr)
+        print(f'Parsed: {cl}', file=sys.stderr)
 
         clsToIntegrate.append(cl)
         versionSet.add(cl.version)
@@ -190,6 +192,7 @@ if __name__ == '__main__':
 
     if session.version is None:
         print(f'Cannot integrate without source -v version', file=sys.stderr)
+        session.close()
         exit(1)
 
     linesToParse: List[str] = []
@@ -220,6 +223,7 @@ if __name__ == '__main__':
         print(f'Parsed changelists\' version different from specified version.', file=sys.stderr)
         print(f'Version parsed from changelists: {input.sourceVersion}', file=sys.stderr)
         print(f'Version specified using -v: {session.version}', file=sys.stderr)
+        session.close()
         exit(1)
 
     versionOwners: List[str] = GqafRequestHandler.fetchVersionOwners(input.sourceVersion)
@@ -232,9 +236,10 @@ if __name__ == '__main__':
 
     if len(defectsInMainstream) > 0 and not input.integrateWithForce:
         print(f'[ERROR] Since the defects above are already on v3.1.build, the only way to integrate is with -f force', file=sys.stderr)
+        session.close()
         exit(1)
 
-    print(end='\n', file=sys.stderr)
+    print('READY TO INTEGRATE', end='\n\n', file=sys.stderr, flush=True)
     print(input, file=sys.stdout)
 
     session.close()
