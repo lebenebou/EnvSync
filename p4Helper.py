@@ -252,38 +252,34 @@ class P4Helper:
         return cl
 
     @staticmethod
-    def extractMergedDefects(version: str, inputDefects: List[str] | Set[str], possibleSubmitters: List[str] | Set[str]) -> Dict[str, Changelist]:
-
-        # INPUT
-        # inputDefects: list of defects
-        # PossibleSubmitters: list of users
+    def extractMergedDefects(inputDefects: Set[str], destVersion: str, destDevs: Set[str]) -> Dict[str, Changelist]:
 
         # OUTPUT
-        # dictionary containing the defects as key, and the FIRST changelist which submitted them on <version> as value
-        # if the defect is NOT submitted on <version> by any of the given users, it will NOT be present in the dictionary
+        # The defects out of <inputDefects> which were merged on <destVersion> by ANY of the <destDevs>
 
         inputDefects = set(defect for defect in inputDefects if defect)
-
         invalidDefect: str = next((d for d in inputDefects if not re.match('DEF\d+', d)), None)
         assert not invalidDefect, f'Not a defect ID: {invalidDefect}'
 
-        mainstreamDefects: Dict[str, Changelist] = {}
+        destDevs: Set[str] = set(destDevs)
+
+        fetchDevDestCls: Callable[[str], List[Changelist]] = lambda dev: list(P4Helper.getChangelists(destVersion, developer=dev)) # verbosity should be mute
+
+        mergedDefects: Dict[str, Changelist] = {}
         with ThreadPoolExecutor() as executor:
 
-            fetchDevMainstreamCls: Callable[[str], List[Changelist]] = lambda dev: list(P4Helper.getChangelists(version, developer=dev))
-            clFutures = {executor.submit(fetchDevMainstreamCls, dev): dev for dev in possibleSubmitters}
+            destClFutureByDev = {executor.submit(fetchDevDestCls, dev) : dev for dev in destDevs}
 
-            for clFuture in as_completed(clFutures):
+            for clFuture in as_completed(destClFutureByDev):
 
-                developer = clFutures[clFuture]
-                hisMainstreamCls = clFuture.result()
+                devWhoMerged: str = destClFutureByDev[clFuture]
+                hisMergedCls: List[Changelist] = clFuture.result()
 
-                for cl in hisMainstreamCls:
+                for mergedCl in hisMergedCls:
+                    if mergedCl.defect in inputDefects:
+                        mergedDefects[mergedCl.defect] = mergedCl
 
-                    if cl.defect in inputDefects:
-                        mainstreamDefects[cl.defect] = cl
-
-        return mainstreamDefects
+        return mergedDefects
 
     from typing import Generator
     @staticmethod
@@ -359,7 +355,7 @@ class P4Helper:
 
             continue
 
-        mergedDefects: Dict[str, Changelist] = P4Helper.extractMergedDefects(dest, srcDefects, srcDevs)
+        mergedDefects: Dict[str, Changelist] = P4Helper.extractMergedDefects(srcDefects, dest, srcDevs)
         return [cl for cl in srcCls if cl.developer == dev and cl.defect not in mergedDefects]
 
 if __name__ == '__main__':
