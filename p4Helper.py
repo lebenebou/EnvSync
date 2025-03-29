@@ -26,6 +26,7 @@ class Changelist:
         self.developer = None
 
         self.fullInfoFetched: bool = False
+        self.version: str = None
         self.files: List[str] = []
 
         self.gitCommit: str = None
@@ -63,7 +64,8 @@ class Changelist:
 
                 i += 2
                 while i < len(outputLines) and not re.match(r'^\s*$', outputLines[i]):
-                    file: str = P4Helper.parsePathFromDepoPath(outputLines[i])
+                    file, version = P4Helper.parsePathFromDepoPath(outputLines[i])
+                    cl.version = version
                     cl.files.append(file)
                     i += 1
 
@@ -91,6 +93,7 @@ class Changelist:
         tmpCL, _ = Changelist.fromP4CmdOutput(output)
 
         self.files = list(tmpCL.files)
+        self.version = tmpCL.version
 
         self.fullInfoFetched = True
         return
@@ -220,17 +223,18 @@ class P4Helper:
         return f"//depot/{rawVersion}/..."
 
     @staticmethod
-    def parsePathFromDepoPath(depoPath: str) -> str:
+    def parsePathFromDepoPath(depoPath: str) -> tuple[str, str]:
 
         depoPath = depoPath.strip(' ').strip('.').strip(' ')
-        pattern = r'depot/v3\.1\.\S+?/(.*)#'
+        pattern = r'depot/(v3\.1\.\S+?)/(.*)#'
         m = re.search(pattern, depoPath)
 
         if not m:
             return None
 
-        file = m.group(1)
-        return file
+        file = m.group(2)
+        version = m.group(1)
+        return file, version
 
     @staticmethod
     def _getChangelist(changelist: int, verbose: bool = False) -> Changelist:
