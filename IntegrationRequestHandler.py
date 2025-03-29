@@ -1,14 +1,16 @@
 
-import settings
+import argparse
+import os
 
+import settings
 from SessionInfo import SessionInfo
-from p4Helper import P4Helper
+from p4Helper import P4Helper, Changelist
 from gqaf.GqafRequestHandler import GqafRequestHandler
 
 import re
 
 import requests
-from typing import List, Dict
+from typing import List, Dict, Set
 
 import sys
 
@@ -38,6 +40,17 @@ class IntegrationInput(ApiJsonInput):
 
         self.fullQualityGateBuild: bool = True
 
+    def __str__(self) -> str:
+
+        s = str()
+
+        s += ', '.join(self.defectIds)
+        s += f'\nSource version: {self.sourceVersion}'
+        s += f'\nNotification list: {",".join(self.notificationList)}'
+
+        return s
+
+    # override
     def isValid(self) -> bool:
         
         if not self.defectIds:
@@ -61,7 +74,10 @@ class IntegrationInput(ApiJsonInput):
     def prepare(self):
 
         self.defectIds = [d for d in self.defectIds if d] # remove null defects
+        self.defectIds = list(set(self.defectIds))
+
         self.interactiveDefectIds = [d for d in self.interactiveDefectIds if d] # remove null defects
+        self.interactiveDefectIds = list(set(self.interactiveDefectIds))
 
         super().prepare()
 
@@ -90,15 +106,136 @@ class IntegrationRequestHandler:
     def postRequest(endpoint: str) -> requests.Response:
         raise NotImplementedError()
 
+def readFileLines(filePath: str) -> List[str]:
+
+    assert os.path.isfile(filePath), f'Not a file: {filePath}'
+
+    with open(filePath, 'r') as file:
+        return file.readlines()
+
+def readStdinLines() -> List[str]:
+
+    print(f"reading from stdin...", file=sys.stderr)
+    return sys.stdin.read().splitlines()
+
+def parseChangelistFromLine(line: str, verbose: bool = False) -> Changelist:
+
+    pattern: str = r'\b(\d+)\b'
+    m = re.search(pattern, line)
+    if not m:
+        return None
+
+    cl = P4Helper._getChangelist(m.group(1))
+    return cl
+
+def parseIntegrationInputFromLines(changelistLines: List[str], verbose: bool = False) -> IntegrationInput:
+
+    clsToIntegrate: List[Changelist] = []
+    versionSet: Set[str] = set()
+    devSet: Set[str] = set()
+
+    for line in changelistLines:
+
+        cl = parseChangelistFromLine(line, verbose=verbose)
+        if not cl:
+            if verbose:
+                print(f'No changelist found on line: {line}', file=sys.stderr)
+            continue
+
+        if not cl.defect:
+            print(f'[WARN] Changelist has no defect: {cl}', file=sys.stderr)
+            continue
+
+        if verbose:
+            print(f'Parsed: {cl}', file=sys.stderr)
+
+        clsToIntegrate.append(cl)
+        versionSet.add(cl.version)
+        devSet.add(cl.developer)
+
+    if verbose:
+        print(end='\n', file=sys.stderr)
+
+    if len(clsToIntegrate) == 0:
+        print(f'No changelists were parsed. Nothing to integrate.', file=sys.stderr)
+        exit(0)
+
+    if len(versionSet) > 1:
+        print(f'[ERROR] Trying to integrate from multiple versions: {", ".join(v for v in versionSet)}', file=sys.stderr)
+        exit(1)
+
+    if len(devSet) > 1:
+        print(f'[WARN] You are integrating multiple developers defects: {", ".join(dev for dev in devSet)}', file=sys.stderr)
+
+    input = IntegrationInput()
+    input.sourceVersion = next(iter(clsToIntegrate)).version
+
+    for cl in clsToIntegrate:
+        input.addDefect(cl.defect)
+
+    return input
+
 if __name__ == '__main__':
     
+    parser = argparse.ArgumentParser(description='Integrate to mainstream from changelist input')
+
+    parser.add_argument('file_to_parse', nargs='?', default=None, help='File to parse changelists from, otherwise parse from stdin')
+
+    parser.add_argument('-f', '--force', action='store_true', default=False, help='Integrate with -f force', required=False)
+    parser.add_argument('-d', '--delete', action='store_true', default=False, help='Integrate with -d delete', required=False)
+
+    args, _ = parser.parse_known_args()
+
     session = SessionInfo()
-    version: str = session.version
 
-    recentDefects: List[str] = [cl.defect for cl in P4Helper.getChangelists(version, limit=15)]
-    mainstreamDefects = P4Helper.extractMergedDefects(recentDefects, GqafRequestHandler.fetchVersionOwners(version))
+    if session.version is None:
+        print(f'Cannot integrate without source -v version', file=sys.stderr)
+        exit(1)
 
-    for defect, cl in mainstreamDefects.items():
-        print(f'[WARN] {defect} was submitted on {cl}')
+    linesToParse: List[str] = []
+    if not args.file_to_parse:
+        linesToParse = readStdinLines()
+    else:
+        fileToParse: str = args.file_to_parse.strip()
+        if not os.path.exists(fileToParse):
+            print(f'Path does not exist: {fileToParse}')
+            exit(1)
+
+        if not os.path.isfile(fileToParse):
+            print(f'Not a file: {fileToParse}')
+            exit(1)
+
+        linesToParse = readFileLines(fileToParse)
+
+    input: IntegrationInput = parseIntegrationInputFromLines(linesToParse, verbose=session.verbose)
+    input.requester = session.username
+
+    input.integrateWithForce = args.force
+    input.integrateWithDelete = args.delete
+    input.fullQualityGateBuild = True
+
+    input.notificationList = [settings.getSetting('notification_list')]
+    
+    if input.sourceVersion != session.version:
+        print(f'Parsed changelists\' version different from specified version.', file=sys.stderr)
+        print(f'Version parsed from changelists: {input.sourceVersion}', file=sys.stderr)
+        print(f'Version specified using -v: {session.version}', file=sys.stderr)
+        exit(1)
+
+    versionOwners: List[str] = GqafRequestHandler.fetchVersionOwners(input.sourceVersion)
+    versionSubmitters: List[str] = list(cl.developer for cl in P4Helper.getChangelists(input.sourceVersion, verbose=session.verbose))
+    defectsInMainstream: Dict[str, Changelist] = P4Helper.extractMergedDefects(input.defectIds, P4Helper.Build, set(versionOwners + versionSubmitters))
+
+    print(end='\n', file=sys.stderr)
+    for defect, cl in defectsInMainstream.items():
+        print(f'[WARN] {cl.defect} already on v3.1.build: {cl}', file=sys.stderr)
+
+    if len(defectsInMainstream) > 0 and not input.integrateWithForce:
+        print(f'[ERROR] Since the defects above are already on v3.1.build, the only way to integrate is with -f force', file=sys.stderr)
+        exit(1)
+
+    print(end='\n', file=sys.stderr)
+    print(input, file=sys.stdout)
 
     session.close()
+    exit(0)
