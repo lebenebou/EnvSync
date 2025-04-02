@@ -45,7 +45,7 @@ class IntegrationInput(ApiJsonInput):
         s = str()
 
         s += ', '.join(self.defectIds)
-        s += f'\nSource version: {self.sourceVersion}'
+        s += f'\nFrom {self.sourceVersion} to {self.destinationVersion}'
         s += f'\nNotification list: {",".join(self.notificationList)}'
         s += f'\n-f: {self.integrateWithForce}'
         s += f'\n-d: {self.integrateWithDelete}'
@@ -155,8 +155,7 @@ def parseIntegrationInputFromLines(changelistLines: List[str], verbose: bool = F
         versionSet.add(cl.version)
         devSet.add(cl.developer)
 
-    if verbose:
-        print(end='\n', file=sys.stderr)
+    print(end='\n', file=sys.stderr)
 
     if len(clsToIntegrate) == 0:
         print(f'No changelists were parsed. Nothing to integrate.', file=sys.stderr)
@@ -228,6 +227,7 @@ if __name__ == '__main__':
 
     versionOwners: List[str] = GqafRequestHandler.fetchVersionOwners(input.sourceVersion)
     versionSubmitters: List[str] = list(cl.developer for cl in P4Helper.getChangelists(input.sourceVersion, verbose=session.verbose))
+    print(f'Getting changelists on {P4Helper.Build}...', file=sys.stderr)
     defectsInMainstream: Dict[str, Changelist] = P4Helper.extractMergedDefects(input.defectIds, P4Helper.Build, set(versionOwners + versionSubmitters))
 
     print(end='\n', file=sys.stderr)
