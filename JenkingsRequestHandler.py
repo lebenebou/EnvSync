@@ -34,7 +34,7 @@ class FailureReason(Enum):
 
     Unknown = 0
     CompileFailed = 1
-    FailedTest = 2
+    FailedTests = 2
     MemoryLeak = 3
     UseAfterFree = 4
     TestCrash = 5
@@ -176,7 +176,7 @@ class JenkinsBuild:
             if m:
                 numberOfFailedTests = int(m.group(1))
                 failedTests: str = ' | '.join([re.search(r'\[\s*FAILED\s*\]\s*(\S+)', l).group(1) for l in logLines[i+1: i+numberOfFailedTests+1]])
-                return (FailureReason.FailedTest, failedTests)
+                return (FailureReason.FailedTests, failedTests)
 
             # Memory Leaks
             m = re.search(r'detected memory leaks', line, re.IGNORECASE)
