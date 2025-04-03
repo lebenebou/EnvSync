@@ -228,7 +228,7 @@ class PipelineInfo:
 class JenkinsRequestHandler:
 
     @staticmethod
-    def buildHeaders() -> dict:
+    def buildDefaultHeaders() -> dict:
         return {'Accept': 'application/json'}
 
     @staticmethod
@@ -251,7 +251,7 @@ class JenkinsRequestHandler:
         
         response = None
         try:
-            response = requests.get(endpoint, headers=JenkinsRequestHandler.buildHeaders(),
+            response = requests.get(endpoint, headers=JenkinsRequestHandler.buildDefaultHeaders(),
                                     params=params,
                                     auth=JenkinsRequestHandler.buildAuth(),
                                     verify=False)
