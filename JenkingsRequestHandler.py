@@ -3,6 +3,7 @@ import settings
 import SessionInfo
 
 import re
+import json
 
 import requests
 from typing import List, Dict
@@ -247,6 +248,45 @@ class JenkinsRequestHandler:
         return {'tree': 'displayName,description,builds[number,status,displayName,description,url,result,building,artifacts[relativePath]]'}
 
     @staticmethod
+    def postRequest(endpoint: str, jsonData: dict = None, params: dict = None, headers: dict = None) -> requests.Response:
+
+        if headers is None:
+            headers = JenkinsRequestHandler.buildDefaultHeaders()
+
+        headers['Content-Type'] = 'application/json'
+        
+        response = None
+        try:
+            response = requests.post(endpoint, headers=headers,
+                                    json=jsonData,
+                                    params=params,
+                                    auth=JenkinsRequestHandler.buildAuth(),
+                                    verify=False)
+
+        except requests.exceptions.ConnectionError:
+                print(f'\nCould not reach Jenkins endpoint: {endpoint}', file=sys.stderr)
+                print('Make sure you are connected to the internet.', file=sys.stderr)
+                print('If you are not on Murex premises, make sure you\'re connected through a VPN.', file=sys.stderr)
+                exit(2)
+
+        if response.status_code == 401:
+
+            print('Wrong username or password. Authentication failed', file=sys.stderr)
+            return None
+
+        if response.status_code == 404:
+
+            print(f'Not found: {endpoint}', file=sys.stderr)
+            return None
+
+        if response.status_code not in [200, 201]:
+
+            print(f'Error occured in POST request:\n{response.text}', file=sys.stderr)
+            return None
+
+        return response
+
+    @staticmethod
     def getRequest(endpoint: str, params: dict = None) -> requests.Response:
         
         response = None
@@ -269,7 +309,7 @@ class JenkinsRequestHandler:
 
         if response.status_code == 404:
 
-            print(f'Pipeline doesn\'t exist: {endpoint}', file=sys.stderr)
+            print(f'Not found: {endpoint}', file=sys.stderr)
             return None
 
         if response.status_code != 200:
@@ -279,11 +319,56 @@ class JenkinsRequestHandler:
 
         return response
 
+    from IntegrationRequestHandler import IntegrationInput
     @staticmethod
-    def getAuthCrumb() -> str:
+    def lynxPipelineIntegrateToMainstream(input: IntegrationInput) -> bool:
 
-        headers: tuple = JenkinsRequestHandler.buildAuth()
-        print(f'Getting jenkins auth crumb for user: {headers[0]}...', file=sys.stderr)
+        print(f'Integrating {len(input.defectIds)} defect(s) to mainsream (using Lynx pipeline)...', file=sys.stderr)
+
+        input: dict = input.toJson()
+
+        input['defectIds'] = ','.join(input['defectIds'])
+        input['interactiveDefectIds'] = ','.join(input['interactiveDefectIds'])
+        input['notificationList'] = ','.join(input['notificationList'])
+
+        for key, value in input.items():
+            input[key] = str(value)
+
+        input = {key[0].upper() + key[1:]: value for key, value in input.items()}
+
+        pipelineUrl: str = 'https://cje-core.fr.murex.com/teams-sbp/job/lynx/job/IntegrateToMainstream/buildWithParameters?delay=0sec'
+
+        for key, value in input.items():
+            pipelineUrl += f'&{key}={value}'
+
+        crumb: str = JenkinsRequestHandler.getTeamsSbpAuthCrumb()
+        if not crumb:
+            print(f'Failed to get jenkins auth crumb for user: {settings.getUsername()}...', file=sys.stderr)
+            return False
+
+        headersWithCrumb: dict = JenkinsRequestHandler.buildDefaultHeaders()
+        headersWithCrumb['Jenkins-Crumb'] = crumb
+
+        response = JenkinsRequestHandler.postRequest(pipelineUrl, headers=headersWithCrumb)
+
+        if not response:
+            print(f'Couldn\'t push Lynx CI job', file=sys.stderr)
+            return False
+
+        if response.status_code != 201:
+            print(f'Couldn\'t push Lynx CI job', file=sys.stderr)
+            return False
+
+        print(f'Lynx CI job successfully pushed.', file=sys.stderr)
+        pipelineUrl: str = 'https://cje-core.fr.murex.com/teams-sbp/job/lynx/job/IntegrateToMainstream/'
+        print(f'URL: {pipelineUrl}', file=sys.stderr)
+        print(f'If successful, you will receive an email with the job link.', file=sys.stderr)
+        return True
+
+    @staticmethod
+    def getTeamsSbpAuthCrumb() -> str:
+
+        print(f'Getting jenkins auth crumb for user: {settings.getUsername()}...', file=sys.stderr)
 
         endpoint: str = 'https://cje-core.fr.murex.com/teams-sbp/crumbIssuer/api/json'
         response = JenkinsRequestHandler.getRequest(endpoint, params=None)

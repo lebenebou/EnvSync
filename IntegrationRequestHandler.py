@@ -8,6 +8,7 @@ from p4Helper import P4Helper, Changelist
 from gqaf.GqafRequestHandler import GqafRequestHandler
 
 import re
+import json
 
 import requests
 from typing import List, Dict, Set
@@ -92,6 +93,18 @@ class IntegrationInput(ApiJsonInput):
         self.defectIds.append(d)
 
 class IntegrationRequestHandler:
+
+    @staticmethod
+    def integrateToMainstream(input: IntegrationInput) -> str:
+        
+        from JenkingsRequestHandler import JenkinsRequestHandler
+        print(f'Integrating {len(input.defectIds)} defect(s) to mainsream...', file=sys.stderr)
+        success: bool = JenkinsRequestHandler.lynxPipelineIntegrateToMainstream(input)
+
+        if not success:
+            return False
+
+        return True
 
     @staticmethod
     def buildHeaders() -> dict:
@@ -184,6 +197,7 @@ if __name__ == '__main__':
 
     parser.add_argument('-f', '--force', action='store_true', default=False, help='Integrate with -f force', required=False)
     parser.add_argument('-d', '--delete', action='store_true', default=False, help='Integrate with -d delete', required=False)
+    parser.add_argument('--send', action='store_true', default=False, help='Immediately send an api request which integrates into build', required=False)
 
     args, _ = parser.parse_known_args()
 
@@ -209,38 +223,49 @@ if __name__ == '__main__':
 
         linesToParse = readFileLines(fileToParse)
 
-    input: IntegrationInput = parseIntegrationInputFromLines(linesToParse, verbose=session.verbose)
-    input.requester = session.username
+    inputs: IntegrationInput = parseIntegrationInputFromLines(linesToParse, verbose=session.verbose)
+    inputs.requester = session.username
 
-    input.integrateWithForce = args.force
-    input.integrateWithDelete = args.delete
-    input.fullQualityGateBuild = True
+    inputs.integrateWithForce = args.force
+    inputs.integrateWithDelete = args.delete
+    inputs.fullQualityGateBuild = True
 
-    input.notificationList = [settings.getSetting('notification_list')]
-    
-    if input.sourceVersion != session.version:
+    if inputs.sourceVersion != session.version:
         print(f'Parsed changelists\' version different from specified version.', file=sys.stderr)
-        print(f'Version parsed from changelists: {input.sourceVersion}', file=sys.stderr)
+        print(f'Version parsed from changelists: {inputs.sourceVersion}', file=sys.stderr)
         print(f'Version specified using -v: {session.version}', file=sys.stderr)
         session.close()
         exit(1)
 
-    versionOwners: List[str] = GqafRequestHandler.fetchVersionOwners(input.sourceVersion)
-    versionSubmitters: List[str] = list(cl.developer for cl in P4Helper.getChangelists(input.sourceVersion, verbose=session.verbose))
+    versionOwners: List[str] = GqafRequestHandler.fetchVersionOwners(inputs.sourceVersion)
+
+    inputs.notificationList = settings.getSetting('notification_list')
+    inputs.notificationList.extend(versionOwners)
+
+    versionSubmitters: List[str] = list(cl.developer for cl in P4Helper.getChangelists(inputs.sourceVersion, verbose=session.verbose))
     print(f'Getting changelists on {P4Helper.Build}...', file=sys.stderr)
-    defectsInMainstream: Dict[str, Changelist] = P4Helper.extractMergedDefects(input.defectIds, P4Helper.Build, set(versionOwners + versionSubmitters))
+    defectsInMainstream: Dict[str, Changelist] = P4Helper.extractMergedDefects(inputs.defectIds, P4Helper.Build, set(versionOwners + versionSubmitters))
 
     print(end='\n', file=sys.stderr)
     for defect, cl in defectsInMainstream.items():
         print(f'[WARN] {cl.defect} already on v3.1.build: {cl}', file=sys.stderr)
 
-    if len(defectsInMainstream) > 0 and not input.integrateWithForce:
+    if len(defectsInMainstream) > 0 and not inputs.integrateWithForce:
         print(f'[ERROR] Since the defects above are already on v3.1.build, the only way to integrate is with -f force', file=sys.stderr)
         session.close()
         exit(1)
 
+    print(end='\n', file=sys.stderr, flush=True)
     print('READY TO INTEGRATE', end='\n\n', file=sys.stderr, flush=True)
-    print(input, file=sys.stdout)
+
+    inputJson: str = json.dumps(inputs.toJson())
+    print(inputJson, file=sys.stdout, flush=True)
+
+    if args.send:
+
+        success = bool(IntegrationRequestHandler.integrateToMainstream(inputs))
+        if not success:
+            exit(1)
 
     session.close()
     exit(0)
