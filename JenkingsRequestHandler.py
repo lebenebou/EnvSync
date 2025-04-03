@@ -243,17 +243,16 @@ class JenkinsRequestHandler:
         return (username, token)
 
     @staticmethod
-    def buildParams() -> dict:
-
+    def buildPipelineInfoParams() -> dict:
         return {'tree': 'displayName,description,builds[number,status,displayName,description,url,result,building,artifacts[relativePath]]'}
 
     @staticmethod
-    def getRequest(endpoint: str) -> requests.Response:
+    def getRequest(endpoint: str, params: dict = None) -> requests.Response:
         
         response = None
         try:
             response = requests.get(endpoint, headers=JenkinsRequestHandler.buildHeaders(),
-                                    params=JenkinsRequestHandler.buildParams(),
+                                    params=params,
                                     auth=JenkinsRequestHandler.buildAuth(),
                                     verify=False)
 
@@ -281,13 +280,30 @@ class JenkinsRequestHandler:
         return response
 
     @staticmethod
+    def getAuthCrumb() -> str:
+
+        headers: tuple = JenkinsRequestHandler.buildAuth()
+        print(f'Getting jenkins auth crumb for user: {headers[0]}...', file=sys.stderr)
+
+        endpoint: str = 'https://cje-core.fr.murex.com/teams-sbp/crumbIssuer/api/json'
+        response = JenkinsRequestHandler.getRequest(endpoint, params=None)
+
+        if not response:
+            return None
+
+        data: dict = response.json()
+        crumb: str = data.get('crumb')
+        return crumb
+
+    @staticmethod
     def getPipelineInfo(pipelineLink: str) -> PipelineInfo:
 
         version = re.search(r'/(v3.1.build.*?)/', pipelineLink).group(1)
         print(f'Fetching a pipeline on {version}...', file=sys.stderr)
 
         pipelineLink = pipelineLink.strip('/') + '/api/json'
-        response = JenkinsRequestHandler.getRequest(pipelineLink)
+        params: dict = JenkinsRequestHandler.buildPipelineInfoParams()
+        response = JenkinsRequestHandler.getRequest(pipelineLink, params)
 
         if not response:
             return None
