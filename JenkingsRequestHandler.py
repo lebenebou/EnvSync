@@ -29,8 +29,6 @@ def tryDecrypt(encoded_message: str) -> str | None:
     except (ValueError, UnicodeDecodeError):
         return None
 
-from getpass import getpass
-
 class FailureReason(Enum):
 
     Unknown = 0
@@ -39,6 +37,7 @@ class FailureReason(Enum):
     MemoryLeak = 3
     UseAfterFree = 4
     TestCrash = 5
+    SegFault = 6
 
     def __str__(self):
         return self.name
@@ -194,6 +193,12 @@ class JenkinsBuild:
             if m:
                 testThatCrashed: str = re.search(r'RUN\s*\]\s*(\S+)', logLines[i-1]).group(1)
                 return (FailureReason.TestCrash, testThatCrashed)
+
+            # Segmentation Fault
+            m = re.search(r'addresssanitizer:deadlysignal', line, re.IGNORECASE)
+            if m:
+                guilyTest: str = re.search(r'RUN\s*\]\s*(\S+)', logLines[i-1]).group(1)
+                return (FailureReason.SegFault, guilyTest)
 
         return (FailureReason.Unknown, 'Unknown Failure')
 
