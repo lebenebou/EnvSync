@@ -66,7 +66,7 @@ class Changelist:
                 while i < len(outputLines) and not re.match(r'^\s*$', outputLines[i]):
                     file, version = P4Helper.parsePathFromDepoPath(outputLines[i])
                     cl.version = version
-                    cl.files.append(file)
+                    cl.files.append(f'{version}/{file}')
                     i += 1
 
                 return (cl, -1)
