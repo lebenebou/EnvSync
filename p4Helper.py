@@ -163,15 +163,18 @@ class Changelist:
         if self.description.startswith('<mxp4Root>'):
             self.parseXmlDescription(verbose)
 
+        # Parse defect
+        defectPattern: str = rf'\[({P4Helper.DefectRegex})\]' 
+        m = re.search(defectPattern, self.description)
+        if m:
+            self.defect = m.group(1)
+            self.description = re.sub(defectPattern, '', self.description)
+
         # parse [tags]
         for m in re.finditer(Changelist.tagPattern, self.description):
 
             matchstr = m.group(1).strip()
-
-            if re.match(P4Helper.DefectRegex, matchstr):
-                self.defect = matchstr
-            else:
-                self.tags.append(matchstr)
+            self.tags.append(re.sub('\s+', '', matchstr))
 
         # remove [tags]
         self.description = re.sub(Changelist.tagPattern, '', self.description).strip()
