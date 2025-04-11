@@ -226,7 +226,7 @@ class P4Helper:
     def parsePathFromDepoPath(depoPath: str) -> tuple[str, str]:
 
         depoPath = depoPath.strip(' ').strip('.').strip(' ')
-        pattern = r'depot/(v3\.1\.\S+?)/(.*)#'
+        pattern = r'depot/(v[^/]+)/(.*)#'
         m = re.search(pattern, depoPath)
 
         if not m:
