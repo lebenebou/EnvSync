@@ -12,7 +12,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser('Push a build job')
 
     # Cls
-    parser.add_argument('--shelved-cl', type=int)
+    parser.add_argument('--shelve', type=int)
 
     # OS
     osArgs = parser.add_argument_group(description='OS to push setups on')
@@ -42,7 +42,7 @@ if __name__ == '__main__':
     input.owner = session.username
     input.version = session.version
     input.changelist = session.changelist
-    input.shelvedChangelists = [args.shelved_cl] if args.shelved_cl else []
+    input.shelvedChangelists = [args.shelve] if args.shelve else []
     input.force = bool(args.force)
     input.mts = bool(args.mts)
 

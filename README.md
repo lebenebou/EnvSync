@@ -62,7 +62,7 @@ Setups pushed.
 ```
 ### Other ways to do it:
 Push setups at head: use `--head`
-Push setups at shelved changelist on top of main changelist: use `-cl <mainCL> --shelved-cl <shelvedCL>`
+Push setups at shelved changelist on top of main changelist: use `-cl <mainCL> --shelve <shelvedCL>`
 Push windows setups: use `--windows`
 
 ## Get Submitted Changelists
