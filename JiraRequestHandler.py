@@ -78,6 +78,8 @@ class JiraRequestHandler:
     @staticmethod
     def _fetchIssueInfoByDefect(defect: str) -> IssueInfo:
 
+        print(f'Looking for Jira issue with defect: {defect}...', file=sys.stderr)
+
         endpoint: str = 'https://mxjira.murex.com/rest/api/latest/search'
         response = JiraRequestHandler.getRequest(endpoint, params=JiraRequestHandler.buildDefectSearchParams(defect))
         
@@ -102,6 +104,7 @@ class JiraRequestHandler:
         issueId = issueId.strip('/').strip(endpoint)
         endpoint += issueId
 
+        print(f'Fetching Jira issue: {issueId}...', file=sys.stderr)
         response = JiraRequestHandler.getRequest(endpoint)
 
         if not response:
@@ -131,4 +134,4 @@ if __name__ == '__main__':
     # example usage
 
     issue = JiraRequestHandler.fetchIssueInfo('LIEDI-9903')
-    print(issue.defect)
+    print(issue.summary)
