@@ -17,10 +17,12 @@ class IssueInfo:
 
     def __init__(self, data: dict):
         
-        self.id = data.get('key')
-        self.defect = data.get('fields', {}).get('customfield_11369')
+        self.id: str = data.get('key')
+        self.defect: str = data.get('fields', {}).get('customfield_11369')
 
-        self.summary = data.get('fields', {}).get('summary')
+        self.assignee: str = data.get('fields', {}).get('assignee', {}).get('name')
+
+        self.summary: str = data.get('fields', {}).get('summary')
 
 class JiraRequestHandler:
 
@@ -36,11 +38,19 @@ class JiraRequestHandler:
         return {'Authorization': f'Bearer {settings.getJiraApiToken()}', 'Accept': 'application/json'}
 
     @staticmethod
-    def buildDefectSearchParams(defect: str) -> dict:
+    def buildDefectFilterParams(defect: str) -> dict:
 
         return {
             "jql" : f"cf[11369]={defect}",
             "maxResults" : 1,
+        }
+
+    @staticmethod
+    def buildAssigneeFilterParams(user: str, maxResults: int = 20) -> dict:
+
+        return {
+            "jql" : f"assignee={user}",
+            "maxResults" : maxResults,
         }
 
     @staticmethod
@@ -76,12 +86,31 @@ class JiraRequestHandler:
         return response
 
     @staticmethod
+    def fetchUsersIssues(assignee: str, maxResults: int = 20) -> list[IssueInfo]:
+
+        print(f'Fetching Jira issues assigned to {assignee}... (limiting search to {maxResults})', file=sys.stderr)
+
+        endpoint: str = 'https://mxjira.murex.com/rest/api/latest/search'
+        response = JiraRequestHandler.getRequest(endpoint, params=JiraRequestHandler.buildAssigneeFilterParams(user=assignee, maxResults=maxResults))
+        
+        if not response:
+            return None
+
+        issues: list[dict] = response.json().get('issues')
+
+        if not len(issues):
+            print(f'No Jira issues were found assigned to: {assignee}', file=sys.stderr)
+            return []
+
+        return [IssueInfo(issue) for issue in issues]
+
+    @staticmethod
     def _fetchIssueInfoByDefect(defect: str) -> IssueInfo:
 
         print(f'Looking for Jira issue with defect: {defect}...', file=sys.stderr)
 
         endpoint: str = 'https://mxjira.murex.com/rest/api/latest/search'
-        response = JiraRequestHandler.getRequest(endpoint, params=JiraRequestHandler.buildDefectSearchParams(defect))
+        response = JiraRequestHandler.getRequest(endpoint, params=JiraRequestHandler.buildDefectFilterParams(defect))
         
         if not response:
             return None
@@ -133,5 +162,6 @@ if __name__ == '__main__':
 
     # example usage
 
-    issue = JiraRequestHandler.fetchIssueInfo('LIEDI-9903')
-    print(issue.summary)
+    for jiraIssue in JiraRequestHandler.fetchUsersIssues('yoyammine', 100):
+
+        print(jiraIssue.__dict__, end='\n\n')
