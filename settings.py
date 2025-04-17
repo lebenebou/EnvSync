@@ -119,6 +119,9 @@ def getGqafApiToken() -> str:
 def getJenkinsApiToken() -> str:
     return getSetting("jenkins_token")
 
+def getJiraApiToken() -> str:
+    return getSetting("jira_token")
+
 def getDefaultNotificationList() -> str:
     return getSetting("notification_list")
 
