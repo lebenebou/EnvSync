@@ -4,6 +4,8 @@ import settings
 import requests
 import re
 
+from p4Helper import P4Helper
+
 import sys
 
 import urllib3
@@ -37,10 +39,8 @@ class JiraRequestHandler:
     def buildDefectSearchParams(defect: str) -> dict:
 
         return {
-            "fields" : "id,key,fiels",
-            "maxResults" : 1,
-
             "jql" : f"cf[11369]={defect}",
+            "maxResults" : 1,
         }
 
     @staticmethod
@@ -76,7 +76,7 @@ class JiraRequestHandler:
         return response
 
     @staticmethod
-    def fetchIssueIdFromDefect(defect: str):
+    def _fetchIssueInfoByDefect(defect: str) -> IssueInfo:
 
         endpoint: str = 'https://mxjira.murex.com/rest/api/latest/search'
         response = JiraRequestHandler.getRequest(endpoint, params=JiraRequestHandler.buildDefectSearchParams(defect))
@@ -90,11 +90,11 @@ class JiraRequestHandler:
             print(f'No Jira issues were found with defect: {defect}', file=sys.stderr)
             return None
 
-        issueEndpoint = issues[0].get('key')
-        return issueEndpoint
+        issue = issues[0]
+        return IssueInfo(issue)
 
     @staticmethod
-    def fetchIssueInfo(issueId: str) -> IssueInfo:
+    def _fetchIssueInfoById(issueId: str) -> IssueInfo:
 
         assert re.match(IssueInfo.issueKeyPattern, issueId), f'{issueId} is not a Jira issue string'
 
@@ -112,16 +112,20 @@ class JiraRequestHandler:
         return IssueInfo(data)
 
     @staticmethod
-    def fetchIssueInfoByDefect(defect: str) -> IssueInfo:
+    def fetchIssueInfo(issueIdOrDefect: str) -> IssueInfo:
 
-        issueId: str = JiraRequestHandler.fetchIssueIdFromDefect(defect)
+        m = re.match(P4Helper.DefectRegex, issueIdOrDefect)
+        if m:
+            return JiraRequestHandler._fetchIssueInfoByDefect(m.group())
 
-        if not issueId:
-            return None
+        issueId: str = issueIdOrDefect.split('/')[-1]
+        m = re.match(IssueInfo.issueKeyPattern, issueId)
+        if m:
+            return JiraRequestHandler._fetchIssueInfoById(m.group())
 
-        issue: IssueInfo = JiraRequestHandler.fetchIssueInfo(issueId)
-        return issue
-        
+        print(f'Not an Jira issue ID or Defect: {issueIdOrDefect}', file=sys.stderr)
+        return None
+
 if __name__ == '__main__':
 
     # example usage
