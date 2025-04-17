@@ -1,35 +1,17 @@
 
 import settings
-import SessionInfo
-
-import re
-import json
 
 import requests
-from typing import List, Dict
+import re
 
 import sys
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-from enum import Enum
-
-import base64
-def tryDecrypt(encoded_message: str) -> str | None:
-
-    if not encoded_message:
-        return None
-
-    try:
-        base64_bytes = encoded_message.encode('utf-8')
-        message_bytes = base64.b64decode(base64_bytes, validate=True)
-        return message_bytes.decode('utf-8')
-
-    except (ValueError, UnicodeDecodeError):
-        return None
-
 class IssueInfo:
+
+    issueKeyPattern: str = r'\w+-\d+'
 
     def __init__(self, data: dict):
         
@@ -96,7 +78,8 @@ class JiraRequestHandler:
     @staticmethod
     def fetchIssueIdFromDefect(defect: str):
 
-        response = JiraRequestHandler.getRequest('https://mxjira.murex.com/rest/api/latest/search', params=JiraRequestHandler.buildDefectSearchParams(defect))
+        endpoint: str = 'https://mxjira.murex.com/rest/api/latest/search'
+        response = JiraRequestHandler.getRequest(endpoint, params=JiraRequestHandler.buildDefectSearchParams(defect))
         
         if not response:
             return None
@@ -112,6 +95,8 @@ class JiraRequestHandler:
 
     @staticmethod
     def fetchIssueInfo(issueId: str) -> IssueInfo:
+
+        assert re.match(IssueInfo.issueKeyPattern, issueId), f'{issueId} is not a Jira issue string'
 
         endpoint: str = 'https://mxjira.murex.com/rest/api/latest/issue/'
         issueId = issueId.strip('/').strip(endpoint)
