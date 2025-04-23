@@ -4,7 +4,8 @@ import settings
 import requests
 import re
 
-from p4Helper import P4Helper
+from SessionInfo import SessionInfo
+from p4Helper import P4Helper, Changelist
 
 import sys
 
@@ -24,6 +25,20 @@ class IssueInfo:
 
         self.summary: str = data.get('fields', {}).get('summary')
 
+    def toPerforceDescription(self, withId: bool = True, revert: bool = False) -> str:
+
+        description: str = ''
+        description += f'[{self.defect}]'
+
+        if revert:
+            description += '[REVERT]'
+
+        if withId:
+            description += f'[{self.id}]'
+
+        description += self.summary
+        return description
+
 class JiraRequestHandler:
 
     @staticmethod
@@ -36,22 +51,6 @@ class JiraRequestHandler:
             return {}
 
         return {'Authorization': f'Bearer {settings.getJiraApiToken()}', 'Accept': 'application/json'}
-
-    @staticmethod
-    def buildDefectFilterParams(defect: str) -> dict:
-
-        return {
-            "jql" : f"cf[11369]={defect}",
-            "maxResults" : 1,
-        }
-
-    @staticmethod
-    def buildAssigneeFilterParams(user: str, maxResults: int = 20) -> dict:
-
-        return {
-            "jql" : f"assignee={user}",
-            "maxResults" : maxResults,
-        }
 
     @staticmethod
     def getRequest(endpoint: str, params: dict = None) -> requests.Response:
@@ -86,12 +85,17 @@ class JiraRequestHandler:
         return response
 
     @staticmethod
-    def fetchUsersIssues(assignee: str, maxResults: int = 20) -> list[IssueInfo]:
+    def fetchDeveloperIssues(assignee: str, maxResults: int = 20) -> list[IssueInfo]:
 
         print(f'Fetching Jira issues assigned to {assignee}... (limiting search to {maxResults})', file=sys.stderr)
 
         endpoint: str = 'https://mxjira.murex.com/rest/api/latest/search'
-        response = JiraRequestHandler.getRequest(endpoint, params=JiraRequestHandler.buildAssigneeFilterParams(user=assignee, maxResults=maxResults))
+
+        filterParams = {
+            "jql" : f"assignee={assignee} AND cf[11369] IS NOT EMPTY ORDER BY created DESC",
+            "maxResults" : maxResults,
+        }
+        response = JiraRequestHandler.getRequest(endpoint, params=filterParams)
         
         if not response:
             return None
@@ -105,12 +109,37 @@ class JiraRequestHandler:
         return [IssueInfo(issue) for issue in issues]
 
     @staticmethod
+    def fetchLatestUnsubmittedIssue(assignee: str, version: str) -> IssueInfo:
+
+        # based on if the defect of the issue is found on the version
+        latestIssues: list[IssueInfo] = JiraRequestHandler.fetchDeveloperIssues(assignee, 20)
+        versionCls: list[Changelist] = P4Helper.getChangelists(version, developer=assignee)
+        buildCls: list[Changelist] = P4Helper.getChangelists(P4Helper.Build, developer=assignee)
+
+        submittedDefects: set[str] = set([cl.defect for cl in versionCls])
+
+        toReturn: IssueInfo = None
+        for issue in latestIssues:
+
+            if issue.defect not in submittedDefects:
+                toReturn = issue
+            else:
+                break
+
+        return toReturn
+
+    @staticmethod
     def _fetchIssueInfoByDefect(defect: str) -> IssueInfo:
 
         print(f'Looking for Jira issue with defect: {defect}...', file=sys.stderr)
 
         endpoint: str = 'https://mxjira.murex.com/rest/api/latest/search'
-        response = JiraRequestHandler.getRequest(endpoint, params=JiraRequestHandler.buildDefectFilterParams(defect))
+
+        filterParams = {
+            "jql" : f"cf[11369]={defect}",
+            "maxResults" : 1,
+        }
+        response = JiraRequestHandler.getRequest(endpoint, params=filterParams)
         
         if not response:
             return None
@@ -162,6 +191,7 @@ if __name__ == '__main__':
 
     # example usage
 
-    for jiraIssue in JiraRequestHandler.fetchUsersIssues('yoyammine', 100):
+    session = SessionInfo()
+    issue = JiraRequestHandler.fetchLatestUnsubmittedIssue(session.username, session.version)
 
-        print(jiraIssue.__dict__, end='\n\n')
+    print(issue.toPerforceDescription(withId=True))
