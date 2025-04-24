@@ -4,6 +4,8 @@ import os
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 import cli
+import tempfile
+
 import re
 
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -373,6 +375,36 @@ class P4Helper:
 
         return unmergedCls
 
+    @staticmethod
+    def moveFilesInDefaultToNewChangelist(description: str = 'Opened using p4helper.py'):
+
+        command: str = 'p4 change -o'
+        result = cli.runCommand(command)
+        
+        if result.returncode != 0:
+            return
+
+        clInfo: str = result.stdout
+
+        if not re.search('^Files', clInfo, flags=re.MULTILINE):
+
+            print(f'No open files in default changelist.', file=sys.stderr)
+            return
+
+        clInfo = re.sub('<enter description here>', description, clInfo, flags=re.IGNORECASE | re.MULTILINE)
+
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as tempFile:
+
+            tempFile.write(clInfo)
+            command = f'p4 change -i < {tempFile.name}'
+
+        result = cli.runCommand(command)
+        os.remove(tempFile.name)
+        if result.returncode != 0:
+            return
+
+        print(result.stdout)
+        print(description)
 
 if __name__ == '__main__':
 

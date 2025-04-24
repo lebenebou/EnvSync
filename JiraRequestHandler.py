@@ -194,4 +194,5 @@ if __name__ == '__main__':
     session = SessionInfo()
     issue = JiraRequestHandler.fetchLatestUnsubmittedIssue(session.username, session.version)
 
-    print(issue.toPerforceDescription(withId=True))
+    description: str = issue.toPerforceDescription(withId=True)
+    P4Helper.moveFilesInDefaultToNewChangelist(description)
