@@ -25,7 +25,7 @@ class IssueInfo:
 
         self.summary: str = data.get('fields', {}).get('summary')
 
-    def toPerforceDescription(self, withId: bool = True, revert: bool = False) -> str:
+    def toPerforceDescription(self, withId: bool = False, revert: bool = False) -> str:
 
         description: str = ''
         description += f'[{self.defect}]'
@@ -38,6 +38,9 @@ class IssueInfo:
 
         description += self.summary
         return description
+
+    def __str__(self) -> str:
+        return self.toPerforceDescription()
 
 class JiraRequestHandler:
 
@@ -109,24 +112,28 @@ class JiraRequestHandler:
         return [IssueInfo(issue) for issue in issues]
 
     @staticmethod
-    def fetchLatestUnsubmittedIssue(assignee: str, version: str) -> IssueInfo:
+    def fetchLatestUnsubmittedIssue(assignee: str, version: str, verbose: bool = False) -> IssueInfo:
 
         # based on if the defect of the issue is found on the version
         latestIssues: list[IssueInfo] = JiraRequestHandler.fetchDeveloperIssues(assignee, 20)
         versionCls: list[Changelist] = P4Helper.getChangelists(version, developer=assignee)
         buildCls: list[Changelist] = P4Helper.getChangelists(P4Helper.Build, developer=assignee)
 
+        if verbose:
+            print(f'Filering out submitted defects...', file=sys.stderr)
         submittedDefects: set[str] = set([cl.defect for cl in versionCls])
+        submittedDefects.update(cl.defect for cl in buildCls)
 
-        toReturn: IssueInfo = None
         for issue in latestIssues:
 
             if issue.defect not in submittedDefects:
-                toReturn = issue
-            else:
-                break
+                print('[FOUND]', issue, file=sys.stderr)
+                return issue
 
-        return toReturn
+            if verbose:
+                print('[ALREADY SUBMITTED]', issue, file=sys.stderr)
+
+        return None
 
     @staticmethod
     def _fetchIssueInfoByDefect(defect: str) -> IssueInfo:
@@ -191,8 +198,12 @@ if __name__ == '__main__':
 
     # example usage
 
-    session = SessionInfo()
-    issue = JiraRequestHandler.fetchLatestUnsubmittedIssue(session.username, session.version)
+    session = SessionInfo(forceVerbose=True)
+    issue = JiraRequestHandler.fetchLatestUnsubmittedIssue(session.username, session.version, session.verbose)
+
+    if not issue:
+        print(f'No issue found', file=sys.stderr)
+        exit(1)
 
     description: str = issue.toPerforceDescription(withId=True)
     P4Helper.moveFilesInDefaultToNewChangelist(description)
