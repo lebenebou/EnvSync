@@ -36,6 +36,7 @@ class IssueInfo:
         if withId:
             description += f'[{self.id}]'
 
+        description += ' '
         description += self.summary
         return description
 
