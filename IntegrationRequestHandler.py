@@ -97,7 +97,7 @@ class IntegrationRequestHandler:
     @staticmethod
     def integrateToMainstream(input: IntegrationInput) -> str:
         
-        from JenkingsRequestHandler import JenkinsRequestHandler
+        from JenkinsRequestHandler import JenkinsRequestHandler
         print(f'Integrating {len(input.defectIds)} defect(s) to mainsream...', file=sys.stderr)
         success: bool = JenkinsRequestHandler.lynxPipelineIntegrateToMainstream(input)
 

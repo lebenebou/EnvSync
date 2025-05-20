@@ -3,7 +3,7 @@ import argparse
 
 from typing import List, Dict
 from GqafRequestHandler import printObjectList, DeploymentJob
-from JenkingsRequestHandler import JenkinsRequestHandler, getPipelineBuildsByChangelist, FailureReason
+from JenkinsRequestHandler import JenkinsRequestHandler, getPipelineBuildsByChangelist, FailureReason
 from SessionInfo import SessionInfo
 
 class RichChangelistRow:
