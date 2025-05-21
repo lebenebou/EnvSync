@@ -8,6 +8,7 @@ from SessionInfo import SessionInfo
 from p4Helper import P4Helper, Changelist
 
 import sys
+import argparse
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -197,10 +198,19 @@ class JiraRequestHandler:
 
 if __name__ == '__main__':
 
-    # example usage
+    parser = argparse.ArgumentParser(description='Open any Mx string')
+    parser.add_argument('idOrDefect', type=str, nargs='?') # optional
 
-    session = SessionInfo(forceVerbose=True)
-    issue = JiraRequestHandler.fetchLatestUnsubmittedIssue(session.username, session.version, session.verbose)
+    args = parser.parse_args()
+
+    idOrDefect: str = args.idOrDefect
+
+    if not idOrDefect:
+        session = SessionInfo(forceVerbose=True)
+        issue = JiraRequestHandler.fetchLatestUnsubmittedIssue(session.username, session.version, session.verbose)
+
+    else:
+        issue = JiraRequestHandler.fetchIssueInfo(idOrDefect)
 
     if not issue:
         print(f'No issue found', file=sys.stderr)
