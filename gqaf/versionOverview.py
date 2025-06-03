@@ -1,10 +1,45 @@
 
 import argparse
 
-from typing import List, Dict
+from typing import List, Callable
 from GqafRequestHandler import printObjectList, DeploymentJob
 from JenkinsRequestHandler import JenkinsRequestHandler, getPipelineBuildsByChangelist, FailureReason
 from SessionInfo import SessionInfo
+
+import os
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(CURRENT_DIR)
+
+import sys
+sys.path.append(PARENT_DIR)
+
+from p4Helper import Changelist
+CellValueCallback = Callable[[Changelist], str]
+
+class RichVersionView:
+
+    def __init__(self, changelists: list[Changelist]):
+
+        self.columnNames: list[str] = []
+        self.columnCallbacks: list[CellValueCallback] = []
+        self.changelists: list[Changelist] = changelists
+
+    def addColumn(self, name: str, callback: CellValueCallback):
+        self.columnNames.append(name)
+        self.columnCallbacks.append(callback)
+
+    def printOut(self):
+
+        for columnName in self.columnNames:
+            print(columnName, end='\t')
+        print()
+
+        for changelist in self.changelists:
+
+            for callback in self.columnCallbacks:
+                print(callback(changelist), end='\t')
+
+            print()
 
 class RichChangelistRow:
 
@@ -102,13 +137,17 @@ if __name__ == '__main__':
 
     session = SessionInfo()
 
-    parser = argparse.ArgumentParser('Fetch setups')
+    parser = argparse.ArgumentParser('Show rich version view')
 
     parser.add_argument('--csv', action='store_true', default=False, help='Output in CSV format')
-    parser.add_argument('--all', action='store_true', default=False, help='Show all changelists')
+    parser.add_argument('--all', action='store_true', default=False, help='Show all changelists instead of 20')
 
     args, _ = parser.parse_known_args()
 
-    richRows: List[RichChangelistRow] = getRichRows(session, (20 if not args.all else None))
-    printObjectList(richRows, args.csv)
+    # richRows: List[RichChangelistRow] = getRichRows(session, (20 if not args.all else None))
+    # printObjectList(richRows, args.csv)
+
+    myView = RichVersionView(session.fetchChangelistPool(True, 20))
+    myView.addColumn('changelist', lambda cl: cl.value)
+    myView.printOut()
     session.close()
