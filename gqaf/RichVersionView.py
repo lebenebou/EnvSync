@@ -57,6 +57,28 @@ class RichVersionView:
         rows = self.buildRows()
         printObjectList(rows, csv=csv)
 
+def createRichJenkinsView(session: SessionInfo, cppPool: dict[int, JenkinsBuild], asanPool: dict[int, JenkinsBuild]) -> RichVersionView:
+
+    jenkinsRichView = RichVersionView(session.fetchChangelistPool(lazy=True, limit=20))
+    jenkinsRichView.addColumn('developer', lambda cl: cl.developer)
+    jenkinsRichView.addColumn('changelist', lambda cl: cl.value)
+
+    def getCppStatus(cl: Changelist) -> str: return getPipelineStatus(cppPool, cl)
+    jenkinsRichView.addColumn('cpp', getCppStatus)
+
+    def getCppFailureMessage(cl: Changelist) -> str: return getPipelineFailureMessage(cppPool, cl)[:30]
+    jenkinsRichView.addColumn('cppReason', getCppFailureMessage)
+
+    def getAsanStatus(cl: Changelist) -> str: return getPipelineStatus(asanPool, cl)
+    jenkinsRichView.addColumn('asan', getAsanStatus)
+
+    def getAsanFailureMessage(cl: Changelist) -> str: return getPipelineFailureMessage(asanPool, cl)[:30]
+    jenkinsRichView.addColumn('asanReason', getAsanFailureMessage)
+
+    jenkinsRichView.addColumn('description', lambda cl: cl.allTags(True))
+
+    return jenkinsRichView
+
 def createSetupsRichView(session: SessionInfo) -> RichVersionView:
 
     setupsRichView = RichVersionView(session.fetchChangelistPool(lazy=True, limit=20))
@@ -104,6 +126,19 @@ def createSetupsRichView(session: SessionInfo) -> RichVersionView:
     setupsRichView.addColumn('description', lambda cl: f'[{cl.defect}]{cl.allTags()}{cl.description[:30]}')
 
     return setupsRichView
+
+def getPipelineFailureMessage(pool: dict[int, JenkinsBuild], cl: Changelist) -> str:
+
+    if not pool or not (cl.value in pool):
+        return '----'
+
+    build = pool[cl.value]
+
+    if not build.isFailed():
+        return '----'
+
+    _, message = build.guessFailureReason()
+    return message
 
 def getPipelineStatus(pool: dict[int, JenkinsBuild], cl: Changelist) -> str:
 

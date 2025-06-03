@@ -1,14 +1,14 @@
 
 import settings
-import SessionInfo
+from SessionInfo import SessionInfo
 
 import re
-import json
 
 import requests
 from typing import List, Dict
 
 import sys
+sys.path.append('./gqaf')
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
@@ -417,36 +417,15 @@ if __name__ == '__main__':
 
     # example usage
 
-    version = SessionInfo.SessionInfo().version
+    session = SessionInfo()
+    version = session.version
     alienAsan = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/AsanValidation/'
     alienCpp = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/CppValidation/'
 
     asanPipeline: PipelineInfo = JenkinsRequestHandler.getPipelineInfo(alienAsan)
+    asanPool = getPipelineBuildsByChangelist(asanPipeline)
     cppPipeline: PipelineInfo = JenkinsRequestHandler.getPipelineInfo(alienCpp)
+    cppPool = getPipelineBuildsByChangelist(cppPipeline)
 
-    if not asanPipeline:
-        print(f'Couldn\'t get pipeline info')
-        exit(1)
-
-    print(cppPipeline.name)
-    builds = getPipelineBuildsByChangelist(cppPipeline)
-    for cl in sorted(builds.keys(), reverse=True):
-
-        build = builds.get(cl)
-        print(build, end='\t')
-        if build.isFailed():
-            print(build.guessFailureReason(), end='')
-
-        print(flush=True)
-
-    print()
-    print(asanPipeline.name)
-    builds = getPipelineBuildsByChangelist(asanPipeline)
-    for cl in sorted(builds.keys(), reverse=True):
-
-        build = builds.get(cl)
-        print(build, end='\t')
-        if build.isFailed():
-            print(build.guessFailureReason(), end='')
-
-        print(flush=True)
+    from gqaf.RichVersionView import createRichJenkinsView
+    createRichJenkinsView(session, cppPool, asanPool).printOut()
