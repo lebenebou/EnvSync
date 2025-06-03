@@ -2,8 +2,8 @@
 import argparse
 
 from typing import List, Callable
-from GqafRequestHandler import printObjectList, DeploymentJob
-from JenkinsRequestHandler import JenkinsRequestHandler, getPipelineBuildsByChangelist, FailureReason
+from GqafRequestHandler import printObjectList, DeploymentJob, BuildJob
+from JenkinsRequestHandler import JenkinsRequestHandler, getPipelineBuildsByChangelist, JenkinsBuild
 from SessionInfo import SessionInfo
 
 import os
@@ -15,6 +15,13 @@ sys.path.append(PARENT_DIR)
 
 from p4Helper import Changelist
 CellValueCallback = Callable[[Changelist], str]
+
+class Row:
+    def __init__(self):
+        pass # attributes will be added dynamically
+        # self.changelist = ...
+        # self.developer = ...
+        # self.cpp = ...
 
 class RichVersionView:
 
@@ -28,45 +35,125 @@ class RichVersionView:
         self.columnNames.append(name)
         self.columnCallbacks.append(callback)
 
-    def printOut(self):
+    def buildRows(self) -> list[Row]:
 
-        for columnName in self.columnNames:
-            print(columnName, end='\t')
-        print()
+        assert self.changelists, 'no changelists to create rows from'
 
-        for changelist in self.changelists:
+        rows: list[Row] = []
+        for cl in self.changelists:
 
-            for callback in self.columnCallbacks:
-                print(callback(changelist), end='\t')
+            row = Row()
 
-            print()
+            for i, callback in enumerate(self.columnCallbacks):
+                colName = self.columnNames[i]
+                setattr(row, colName, callback(cl))
 
-class RichChangelistRow:
+            rows.append(row)
 
-    def __init__(self):
-        
-        self.developer: str = None
-        self.changelist: int = None
+        return rows
 
-        self.linux: str = None
-        self.jobsPushed: int = None
+    def printOut(self, csv: bool = False):
 
-        self.cpp: str = None
-        self.asan: str = None
+        rows = self.buildRows()
+        printObjectList(rows, csv=csv)
 
-        self.cpp: str = None
-        self.asan: str = None
-        self.freyja: str = None
+def createSetupsRichView(session: SessionInfo) -> RichVersionView:
 
-        self.info: str = None
+    setupsRichView = RichVersionView(session.fetchChangelistPool(lazy=True, limit=20))
+    setupsRichView.addColumn('developer', lambda cl: cl.developer)
+    setupsRichView.addColumn('changelist', lambda cl: cl.value)
 
-def getRichRows(session: SessionInfo, limit: int = None) -> List[RichChangelistRow]:
+    def getWindowsSetupsStatus(cl: Changelist) -> str:
 
-    toReturn: List[RichChangelistRow] = []
+        setupsPool = session.fetchSetupsPool(lazy=True)
+        builds = [build for build in setupsPool.get(cl.value, []) if build.isWindows()]
+        if len(builds) == 0:
+            return '----'
+        else:
+            bestBuild = max(builds, key=lambda b: b.relevancy())
+            return bestBuild.status
+    setupsRichView.addColumn('windows', getWindowsSetupsStatus)
 
-    chaneglistPool = session.fetchChangelistPool(lazy=True, limit=limit)
-    jobsPool = session.fetchJobsPool(lazy=True)
-    setupsPool = session.fetchSetupsPool(lazy=True)
+    def getLinuxSetupsStatus(cl: Changelist) -> str:
+
+        setupsPool = session.fetchSetupsPool(lazy=True)
+        builds = [build for build in setupsPool.get(cl.value, []) if build.isLinux()]
+        if len(builds) == 0:
+            return '----'
+        else:
+            bestBuild = max(builds, key=lambda b: b.relevancy())
+            return bestBuild.status
+    setupsRichView.addColumn('linux', getLinuxSetupsStatus)
+
+    def getLinuxSetupsBuildId(cl: Changelist) -> str:
+
+        bestLinuxBuild: BuildJob = None
+        bestWindowsBuild: BuildJob = None
+
+        setupsPool = session.fetchSetupsPool(lazy=True)
+        linuxBuilds: list[BuildJob] = setupsPool.get(cl.value, None)
+
+        if not linuxBuilds:
+            return '----'
+
+        bestLinuxBuild = max(linuxBuilds, key=lambda b: b.relevancy())
+        return bestLinuxBuild.buildId
+
+    setupsRichView.addColumn('buildId', getLinuxSetupsBuildId)
+
+    setupsRichView.addColumn('description', lambda cl: f'[{cl.defect}]{cl.allTags()}{cl.description[:30]}')
+
+    return setupsRichView
+
+def getPipelineStatus(pool: dict[int, JenkinsBuild], cl: Changelist) -> str:
+
+    if not pool or not (cl.value in pool):
+        return '----'
+
+    build = pool.get(cl.value)
+
+    if build.isFailed():
+        reason, _ = build.guessFailureReason()
+        return 'RED' if reason.name == 'Unknown' else reason.name
+
+    return build.status()
+
+if __name__ == '__main__':
+
+    session = SessionInfo()
+
+    parser = argparse.ArgumentParser('Show rich version view')
+
+    parser.add_argument('--csv', action='store_true', default=False, help='Output in CSV format')
+    parser.add_argument('--all', action='store_true', default=False, help='Show all changelists instead of 20')
+
+    args, _ = parser.parse_known_args()
+
+    myView = RichVersionView(session.fetchChangelistPool(True, 20))
+    myView.addColumn('developer', lambda cl: cl.developer)
+    myView.addColumn('changelist', lambda cl: cl.value)
+
+    def getLinuxSetupsStatus(cl: Changelist) -> str:
+
+        setupsPool = session.fetchSetupsPool(lazy=True)
+        builds = [build for build in setupsPool.get(cl.value, []) if build.isLinux()]
+        if len(builds) == 0:
+            return '----'
+        else:
+            bestBuild = max(builds, key=lambda b: b.relevancy())
+            return bestBuild.status
+    myView.addColumn('linux', getLinuxSetupsStatus)
+
+    def getNumberOfJobsPushed(cl: Changelist) -> str:
+
+        jobsPool = session.fetchJobsPool(True)
+        clJobs: List[DeploymentJob] = jobsPool.get(cl.value, [])
+
+        redJobs = len([j for j in clJobs if j.isFailed()])
+        greenJobs = len([j for j in clJobs if j.isPassed()])
+
+        return str(len(clJobs))
+    myView.addColumn('jobspushed', getNumberOfJobsPushed)
 
     # pipelines
     cppLink = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{session.version}/job/CppValidation/'
@@ -81,73 +168,19 @@ def getRichRows(session: SessionInfo, limit: int = None) -> List[RichChangelistR
     freyjaPipeline = JenkinsRequestHandler.getPipelineInfo(freyjaLink)
     freyjaPool = getPipelineBuildsByChangelist(freyjaPipeline)
 
-    for i, cl in enumerate(chaneglistPool):
+    def getCppPipelineStatus(cl: Changelist) -> str:
+        return getPipelineStatus(cppPool, cl)
+    myView.addColumn('cpp', getCppPipelineStatus)
 
-        if limit and limit == i:
-            break
+    def getAsanPipelineStatus(cl: Changelist) -> str:
+        return getPipelineStatus(asanPool, cl)
+    myView.addColumn('asan', getAsanPipelineStatus)
 
-        richRow = RichChangelistRow()
-        richRow.changelist = cl.value
-        richRow.developer = cl.developer
+    def getFreyjaPipelineStatus(cl: Changelist) -> str:
+        return getPipelineStatus(freyjaPool, cl)
+    myView.addColumn('freyja', getFreyjaPipelineStatus)
 
-        linuxBuilds = [build for build in setupsPool.get(cl.value, []) if build.isLinux()]
-        if len(linuxBuilds) == 0:
-            richRow.linux = '----'
-        else:
-            bestLinuxBuild = max(linuxBuilds, key=lambda b: b.relevancy())
-            richRow.linux = bestLinuxBuild.status
+    myView.addColumn('info', lambda cl: cl.allTags())
 
-        clJobs: List[DeploymentJob] = jobsPool.get(cl.value, [])
-        richRow.jobsPushed = len(clJobs)
-
-        redJobs = len([j for j in clJobs if j.isFailed()])
-        greenJobs = len([j for j in clJobs if j.isPassed()])
-
-        richRow.cpp = '----'
-        if cppPool and cl.value in cppPool:
-
-            build = cppPool.get(cl.value)
-            richRow.cpp = build.status()
-
-            if build.isFailed():
-                reason, _ = build.guessFailureReason()
-                richRow.cpp = 'RED' if reason.name == 'Unknown' else reason.name
-
-        richRow.asan = '----'
-        if asanPool and cl.value in asanPool:
-
-            build = asanPool.get(cl.value)
-            richRow.asan = build.status()
-
-            if build.isFailed():
-                reason, _ = build.guessFailureReason()
-                richRow.asan = 'RED' if reason.name == 'Unknown' else reason.name
-
-        richRow.freyja = '----'
-        if freyjaPool and cl.value in freyjaPool:
-            richRow.freyja = freyjaPool.get(cl.value).status()
-
-        richRow.info = cl.allTags(withDefect=True)
-
-        toReturn.append(richRow)
-
-    return toReturn
-
-if __name__ == '__main__':
-
-    session = SessionInfo()
-
-    parser = argparse.ArgumentParser('Show rich version view')
-
-    parser.add_argument('--csv', action='store_true', default=False, help='Output in CSV format')
-    parser.add_argument('--all', action='store_true', default=False, help='Show all changelists instead of 20')
-
-    args, _ = parser.parse_known_args()
-
-    # richRows: List[RichChangelistRow] = getRichRows(session, (20 if not args.all else None))
-    # printObjectList(richRows, args.csv)
-
-    myView = RichVersionView(session.fetchChangelistPool(True, 20))
-    myView.addColumn('changelist', lambda cl: cl.value)
-    myView.printOut()
+    myView.printOut(args.csv)
     session.close()
