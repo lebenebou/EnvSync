@@ -5,7 +5,7 @@ import json
 
 from GqafRequestHandler import GqafRequestHandler, printObjectList
 from SessionInfo import SessionInfo
-from versionOverview import RichVersionView, createSetupsRichView
+from RichVersionView import RichVersionView, createSetupsRichView
 
 def setupsRowsFromSession(session: SessionInfo, limit: int = 20):
 
