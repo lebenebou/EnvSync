@@ -75,7 +75,7 @@ class BuildJob:
         return self.customized != 'standard'
 
     def isValid(self) -> bool:
-        return all([self.deployer, self.buildId])
+        return all([self.buildId])
 
     def relevancy(self) -> int:
 
