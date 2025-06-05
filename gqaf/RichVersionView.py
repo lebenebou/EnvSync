@@ -215,7 +215,7 @@ if __name__ == '__main__':
         return getPipelineStatus(freyjaPool, cl)
     myView.addColumn('freyja', getFreyjaPipelineStatus)
 
-    myView.addColumn('info', lambda cl: cl.allTags())
+    myView.addColumn('info', lambda cl: f'[{cl.defect}]' + cl.allTags())
 
     myView.printOut(args.csv)
     session.close()
