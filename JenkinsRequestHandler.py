@@ -38,6 +38,7 @@ class FailureReason(Enum):
     UseAfterFree = 4
     TestCrash = 5
     SegFault = 6
+    BufferOverflow = 7
 
     def __str__(self):
         return self.name
@@ -199,6 +200,11 @@ class JenkinsBuild:
             if m:
                 guilyTest: str = re.search(r'RUN\s*\]\s*(\S+)', logLines[i-1]).group(1)
                 return (FailureReason.SegFault, guilyTest)
+
+            # Stack Buffer Overflow
+            m = re.search(r'ERROR:\s+AddressSanitizer:\s+stack-buffer-overflow', line, re.IGNORECASE)
+            if m:
+                return (FailureReason.BufferOverflow, 'BufferOverflow')
 
         return (FailureReason.Unknown, 'Unknown Failure')
 
