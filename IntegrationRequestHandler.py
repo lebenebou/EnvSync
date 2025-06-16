@@ -209,19 +209,7 @@ if __name__ == '__main__':
         exit(1)
 
     linesToParse: List[str] = []
-    if not args.file_to_parse:
-        linesToParse = readStdinLines()
-    else:
-        fileToParse: str = args.file_to_parse.strip()
-        if not os.path.exists(fileToParse):
-            print(f'Path does not exist: {fileToParse}')
-            exit(1)
-
-        if not os.path.isfile(fileToParse):
-            print(f'Not a file: {fileToParse}')
-            exit(1)
-
-        linesToParse = readFileLines(fileToParse)
+    linesToParse = readStdinLines()
 
     inputs: IntegrationInput = parseIntegrationInputFromLines(linesToParse, verbose=session.verbose)
     inputs.requester = session.username
