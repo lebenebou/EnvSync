@@ -376,21 +376,50 @@ class P4Helper:
         return unmergedCls
 
     @staticmethod
-    def moveFilesInDefaultToNewChangelist(description: str = 'Opened using p4helper.py'):
+    def filesAreOpenInDefault() -> bool:
 
         command: str = 'p4 change -o'
         result = cli.runCommand(command)
         
         if result.returncode != 0:
-            return
+            return 'unhandled'
 
         clInfo: str = result.stdout
 
         if not re.search('^Files', clInfo, flags=re.MULTILINE):
 
             print(f'No open files in default changelist.', file=sys.stderr)
-            return
+            return False
 
+        return True
+
+    @staticmethod
+    def revertChangelist(changelist: int, verbose: bool = False) -> int:
+
+        if P4Helper.filesAreOpenInDefault():
+            print(f'Some files are open in default changelist.', file=sys.stderr)
+            return 1
+
+        submittedCl: Changelist = P4Helper._getChangelist(changelist, verbose=verbose)
+
+        command: str = f'p4 undo -c default @={changelist}'
+        result = cli.runCommand(command)
+
+        if result.returncode != 0:
+            return result.returncode
+
+        submittedCl.tags.insert(0, 'REVERT')
+        revertDescription = f'{submittedCl.allTags(withDefect=True)} {submittedCl.description}'
+        returCode: int = P4Helper.moveFilesInDefaultToNewChangelist(revertDescription)
+        return returCode
+
+    @staticmethod
+    def moveFilesInDefaultToNewChangelist(description: str = 'Opened using p4helper.py') -> int:
+
+        if not P4Helper.filesAreOpenInDefault():
+            return 1
+
+        clInfo: str = cli.runCommand('p4 change -o').stdout
         clInfo = re.sub('<enter description here>', description, clInfo, flags=re.IGNORECASE | re.MULTILINE)
 
         with tempfile.NamedTemporaryFile(mode='w', delete=False) as tempFile:
@@ -401,10 +430,11 @@ class P4Helper:
         result = cli.runCommand(command)
         os.remove(tempFile.name)
         if result.returncode != 0:
-            return
+            return result.returncode
 
         print(result.stdout)
         print(description)
+        return 0
 
 if __name__ == '__main__':
 
@@ -418,10 +448,20 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Display changelists')
 
     parser.add_argument('--unmerged', nargs='?', const=P4Helper.Build, default=None, type=str, help='only changelists which are unmerged (based on defectID)')
+    parser.add_argument('--revert', type=int, default=0, help='The changelist to revert locally')
     parser.add_argument('-m', '--max-results', default=None, type=int, help='limit the output to a certain number of changelists')
     parser.add_argument('-f', '--file', type=str, nargs='?', const='.*', default=None, help='output changelit files. if value is given, filter on matching files by regex')
 
     args, _ = parser.parse_known_args()
+
+    if args.revert:
+
+        returnCode: int = P4Helper.revertChangelist(args.revert, session.verbose)
+        if returnCode == 0:
+            exit(0)
+
+        print(f'Could not revert changelist: {args.revert}', file=sys.stderr)
+        exit(1)
 
     if session.changelist:
 
