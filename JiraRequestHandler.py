@@ -4,9 +4,6 @@ import settings
 import requests
 import re
 
-from SessionInfo import SessionInfo
-from p4Helper import P4Helper, Changelist
-
 import sys
 import argparse
 
@@ -37,12 +34,14 @@ class IssueInfo:
         if withId:
             description += f'[{self.id}]'
 
-        description += ' '
+        if not self.summary.startswith('['):
+            description += ' '
+
         description += self.summary
         return description
 
     def __str__(self) -> str:
-        return self.toPerforceDescription()
+        return self.toPerforceDescription(withId=True)
 
 class JiraRequestHandler:
 
@@ -90,14 +89,29 @@ class JiraRequestHandler:
         return response
 
     @staticmethod
-    def fetchDeveloperIssues(assignee: str, maxResults: int = 20) -> list[IssueInfo]:
+    def fetchDeveloperIssues(assignee: str, maxResults: int = 20, searchTerm: str = None) -> list[IssueInfo]:
 
-        print(f'Fetching Jira issues assigned to {assignee}... (limiting search to {maxResults})', file=sys.stderr)
+        jqlStatement: str = f"assignee={assignee} AND cf[11369] IS NOT EMPTY"
+
+        if searchTerm:
+            searchTerm.strip('*')
+            searchTerm = '*' + searchTerm + '*'
+            jqlStatement += f" AND summary ~ \"{searchTerm}\""
+
+        if True:
+            jqlStatement += f" ORDER BY created DESC"
+
+        message: str = f'Fetching Jira issues assigned to {assignee}... (limiting search to {maxResults}'
+        if searchTerm:
+            message += f' and looking for "{searchTerm}"'
+
+        message += ')'
+        print(message, file=sys.stderr)
 
         endpoint: str = 'https://mxjira.murex.com/rest/api/latest/search'
 
         filterParams = {
-            "jql" : f"assignee={assignee} AND cf[11369] IS NOT EMPTY ORDER BY created DESC",
+            "jql" : jqlStatement,
             "maxResults" : maxResults,
         }
         response = JiraRequestHandler.getRequest(endpoint, params=filterParams)
@@ -112,30 +126,6 @@ class JiraRequestHandler:
             return []
 
         return [IssueInfo(issue) for issue in issues]
-
-    @staticmethod
-    def fetchLatestUnsubmittedIssue(assignee: str, version: str, verbose: bool = False) -> IssueInfo:
-
-        # based on if the defect of the issue is found on the version
-        latestIssues: list[IssueInfo] = JiraRequestHandler.fetchDeveloperIssues(assignee, 20)
-        versionCls: list[Changelist] = P4Helper.getChangelists(version, developer=assignee)
-        buildCls: list[Changelist] = P4Helper.getChangelists(P4Helper.Build, developer=assignee)
-
-        if verbose:
-            print(f'Filering out submitted defects...', file=sys.stderr)
-        submittedDefects: set[str] = set([cl.defect for cl in versionCls])
-        submittedDefects.update(cl.defect for cl in buildCls)
-
-        for issue in latestIssues:
-
-            if issue.defect not in submittedDefects:
-                print('[FOUND]', issue, file=sys.stderr)
-                return issue
-
-            if verbose:
-                print('[ALREADY SUBMITTED]', issue, file=sys.stderr)
-
-        return None
 
     @staticmethod
     def _fetchIssueInfoByDefect(defect: str) -> IssueInfo:
@@ -184,7 +174,7 @@ class JiraRequestHandler:
     @staticmethod
     def fetchIssueInfo(issueIdOrDefect: str) -> IssueInfo:
 
-        m = re.match(P4Helper.DefectRegex, issueIdOrDefect)
+        m = re.match(r'DEF\d+', issueIdOrDefect)
         if m:
             return JiraRequestHandler._fetchIssueInfoByDefect(m.group())
 
@@ -198,23 +188,28 @@ class JiraRequestHandler:
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Open any Mx string')
-    parser.add_argument('idOrDefect', type=str, nargs='?') # optional
+    parser = argparse.ArgumentParser(description='Helper for Jira points')
+    parser.add_argument('--id', default=None, type=str, help='Jira ID or Defect ID', required=False)
+    parser.add_argument('-m', '--max-results', default=20, type=int, help='limit the output to a certain number of jira issues')
+    parser.add_argument('-s', '--search', default=None, type=str, help='filter on points with this substring in the summary')
 
-    args = parser.parse_args()
+    args, _ = parser.parse_known_args()
 
-    idOrDefect: str = args.idOrDefect
+    parsedId: str = args.id
+    if parsedId:
 
-    if not idOrDefect:
-        session = SessionInfo(forceVerbose=True)
-        issue = JiraRequestHandler.fetchLatestUnsubmittedIssue(session.username, session.version, session.verbose)
+        issue = JiraRequestHandler.fetchIssueInfo(parsedId)
+        if not issue:
+            print(f'Issue not found: {parsedId}', file=sys.stderr)
+            exit(1)
 
-    else:
-        issue = JiraRequestHandler.fetchIssueInfo(idOrDefect)
+        print(issue)
+        exit(0)
 
-    if not issue:
-        print(f'No issue found', file=sys.stderr)
-        exit(1)
+    from SessionInfo import SessionInfo
+    session = SessionInfo()
+    issues: list[IssueInfo] = JiraRequestHandler.fetchDeveloperIssues(session.username, maxResults=args.max_results, searchTerm=args.search)
+    for issue in issues:
+        print(issue)
 
-    description: str = issue.toPerforceDescription(withId=True)
-    P4Helper.moveFilesInDefaultToNewChangelist(description)
+    exit(0)
