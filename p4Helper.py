@@ -8,6 +8,8 @@ import tempfile
 
 import re
 
+from JiraRequestHandler import JiraRequestHandler
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import xml.etree.ElementTree as xmlParser
@@ -449,10 +451,22 @@ if __name__ == '__main__':
 
     parser.add_argument('--unmerged', nargs='?', const=P4Helper.Build, default=None, type=str, help='only changelists which are unmerged (based on defectID)')
     parser.add_argument('--revert', type=int, default=0, help='The changelist to revert locally')
+    parser.add_argument('--submit', type=str, default=0, help='Create a changelist by fetching the description from a Jira ID or Defect ID')
     parser.add_argument('-m', '--max-results', default=None, type=int, help='limit the output to a certain number of changelists')
     parser.add_argument('-f', '--file', type=str, nargs='?', const='.*', default=None, help='output changelit files. if value is given, filter on matching files by regex')
 
     args, _ = parser.parse_known_args()
+
+    if args.submit:
+
+        issue = JiraRequestHandler.fetchIssueInfo(args.submit)
+        if not issue:
+            print(f'Issue not found: {args.submit}', file=sys.stderr)
+            exit(1)
+
+        description: str = issue.toPerforceDescription(withId=True)
+        code: int = P4Helper.moveFilesInDefaultToNewChangelist(description)
+        exit(code)
 
     if args.revert:
 
