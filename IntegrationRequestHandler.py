@@ -246,7 +246,7 @@ if __name__ == '__main__':
     print(end='\n', file=sys.stderr, flush=True)
     print('READY TO INTEGRATE', end='\n\n', file=sys.stderr, flush=True)
 
-    inputJson: str = json.dumps(inputs.toJson())
+    inputJson: str = json.dumps(inputs.toJson(), indent=4)
     print(inputJson, file=sys.stdout, flush=True)
 
     if args.send:
