@@ -192,7 +192,11 @@ class JenkinsBuild:
             # Test Crash
             m = re.search(r'test crash detected', line, re.IGNORECASE)
             if m:
-                testThatCrashed: str = re.search(r'RUN\s*\]\s*(\S+)', logLines[i-1]).group(1)
+                m = re.search(r'RUN\s*\]\s*(\S+)', logLines[i-1])
+                if not m:
+                    m = re.search(r'RUN\s*\]\s*(\S+)', logLines[i-2])
+
+                testThatCrashed: str = m.group(1)
                 return (FailureReason.TestCrash, testThatCrashed)
 
             # Segmentation Fault

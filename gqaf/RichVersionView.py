@@ -66,13 +66,13 @@ def createRichJenkinsView(session: SessionInfo, cppPool: dict[int, JenkinsBuild]
     def getCppStatus(cl: Changelist) -> str: return getPipelineStatus(cppPool, cl)
     jenkinsRichView.addColumn('cpp', getCppStatus)
 
-    def getCppFailureMessage(cl: Changelist) -> str: return getPipelineFailureMessage(cppPool, cl)[:30]
+    def getCppFailureMessage(cl: Changelist) -> str: return getPipelineFailureMessage(cppPool, cl)
     jenkinsRichView.addColumn('cppReason', getCppFailureMessage)
 
     def getAsanStatus(cl: Changelist) -> str: return getPipelineStatus(asanPool, cl)
     jenkinsRichView.addColumn('asan', getAsanStatus)
 
-    def getAsanFailureMessage(cl: Changelist) -> str: return getPipelineFailureMessage(asanPool, cl)[:30]
+    def getAsanFailureMessage(cl: Changelist) -> str: return getPipelineFailureMessage(asanPool, cl)
     jenkinsRichView.addColumn('asanReason', getAsanFailureMessage)
 
     jenkinsRichView.addColumn('description', lambda cl: cl.allTags(True))
