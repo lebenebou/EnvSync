@@ -29,6 +29,6 @@ send() {
 
 	cdmiddleman
 	git add /root/MiddleMan/middle_man.md
-	git commit -m "$(date +%d-%m-%y)"
+	git commit -m "$(date '+%b %d %Y, %-I:%M %p')"
 	git push origin main
 }

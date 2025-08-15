@@ -1,2 +1,2 @@
 
-git commit -am "$(date +%d-%m-%y)" && git push origin main
+git commit -am "$(date '+%b %d %Y, %-I:%M %p')" && git push origin main
