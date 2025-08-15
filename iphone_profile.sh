@@ -1,41 +1,52 @@
 
+#!/bin/sh
 clear
 
-shopt -s expand_aliases
+cdmiddleman() {
+    cd /root/MiddleMan/ || {
+        echo "/root/MiddleMan/ directory does not exist." >&2
+        exit 1
+    }
+}
 
-alias cdmiddleman='cd /root/MiddleMan/'
-alias sync='cdmiddleman && git fetch origin && git reset --hard origin/main'
+sync_repo() {
+    cdmiddleman
+    git fetch origin
+    git reset --hard origin/main
+}
 
-echo "Re-directing into MiddleMan/ directory..." >&2 # stderr
-[ ! -d "/root/MiddleMan/" ] && { echo "/root/MiddleMan/ directory does not exist." >&2; return; }
+echo "Re-directing into MiddleMan/ directory..." >&2
 cdmiddleman
 
-echo "Syncing to repo..." >&2 # stderr
-sync
+echo "Syncing to repo..." >&2
+sync_repo
 
-echo "Updating /root/.profile ..." >&2 # stderr
-[ ! -f "/root/MiddleMan/iphone_profile.sh" ] && { echo "iphone_profile.sh does not exist" >&2; return; }
+echo "Updating /root/.profile ..." >&2
+if [ ! -f "/root/MiddleMan/iphone_profile.sh" ]; then
+    echo "iphone_profile.sh does not exist" >&2
+    exit 1
+fi
 cp /root/MiddleMan/iphone_profile.sh /root/.profile
 
-echo "" >&2 # stderr
-echo "ALL SET" >&2 # stderr
-echo "WELCOME, Youssef" >&2 # stderr
+echo "" >&2
+echo "ALL SET" >&2
+echo "WELCOME, Youssef" >&2
 
-alias ll='ls -l'
-alias back='cd .. && ls'
-alias cls='clear'
-alias gs='git status'
-alias reload='source /root/.profile'
+ll() { ls -l "$@"; }
+back() { cd .. && ls; }
+cls() { clear; }
+gs() { git status; }
+reload() { . /root/.profile; }
 
 send() {
-	sync
-	cdmiddleman
+    sync_repo
+    cdmiddleman
 
-	timestamp="$(date +%s)"
-	line="$timestamp $*"  # Prepend the unique integer to the line
-	echo "$line" >> middle_man.md
+    timestamp="$(date +%s)"
+    line="$timestamp $*"
+    echo "$line" >> middle_man.md
 
-	git add /root/MiddleMan/middle_man.md
-	git commit -m "$(date '+%b %d %Y, %-I:%M %p')"
-	git push origin main
+    git add /root/MiddleMan/middle_man.md
+    git commit -m "$(date '+%b %d %Y, %-I:%M %p')"
+    git push origin main
 }
