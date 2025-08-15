@@ -1,5 +1,8 @@
 
 clear
+
+shopt -s expand_aliases
+
 alias cdmiddleman='cd /root/MiddleMan/'
 alias sync='cdmiddleman && git fetch origin && git reset --hard origin/main'
 
