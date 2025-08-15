@@ -12,7 +12,7 @@ sync
 
 echo "Updating /root/.profile ..." >&2 # stderr
 [ ! -f "/root/MiddleMan/iphone_profile.sh" ] && { echo "iphone_profile.sh does not exist" >&2; return; }
-cat /root/MiddleMan/iphone_profile.sh > /root/.profile
+cp /root/MiddleMan/iphone_profile.sh /root/.profile
 
 echo "ALL SET" >&2 # stderr
 echo "WELCOME, Youssef" >&2 # stderr
