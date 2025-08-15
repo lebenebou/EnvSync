@@ -6,8 +6,8 @@ echo "Re-directing into MiddleMan/..." >&2 # stderr
 cd MiddleMan/
 
 echo "Pulling from git..." >&2 # stderr
-git pull origin main
-git reset --hard origin/main
+git pull origin main 2>/dev/null
+git reset --hard origin/main 2>/dev/null
 
 echo "Updating /root/.profile ..." >&2 # stderr
 [ ! -f "iphone_profile.sh" ] && { echo "iphone_profile.sh does not exist" >&2; exit 1; }
