@@ -1,9 +1,10 @@
 
 clear
+alias cdmiddleman='cd /root/MiddleMan/'
 
 echo "Re-directing into MiddleMan/..." >&2 # stderr
-[ ! -d "MiddleMan" ] && { echo "MiddleMan/ directory does not exist." >&2; exit 1; }
-cd MiddleMan/
+[ ! -d "/root/MiddleMan/" ] && { echo "/root/MiddleMan/ directory does not exist." >&2; exit 1; }
+cd cdmiddleman
 
 echo "Pulling from git..." >&2 # stderr
 git pull origin main 2>/dev/null
@@ -21,3 +22,13 @@ alias back='cd .. && ls'
 alias cls='clear'
 alias reload='source /root/.profile'
 
+send() {
+	line="$*" # Concatenate all parameters into a single string
+
+	echo "$line" >> /root/MiddleMan/middle_man.md
+
+	cdmiddleman
+	git add /root/MiddleMan/middle_man.md
+	git commit -m "$(date +%d-%m-%y)"
+	git push origin main
+}
