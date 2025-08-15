@@ -1,4 +1,7 @@
 
-alias ll='ls -l'
-alias cls='clear'
-git pull
+clear
+cd MiddleMan/
+git pull origin main
+
+cat .iphone_profile > /root/.profile
+
