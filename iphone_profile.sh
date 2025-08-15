@@ -20,6 +20,7 @@ echo "WELCOME, Youssef" >&2 # stderr
 alias ll='ls -l'
 alias back='cd .. && ls'
 alias cls='clear'
+alias gs='git status'
 alias reload='source /root/.profile'
 
 send() {
