@@ -1,7 +1,7 @@
 
 clear
 alias cdmiddleman='cd /root/MiddleMan/'
-alias sync='cdmiddleman && git reset --hard origin/main'
+alias sync='cdmiddleman && git fetch origin && git reset --hard origin/main'
 
 echo "Re-directing into MiddleMan/ directory..." >&2 # stderr
 [ ! -d "/root/MiddleMan/" ] && { echo "/root/MiddleMan/ directory does not exist." >&2; return; }
