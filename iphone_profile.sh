@@ -14,6 +14,7 @@ echo "Updating /root/.profile ..." >&2 # stderr
 [ ! -f "/root/MiddleMan/iphone_profile.sh" ] && { echo "iphone_profile.sh does not exist" >&2; return; }
 cp /root/MiddleMan/iphone_profile.sh /root/.profile
 
+echo "" >&2 # stderr
 echo "ALL SET" >&2 # stderr
 echo "WELCOME, Youssef" >&2 # stderr
 
