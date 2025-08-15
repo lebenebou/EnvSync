@@ -28,9 +28,8 @@ send() {
 	sync
 	cdmiddleman
 
-	line="$*" # Concatenate all parameters into a single string
-	echo "line is:"
-	echo "$line" 
+	timestamp=$(date +%s)
+	line="$timestamp $*"  # Prepend the unique integer to the line
 	echo "$line" >> middle_man.md
 
 	git add /root/MiddleMan/middle_man.md
