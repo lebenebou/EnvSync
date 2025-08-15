@@ -25,11 +25,12 @@ alias gs='git status'
 alias reload='source /root/.profile'
 
 send() {
-	line="$*" # Concatenate all parameters into a single string
-
-	echo "$line" >> /root/MiddleMan/middle_man.md
-
 	sync
+	cdmiddleman
+
+	line="$*" # Concatenate all parameters into a single string
+	echo "$line" >> middle_man.md
+
 	git add /root/MiddleMan/middle_man.md
 	git commit -m "$(date '+%b %d %Y, %-I:%M %p')"
 	git push origin main
