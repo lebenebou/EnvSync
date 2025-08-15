@@ -28,7 +28,7 @@ send() {
 	sync
 	cdmiddleman
 
-	timestamp=$(date +%s)
+	timestamp="$(date +%s)"
 	line="$timestamp $*"  # Prepend the unique integer to the line
 	echo "$line" >> middle_man.md
 
