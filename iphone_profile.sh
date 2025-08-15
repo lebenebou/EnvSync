@@ -29,6 +29,8 @@ send() {
 	cdmiddleman
 
 	line="$*" # Concatenate all parameters into a single string
+	echo "line is:"
+	echo "$line" 
 	echo "$line" >> middle_man.md
 
 	git add /root/MiddleMan/middle_man.md
