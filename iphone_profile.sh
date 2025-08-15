@@ -24,6 +24,7 @@ alias back='cd .. && ls'
 alias cls='clear'
 alias gs='git status'
 alias reload='source /root/.profile'
+alias refresh='sync && source iphone_profile.sh'
 
 send() {
 	sync
