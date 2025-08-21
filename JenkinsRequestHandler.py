@@ -39,6 +39,7 @@ class FailureReason(Enum):
     TestCrash = 5
     SegFault = 6
     BufferOverflow = 7
+    AllocDeallocMismatch = 8
 
     def __str__(self):
         return self.name
@@ -209,6 +210,11 @@ class JenkinsBuild:
             m = re.search(r'ERROR:\s+AddressSanitizer:\s+stack-buffer-overflow', line, re.IGNORECASE)
             if m:
                 return (FailureReason.BufferOverflow, 'BufferOverflow')
+
+            # Alloc Dealloc Mismatch
+            m = re.search(r'ERROR:\s+AddressSanitizer:\s+alloc-dealloc-mismatch', line, re.IGNORECASE)
+            if m:
+                return (FailureReason.AllocDeallocMismatch, 'AllocDeallocMismatch')
 
         return (FailureReason.Unknown, 'Unknown Failure')
 
