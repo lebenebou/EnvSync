@@ -194,8 +194,10 @@ class JenkinsBuild:
             m = re.search(r'test crash detected', line, re.IGNORECASE)
             if m:
                 m = re.search(r'RUN\s*\]\s*(\S+)', logLines[i-1])
-                if not m:
-                    m = re.search(r'RUN\s*\]\s*(\S+)', logLines[i-2])
+                back = 2
+                while not m:
+                    m = re.search(r'RUN\s*\]\s*(\S+)', logLines[i-back])
+                    back += 1
 
                 testThatCrashed: str = m.group(1)
                 return (FailureReason.TestCrash, testThatCrashed)
