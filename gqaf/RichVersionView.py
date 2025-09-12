@@ -2,7 +2,7 @@
 import argparse
 
 from typing import List, Callable
-from GqafRequestHandler import printObjectList, DeploymentJob, BuildJob
+from GqafRequestHandler import printObjectList, DeploymentJob, BuildJob, objectListToTableStr
 from JenkinsRequestHandler import JenkinsRequestHandler, getPipelineBuildsByChangelist, JenkinsBuild
 from SessionInfo import SessionInfo
 
@@ -51,6 +51,13 @@ class RichVersionView:
             rows.append(row)
 
         return rows
+
+    def toCsv(self) -> str:
+
+        rows = self.buildRows()
+
+        csvContent: str = objectListToTableStr(rows, csv=True)
+        return csvContent
 
     def printOut(self, csv: bool = False):
 

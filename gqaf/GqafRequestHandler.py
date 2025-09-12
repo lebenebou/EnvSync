@@ -596,6 +596,29 @@ class GqafRequestHandler:
         parDjobId: str =response.json().get('jobId', None)
         return parDjobId
 
+def objectListToTableStr(objects: List[object], csv: bool = False):
+
+    if len(objects) == 0:
+        return ''
+
+    tableContent = [obj.__dict__.values() for obj in objects]
+    headers = [key.capitalize() for key in objects[0].__dict__.keys()]
+
+    if csv:
+        fullTable: str = tabulate(tableContent, headers=headers, tablefmt='tsv').replace('\t', ',')
+        fullTable = re.sub(r'\s*,\s*', r',', fullTable)
+    else:
+        fullTable: str = tabulate(tableContent, headers=headers)
+
+    headerCutOff = 1 if csv else 2
+    headerContent = '\n'.join(fullTable.split('\n')[:headerCutOff])
+    tableContent = '\n'.join(fullTable.split('\n')[headerCutOff:])
+
+    if not len(tableContent):
+        return headerContent
+
+    return headerContent + '\n' + tableContent
+
 def printObjectList(objects: List[object], csv: bool = False):
 
     if len(objects) == 0:
