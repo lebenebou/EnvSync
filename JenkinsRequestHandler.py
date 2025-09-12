@@ -406,7 +406,7 @@ class JenkinsRequestHandler:
     @staticmethod
     def getPipelineInfo(pipelineLink: str) -> PipelineInfo:
 
-        version = re.search(r'/(v3.1.build.*?)/', pipelineLink).group(1)
+        version = re.search(r'/(v3.1.build.*?)\/?$', pipelineLink).group(1)
         print(f'Fetching a pipeline on {version}...', file=sys.stderr)
 
         pipelineLink = pipelineLink.strip('/') + '/api/json'
@@ -446,4 +446,4 @@ if __name__ == '__main__':
     cppPool = getPipelineBuildsByChangelist(cppPipeline)
 
     from gqaf.RichVersionView import createRichJenkinsView
-    createRichJenkinsView(cppPool, asanPool).printOut(session.fetchChangelistPool(lazy=True, limit=20))
+    createRichJenkinsView(cppPool, asanPool).buildAndPrint(session.fetchChangelistPool(lazy=True, limit=20))
