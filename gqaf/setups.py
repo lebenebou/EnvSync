@@ -5,13 +5,12 @@ import json
 
 from GqafRequestHandler import GqafRequestHandler, printObjectList
 from SessionInfo import SessionInfo
-from RichVersionView import RichVersionView, createSetupsRichView
+from RichVersionView import RichVersionView, createSetupsView
 
 def setupsRowsFromSession(session: SessionInfo, limit: int = 20):
 
-    session.fetchChangelistPool(lazy=True, limit=limit)
-    setupsRichView: RichVersionView = createSetupsRichView(session)
-    return setupsRichView.buildRows()
+    setupsRichView: RichVersionView = createSetupsView(session.fetchSetupsPool(lazy=True))
+    return setupsRichView.buildRows(session.fetchChangelistPool(lazy=True, limit=limit))
 
 if __name__ == '__main__':
 

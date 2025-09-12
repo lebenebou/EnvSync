@@ -446,4 +446,4 @@ if __name__ == '__main__':
     cppPool = getPipelineBuildsByChangelist(cppPipeline)
 
     from gqaf.RichVersionView import createRichJenkinsView
-    createRichJenkinsView(session, cppPool, asanPool).printOut()
+    createRichJenkinsView(cppPool, asanPool).printOut(session.fetchChangelistPool(lazy=True, limit=20))

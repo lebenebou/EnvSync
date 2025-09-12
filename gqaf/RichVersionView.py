@@ -25,22 +25,19 @@ class Row:
 
 class RichVersionView:
 
-    def __init__(self, changelists: list[Changelist]):
+    def __init__(self):
 
         self.columnNames: list[str] = []
         self.columnCallbacks: list[CellValueCallback] = []
-        self.changelists: list[Changelist] = changelists
 
     def addColumn(self, name: str, callback: CellValueCallback):
         self.columnNames.append(name)
         self.columnCallbacks.append(callback)
 
-    def buildRows(self) -> list[Row]:
-
-        assert self.changelists, 'no changelists to create rows from'
+    def buildRows(self, changelists: list[Changelist]) -> list[Row]:
 
         rows: list[Row] = []
-        for cl in self.changelists:
+        for cl in changelists:
 
             row = Row()
 
@@ -52,21 +49,20 @@ class RichVersionView:
 
         return rows
 
-    def toCsv(self) -> str:
+    def toCsv(self, changelists: list[Changelist]) -> str:
 
-        rows = self.buildRows()
-
+        rows = self.buildRows(changelists)
         csvContent: str = objectListToTableStr(rows, csv=True)
         return csvContent
 
-    def printOut(self, csv: bool = False):
+    def printOut(self, changelists: list[Changelist], csv: bool = False):
 
-        rows = self.buildRows()
+        rows = self.buildRows(changelists)
         printObjectList(rows, csv=csv)
 
-def createRichJenkinsView(session: SessionInfo, cppPool: dict[int, JenkinsBuild], asanPool: dict[int, JenkinsBuild]) -> RichVersionView:
+def createRichJenkinsView(cppPool: dict[int, JenkinsBuild], asanPool: dict[int, JenkinsBuild]) -> RichVersionView:
 
-    jenkinsRichView = RichVersionView(session.fetchChangelistPool(lazy=True, limit=20))
+    jenkinsRichView = RichVersionView()
     jenkinsRichView.addColumn('developer', lambda cl: cl.developer)
     jenkinsRichView.addColumn('changelist', lambda cl: cl.value)
 
@@ -86,15 +82,14 @@ def createRichJenkinsView(session: SessionInfo, cppPool: dict[int, JenkinsBuild]
 
     return jenkinsRichView
 
-def createSetupsRichView(session: SessionInfo) -> RichVersionView:
+def createSetupsView(setupsPool: dict[int, list[BuildJob]]) -> RichVersionView:
 
-    setupsRichView = RichVersionView(session.fetchChangelistPool(lazy=True, limit=20))
+    setupsRichView = RichVersionView()
     setupsRichView.addColumn('developer', lambda cl: cl.developer)
     setupsRichView.addColumn('changelist', lambda cl: cl.value)
 
     def getWindowsSetupsStatus(cl: Changelist) -> str:
 
-        setupsPool = session.fetchSetupsPool(lazy=True)
         builds = [build for build in setupsPool.get(cl.value, []) if build.isWindows()]
         if len(builds) == 0:
             return '----'
@@ -105,7 +100,6 @@ def createSetupsRichView(session: SessionInfo) -> RichVersionView:
 
     def getLinuxSetupsStatus(cl: Changelist) -> str:
 
-        setupsPool = session.fetchSetupsPool(lazy=True)
         builds = [build for build in setupsPool.get(cl.value, []) if build.isLinux()]
         if len(builds) == 0:
             return '----'
@@ -119,7 +113,6 @@ def createSetupsRichView(session: SessionInfo) -> RichVersionView:
         bestLinuxBuild: BuildJob = None
         bestWindowsBuild: BuildJob = None
 
-        setupsPool = session.fetchSetupsPool(lazy=True)
         linuxBuilds: list[BuildJob] = setupsPool.get(cl.value, None)
 
         if not linuxBuilds:
