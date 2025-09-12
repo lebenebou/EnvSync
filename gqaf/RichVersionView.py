@@ -38,14 +38,11 @@ class RichVersionView:
 
         def getTotalJobsPushed(cl: Changelist) -> str:
 
-            jobsPool = session.fetchJobsPool(lazy=True)
             clJobs: list[DeploymentJob] = jobsPool.get(cl.value, [])
-
             return str(len(clJobs))
 
         def getTotalFailedJobs(cl: Changelist) -> str:
 
-            jobsPool = session.fetchJobsPool(lazy=True)
             clJobs: list[DeploymentJob] = jobsPool.get(cl.value, [])
 
             failedJobs = len([j for j in clJobs if j.isFailed()])
@@ -199,6 +196,20 @@ def getLinuxSetupsStatus(setupsPool: dict[int, list[BuildJob]]) -> callable:
 
     return f
 
+def getWindowsSetupsStatus(setupsPool: dict[int, list[BuildJob]]) -> callable:
+
+    def f(cl: Changelist):
+
+        builds = [build for build in setupsPool.get(cl.value, []) if build.isWindows()]
+
+        if len(builds) == 0:
+            return '----'
+
+        bestBuild = max(builds, key=lambda b: b.relevancy())
+        return bestBuild.status
+
+    return f
+
 def getNumberOfJobsPushed(jobsPool: dict[int, list]) -> str:
 
     def f(cl: Changelist):
@@ -218,6 +229,7 @@ def createAlienTeamExampleVersionView(session: SessionInfo) -> RichVersionView:
     alienVersionView.addColumn('developer', lambda cl: cl.developer)
     alienVersionView.addColumn('changelist', lambda cl: cl.value)
 
+    alienVersionView.addColumn('windows', getWindowsSetupsStatus(session.fetchSetupsPool()))
     alienVersionView.addColumn('linux', getLinuxSetupsStatus(session.fetchSetupsPool()))
 
     alienVersionView.addSafetyNetStatus(session.fetchJobsPool())
