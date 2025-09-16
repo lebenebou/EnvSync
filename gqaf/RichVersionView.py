@@ -31,8 +31,24 @@ class RichVersionView:
         self.columnCallbacks: list[CellValueCallback] = []
 
     def addColumn(self, name: str, callback: CellValueCallback):
+
+        name = name.lower()
         self.columnNames.append(name)
         self.columnCallbacks.append(callback)
+
+    def modifyColumn(self, name: str, newCallBack: CellValueCallback):
+
+        name = name.lower()
+
+        columnIndex: int = -1
+        for i, col in enumerate(self.columnNames):
+
+            if col == name:
+                columnIndex = i
+                break
+
+        assert i != -1, 'Tried to modify column which doesn\'t exist'
+        self.columnCallbacks[i] = newCallBack
 
     def addSafetyNetStatus(self, jobsPool: dict[int, list]):
 
