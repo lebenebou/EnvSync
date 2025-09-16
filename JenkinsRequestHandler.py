@@ -96,6 +96,9 @@ class JenkinsBuild:
         if self.isFailed():
             return 'RED'
 
+        if 'unstable' in self.result.lower():
+            return 'UNSTABLE'
+
         return 'GREEN'
 
     def isDone(self) -> bool:
