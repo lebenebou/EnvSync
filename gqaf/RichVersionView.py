@@ -95,7 +95,10 @@ class RichVersionView:
             for i, callback in enumerate(self.columnCallbacks):
 
                 colName = self.columnNames[i]
-                colValue: str = callback(cl)
+                colValue: str = str(callback(cl))
+                if ',' in colValue:
+                    colValue = f'"{colValue}"'
+
                 setattr(row, colName, colValue)
 
             rows.append(row)
