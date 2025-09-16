@@ -13,33 +13,20 @@ sys.path.append('./gqaf')
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
-from enum import Enum
-
-import base64
-def tryDecrypt(encoded_message: str) -> str | None:
-
-    if not encoded_message:
-        return None
-
-    try:
-        base64_bytes = encoded_message.encode('utf-8')
-        message_bytes = base64.b64decode(base64_bytes, validate=True)
-        return message_bytes.decode('utf-8')
-
-    except (ValueError, UnicodeDecodeError):
-        return None
+from enum import Enum, auto
 
 class FailureReason(Enum):
 
-    Unknown = 0
-    CompileFailed = 1
-    FailedTests = 2
-    MemoryLeak = 3
-    UseAfterFree = 4
-    TestCrash = 5
-    SegFault = 6
-    BufferOverflow = 7
-    AllocDeallocMismatch = 8
+    Unknown = auto()
+    CompileFailed = auto()
+    BuildFailed = auto()
+    FailedTests = auto()
+    MemoryLeak = auto()
+    UseAfterFree = auto()
+    TestCrash = auto()
+    SegFault = auto()
+    BufferOverflow = auto()
+    AllocDeallocMismatch = auto()
 
     def __str__(self):
         return self.name
@@ -172,6 +159,11 @@ class JenkinsBuild:
                 guiltyFile: re.Match = re.search(r'([^/]*\.(c|cpp))', m.group(1))
                 errorMessage: str = m.group(2) if not guiltyFile else guiltyFile.group(1)
                 return (FailureReason.CompileFailed, errorMessage)
+
+            # Build Failed
+            m = re.search(r'BUILD\s+FAILURE', line)
+            if m:
+                return (FailureReason.BuildFailed, 'Build Failure')
 
             # Failed GTest(s)
             m = re.search(r'\[\s*FAILED\s*\]\s*(\d+)\s*test.*listed\s*below', line)
