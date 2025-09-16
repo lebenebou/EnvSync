@@ -116,8 +116,21 @@ class DeploymentJob:
 
         return self.testPackage == other.testPackage and self.nickname == other.nickname
 
+    def isTaken(self) -> bool:
+
+        if self.isFailed():
+            return False
+
+        if self.isPassed():
+            return False
+
+        if self.state in ['CLEANED', 'PURGED', 'KILLED']:
+            return False
+
+        return True
+
     def isFailed(self) -> bool:
-        return self.status == 'FAILED' or self.status == 'REQUESTED_FOR_ANALYSIS'
+        return self.status in ['FAILED', 'REQUESTED_FOR_ANALYSIS', 'ANALYZEDCANCELED']
 
     def isPassed(self) -> bool:
         return self.status == 'PASSED'
