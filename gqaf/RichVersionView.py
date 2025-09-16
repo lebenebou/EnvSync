@@ -36,10 +36,12 @@ class RichVersionView:
 
     def addSafetyNetStatus(self, jobsPool: dict[int, list]):
 
-        def getTotalJobsPushed(cl: Changelist) -> str:
+        def getTotalTakenJobs(cl: Changelist) -> str:
 
             clJobs: list[DeploymentJob] = jobsPool.get(cl.value, [])
-            return str(len(clJobs))
+
+            failedJobs = [j for j in clJobs if j.isTaken()]
+            return str(len(failedJobs))
 
         def getTotalFailedJobs(cl: Changelist) -> str:
 
@@ -48,8 +50,16 @@ class RichVersionView:
             failedJobs = len([j for j in clJobs if j.isFailed()])
             return str(failedJobs)
 
-        self.addColumn('tpks', getTotalJobsPushed)
-        self.addColumn('redTpks', getTotalFailedJobs)
+        def getTotalPassedJobs(cl: Changelist) -> str:
+
+            clJobs: list[DeploymentJob] = jobsPool.get(cl.value, [])
+
+            failedJobs = len([j for j in clJobs if j.isPassed()])
+            return str(failedJobs)
+
+        self.addColumn('tpks', getTotalTakenJobs)
+        self.addColumn('red', getTotalFailedJobs)
+        self.addColumn('passed', getTotalPassedJobs)
 
     def addPipeline(self, pipelineName:str, link: str):
 
@@ -67,8 +77,10 @@ class RichVersionView:
             row = Row()
 
             for i, callback in enumerate(self.columnCallbacks):
+
                 colName = self.columnNames[i]
-                setattr(row, colName, callback(cl))
+                colValue: str = callback(cl)
+                setattr(row, colName, colValue)
 
             rows.append(row)
 
@@ -245,7 +257,7 @@ def createAlienTeamExampleVersionView(session: SessionInfo) -> RichVersionView:
     alienVersionView.addPipeline('freyja', freyjaLink)
 
     alienVersionView.addColumn('defect', lambda cl: f'[{cl.defect}]')
-    alienVersionView.addColumn('tags', lambda cl: cl.allTags())
+    alienVersionView.addColumn('description', lambda cl: cl.description)
     return alienVersionView
 
 if __name__ == '__main__':
