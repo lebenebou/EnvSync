@@ -96,9 +96,8 @@ class RichVersionView:
 
                 colName = self.columnNames[i]
                 colValue: str = str(callback(cl))
-                if ',' in colValue:
-                    colValue = f'"{colValue}"'
 
+                colValue = colValue.replace(',', ' ').replace('\n', ' ').replace('\t', ' ')
                 setattr(row, colName, colValue)
 
             rows.append(row)
