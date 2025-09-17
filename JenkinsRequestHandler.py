@@ -411,6 +411,8 @@ class JenkinsRequestHandler:
         if not response:
             return None
 
+        jsonData: str = response.text
+
         data = response.json()
         return PipelineInfo(data)
 
@@ -426,17 +428,26 @@ def getPipelineBuildsByChangelist(pipeline: PipelineInfo) -> Dict[int, JenkinsBu
 
     return builds
 
+if 0:
+
+    alienFreyja = f'https://cje-core.fr.murex.com/assets/job/FreyjaAlien/job/{SessionInfo().version}/'
+    freyjaPipeline: PipelineInfo = JenkinsRequestHandler.getPipelineInfo(alienFreyja)
+    freyjaPool = getPipelineBuildsByChangelist(freyjaPipeline)
+
+    exit(0)
+
 if __name__ == '__main__':
 
     # example usage
 
     session = SessionInfo()
     version = session.version
-    alienAsan = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/AsanValidation/'
-    alienCpp = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/CppValidation/'
 
+    alienAsan = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/AsanValidation/'
     asanPipeline: PipelineInfo = JenkinsRequestHandler.getPipelineInfo(alienAsan)
     asanPool = getPipelineBuildsByChangelist(asanPipeline)
+
+    alienCpp = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{version}/job/CppValidation/'
     cppPipeline: PipelineInfo = JenkinsRequestHandler.getPipelineInfo(alienCpp)
     cppPool = getPipelineBuildsByChangelist(cppPipeline)
 
