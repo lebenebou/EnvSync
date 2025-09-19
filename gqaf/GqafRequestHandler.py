@@ -106,6 +106,9 @@ class DeploymentJob:
 
         self.changelist = int(self.buildId.split('-')[0]) if self.buildId else None
 
+    def getTpkName(self) -> str:
+        return self.testPackage + ' - ' + self.nickname
+
     def __hash__(self):
         return hash((self.testPackage, self.nickname))
 
