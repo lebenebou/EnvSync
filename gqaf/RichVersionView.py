@@ -29,6 +29,7 @@ class RichVersionView:
 
         self.columnNames: list[str] = []
         self.columnCallbacks: list[CellValueCallback] = []
+        self.errorsPerCl: dict[int, list[str]] = {}
 
     def addColumn(self, name: str, callback: CellValueCallback):
 
@@ -122,9 +123,11 @@ class RichVersionView:
         pipeline = JenkinsRequestHandler.getPipelineInfo(link)
         pool = getPipelineBuildsByChangelist(pipeline)
 
-        self.addColumn(pipelineName, getPipelineStatus(pool))
+        self.addColumn(pipelineName, getPipelineStatus(pool, self.errorsPerCl))
 
     def buildRows(self, changelists: list[Changelist]) -> list[Row]:
+
+        self.errorsPerCl.clear()
 
         rows: list[Row] = []
         for cl in changelists:
@@ -234,7 +237,7 @@ def getPipelineFailureMessage(pool: dict[int, JenkinsBuild]) -> str:
 
     return f
 
-def getPipelineStatus(pool: dict[int, JenkinsBuild]) -> str:
+def getPipelineStatus(pool: dict[int, JenkinsBuild], errorsPerCl: dict[int, list[str]] = None) -> str:
 
     def f(cl: Changelist):
 
@@ -243,11 +246,15 @@ def getPipelineStatus(pool: dict[int, JenkinsBuild]) -> str:
 
         build = pool.get(cl.value)
 
-        if build.isFailed():
-            reason, _ = build.guessFailureReason()
-            return 'RED' if reason.name == 'Unknown' else reason.name
+        if not build.isFailed():
+            return build.status()
 
-        return build.status()
+        reason, errorMessage = build.guessFailureReason()
+
+        if errorsPerCl is not None:
+            errorsPerCl.setdefault(cl.value, []).append(reason.name + ': ' + errorMessage)
+
+        return 'RED' if reason.name == 'Unknown' else reason.name
 
     return f
 
