@@ -50,7 +50,7 @@ class RichVersionView:
         assert i != -1, 'Tried to modify column which doesn\'t exist'
         self.columnCallbacks[i] = newCallBack
 
-    def addSafetyNetStatus(self, jobsPool: dict[int, list]):
+    def addSafetyNetStatus(self, jobsPool: dict[int, list[DeploymentJob]]):
 
         def getTotalTakenJobs(cl: Changelist) -> str:
 
@@ -59,19 +59,58 @@ class RichVersionView:
             failedJobs = [j for j in clJobs if j.isTaken()]
             return str(len(failedJobs))
 
+        tpksPerCl: dict[tuple, list[DeploymentJob]] = {}
+        for cl, pushedJobs in jobsPool.items():
+            for job in pushedJobs:
+
+                key: tuple = (cl, job.getTpkName())
+
+                if key not in tpksPerCl:
+                    tpksPerCl[key] = []
+
+                tpksPerCl[key].append(job)
+
         def getTotalFailedJobs(cl: Changelist) -> str:
 
             clJobs: list[DeploymentJob] = jobsPool.get(cl.value, [])
 
-            failedJobs = len([j for j in clJobs if j.isFailed()])
-            return str(failedJobs)
+            res: int = 0
+            seenTpks: set[str] = set()
+            for j in clJobs:
+
+                if j.getTpkName() in seenTpks:
+                    continue
+
+                seenTpks.add(j.getTpkName())
+                key: tuple = (cl.value, j.getTpkName())
+
+                if any(tpk.isPassed() for tpk in tpksPerCl[key]):
+                    continue
+
+                if any(tpk.isFailed() for tpk in tpksPerCl[key]):
+                    res += 1
+
+            return str(res)
 
         def getTotalPassedJobs(cl: Changelist) -> str:
 
             clJobs: list[DeploymentJob] = jobsPool.get(cl.value, [])
 
-            failedJobs = len([j for j in clJobs if j.isPassed()])
-            return str(failedJobs)
+            seenTpks: set[str] = set()
+            res: int = 0
+            for j in clJobs:
+
+                if j.getTpkName() in seenTpks:
+                    continue
+
+                seenTpks.add(j.getTpkName())
+
+                key: tuple = (cl.value, j.getTpkName())
+
+                if any(tpk.isPassed() for tpk in tpksPerCl[key]):
+                    res += 1
+
+            return str(res)
 
         self.addColumn('tpks', getTotalTakenJobs)
         self.addColumn('red', getTotalFailedJobs)
