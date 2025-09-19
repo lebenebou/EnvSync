@@ -240,19 +240,6 @@ def getWindowsSetupsStatus(setupsPool: dict[int, list[BuildJob]]) -> callable:
 
     return f
 
-def getNumberOfJobsPushed(jobsPool: dict[int, list]) -> str:
-
-    def f(cl: Changelist):
-
-        clJobs: List[DeploymentJob] = jobsPool.get(cl.value, [])
-
-        redJobs = len([j for j in clJobs if j.isFailed()])
-        greenJobs = len([j for j in clJobs if j.isPassed()])
-
-        return str(len(clJobs))
-
-    return f
-
 def createAlienTeamExampleVersionView(session: SessionInfo) -> RichVersionView:
 
     alienVersionView = RichVersionView()
