@@ -342,7 +342,7 @@ class GqafRequestHandler:
         password: str = tryDecrypt(settings.getEncryptedPassword())
 
         if not username or not password:
-            print(f'Failed to authenticate using settings JSON. Please authenticate through CMD', file=sys.stderr)
+            print(f'Username or Password not found to authenticate GQAF', file=sys.stderr)
             return GqafRequestHandler.authenticateUserThroughCmd() if cmdFallback else None
 
         accessToken: str = GqafRequestHandler.authenticate(username, password)
