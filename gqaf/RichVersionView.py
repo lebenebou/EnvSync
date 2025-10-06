@@ -14,7 +14,7 @@ import sys
 sys.path.append(PARENT_DIR)
 
 from p4Helper import Changelist
-CellValueCallback = Callable[[Changelist], str]
+ChangelistCallback = Callable[[Changelist], str]
 
 class Row:
     def __init__(self):
@@ -28,23 +28,23 @@ class RichVersionView:
     def __init__(self):
 
         self.columnNames: list[str] = []
-        self.columnCallbacks: list[CellValueCallback] = []
+        self.columnCallbacks: list[ChangelistCallback] = []
         self.errorsPerCl: dict[int, list[str]] = {}
 
-    def addColumn(self, name: str, callback: CellValueCallback):
+    def addColumn(self, name: str, callback: ChangelistCallback):
 
         name = name.lower()
         self.columnNames.append(name)
         self.columnCallbacks.append(callback)
 
-    def modifyColumn(self, name: str, newCallBack: CellValueCallback):
+    def modifyColumn(self, name: str, newCallBack: ChangelistCallback):
 
         name = name.lower()
 
         columnIndex: int = -1
         for i, col in enumerate(self.columnNames):
 
-            if col == name:
+            if col.lower() == name:
                 columnIndex = i
                 break
 
