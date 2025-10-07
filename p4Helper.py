@@ -178,7 +178,7 @@ class Changelist:
         for m in re.finditer(Changelist.tagPattern, self.description):
 
             matchstr = m.group(1).strip()
-            self.tags.append(re.sub('\s+', '', matchstr))
+            self.tags.append(re.sub(r'\s+', '', matchstr))
 
         # remove [tags]
         self.description = re.sub(Changelist.tagPattern, '', self.description).strip()
@@ -273,7 +273,7 @@ class P4Helper:
         # The defects out of <inputDefects> which were merged on <destVersion> by ANY of the <destDevs>
 
         inputDefects = set(defect for defect in inputDefects if defect)
-        invalidDefect: str = next((d for d in inputDefects if not re.match('DEF\d+', d)), None)
+        invalidDefect: str = next((d for d in inputDefects if not re.match(r'DEF\d+', d)), None)
         assert not invalidDefect, f'Not a defect ID: {invalidDefect}'
 
         destDevs: Set[str] = set(destDevs)
