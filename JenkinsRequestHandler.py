@@ -173,7 +173,7 @@ class JenkinsBuild:
             if m:
                 numberOfFailedTests = int(m.group(1))
                 failedTests: str = ' | '.join([re.search(r'\[\s*FAILED\s*\]\s*(\S+)', l).group(1) for l in logLines[i+1: i+numberOfFailedTests+1]])
-                return (FailureReason.FailedTests, failedTests)
+                return (FailureReason.FailedTests, f'({numberOfFailedTests}) ' + failedTests)
 
             # Memory Leaks
             m = re.search(r'detected memory leaks', line, re.IGNORECASE)

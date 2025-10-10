@@ -16,6 +16,8 @@ sys.path.append(PARENT_DIR)
 from p4Helper import Changelist
 ChangelistCallback = Callable[[Changelist], str]
 
+import re
+
 class Row:
     def __init__(self):
         pass # attributes will be added dynamically
@@ -123,7 +125,7 @@ class RichVersionView:
         pipeline = JenkinsRequestHandler.getPipelineInfo(link)
         pool = getPipelineBuildsByChangelist(pipeline)
 
-        self.addColumn(pipelineName, getPipelineStatus(pool, self.errorsPerCl))
+        self.addColumn(pipelineName, getPipelineStatus(pool))
 
     def buildRows(self, changelists: list[Changelist]) -> list[Row]:
 
@@ -237,7 +239,7 @@ def getPipelineFailureMessage(pool: dict[int, JenkinsBuild]) -> str:
 
     return f
 
-def getPipelineStatus(pool: dict[int, JenkinsBuild], errorsPerCl: dict[int, list[str]] = None) -> str:
+def getPipelineStatus(pool: dict[int, JenkinsBuild]) -> str:
 
     def f(cl: Changelist):
 
@@ -251,10 +253,16 @@ def getPipelineStatus(pool: dict[int, JenkinsBuild], errorsPerCl: dict[int, list
 
         reason, errorMessage = build.guessFailureReason()
 
-        if errorsPerCl is not None:
-            errorsPerCl.setdefault(cl.value, []).append(reason.name + ': ' + errorMessage)
+        if reason.name == 'Unknown':
+            return 'RED'
 
-        return 'RED' if reason.name == 'Unknown' else reason.name
+        if re.search('failed.*test', reason.name, re.IGNORECASE):
+            m = re.search(r'\(\d+\)', errorMessage)
+            if m:
+                numberOfFailedTests: int = m.group()
+                return reason.name + f' {numberOfFailedTests}'
+
+        return reason.name
 
     return f
 
