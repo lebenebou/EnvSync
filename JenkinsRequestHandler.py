@@ -8,7 +8,10 @@ import requests
 from typing import List, Dict
 
 import sys
-sys.path.append('./gqaf')
+import os
+
+CURRENT_DIR = sys.path[0]
+sys.path.append(os.path.join(CURRENT_DIR, 'gqaf'))
 
 import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
