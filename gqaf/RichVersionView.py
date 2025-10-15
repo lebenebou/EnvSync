@@ -248,8 +248,19 @@ def getPipelineStatus(pool: dict[int, JenkinsBuild]) -> str:
 
         build = pool.get(cl.value)
 
-        if not build.isFailed():
-            return build.status()
+        if build.isSuccessful():
+            return 'GREEN'
+
+        if not build.isDone():
+
+            minutes = build.getRunningTimeMinutes()
+            hours = int(minutes / 60)
+            minutes = minutes % 60
+
+            if hours > 0:
+                return f'{hours}h {minutes}min'
+
+            return f'{minutes}min'
 
         reason, errorMessage = build.guessFailureReason()
 

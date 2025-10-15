@@ -9,6 +9,7 @@ from typing import List, Dict
 
 import sys
 import os
+import time
 
 CURRENT_DIR = sys.path[0]
 sys.path.append(os.path.join(CURRENT_DIR, 'gqaf'))
@@ -46,6 +47,8 @@ class JenkinsBuild:
 
         self.displayName = data.get('displayName')
         self.description = data.get('description')
+
+        self.startTimestamp = data.get('timestamp')
 
         self.changelist = None
         # Parse CL from display name
@@ -149,6 +152,18 @@ class JenkinsBuild:
             return self.logs.get(artifactName)
 
         return None
+
+    def getRunningTimeMinutes(self) -> int:
+
+        if not self.startTimestamp:
+            return None
+
+        if self.isDone():
+            return None
+
+        now = int(time.time() * 1000)
+        delta = now - self.startTimestamp
+        return int(delta / 60000)
 
     @staticmethod
     def guessFailureReasonFromLogs(logLines: List[str]) -> tuple[FailureReason, str]:
@@ -266,7 +281,7 @@ class JenkinsRequestHandler:
 
     @staticmethod
     def buildPipelineInfoParams() -> dict:
-        return {'tree': 'displayName,description,builds[number,status,displayName,description,url,result,building,artifacts[relativePath]]'}
+        return {'tree': 'displayName,description,builds[number,status,timestamp,displayName,description,url,result,building,artifacts[relativePath]]'}
 
     @staticmethod
     def postRequest(endpoint: str, jsonData: dict = None, params: dict = None, headers: dict = None) -> requests.Response:
