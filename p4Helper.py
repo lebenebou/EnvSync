@@ -105,6 +105,9 @@ class Changelist:
     def isCherryPickedFromGit(self) -> bool:
         return self.gitCommit is not None
 
+    def isARevert(self) -> bool:
+        return 'REVERT' in (tag.upper() for tag in self.tags)
+
     def toString(self, onlyTags: bool = False, withFiles: bool = False) -> str:
 
         s: str = f'CL {self.value} by {self.developer}'

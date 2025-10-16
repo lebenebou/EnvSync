@@ -327,7 +327,13 @@ def createAlienTeamExampleVersionView(session: SessionInfo) -> RichVersionView:
     alienVersionView.addPipeline('freyja', freyjaLink)
 
     alienVersionView.addColumn('defect', lambda cl: f'[{cl.defect}]')
-    alienVersionView.addColumn('description', lambda cl: cl.description)
+
+    def getDescription(cl: Changelist) -> str:
+        if cl.isARevert():
+            return '[REVERT] ' + cl.description
+        return cl.description
+
+    alienVersionView.addColumn('description', getDescription)
     return alienVersionView
 
 if __name__ == '__main__':
