@@ -354,7 +354,6 @@ class BashProfile(ConfigFile):
 
 def runUnitTests():
 
-    return
     # Python
     assert RunPython(CURRENT_FILE).toString().__eq__(f'python {aspath.aslinuxPath(CURRENT_FILE)}')
 
@@ -362,6 +361,22 @@ def runUnitTests():
     aliasRegexPattern = r'alias\s+\w+=["\'].*["\']'
     assert re.match(aliasRegexPattern, Alias('aliasName').to(RunPython('script.py')).toString())
     assert re.match(aliasRegexPattern, Alias('aliasName').to(cdInto('D:\\')).toString())
+
+def findBashProfilePath() -> str:
+
+    homeDir = os.path.expanduser('~')
+    options = ['.bash_profile', '.bashrc', '.profile']
+
+    for filename in options:
+
+        fullPath = os.path.join(homeDir, filename)
+
+        if os.path.exists(fullPath):
+            return fullPath
+
+    print("[WARN]: No bash profile file found in home directory.", file=sys.stderr)
+    exit(0)
+    return None
 
 if __name__ == "__main__":
 
@@ -508,11 +523,10 @@ if __name__ == "__main__":
     Alias('editnvim').to('vim').addPath(NVIM_RC).withTag('Config'),
     Alias('runbashprofile').to(RunPython(CURRENT_FILE)).withTag('Config'),
 
-    Function('reload').thenExecute([
+    Function('updatebashprofile').thenExecute([
         Exec('echo Updating...'),
-        Exec(RunPython(CURRENT_FILE).addArg('--in_place')).andThen('restart')
+        Exec(RunPython(CURRENT_FILE).addArg('--in_place'))
         ]).withTag('Config'),
-    Alias('updatebashprofile').to('reload').withTag('Config'),
 
     Alias('switch').to(InlinePython().linesAre([
         'import pyautogui',
@@ -672,6 +686,6 @@ if __name__ == "__main__":
 
     if args.in_place:
         bashprofileContent: str = bashprofile.toString(scopeFilter=CURRENT_SCOPE)
-        ConfigFile.writeToFile(BASHPROFILE, bashprofileContent)
+        ConfigFile.writeToFile(findBashProfilePath(), bashprofileContent)
     else:
         print(bashprofile.toString(), file=sys.stdout)

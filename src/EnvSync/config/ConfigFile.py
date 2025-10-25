@@ -13,7 +13,6 @@ HOME_DIR = os.path.expanduser('~')
 TMP_FOLDER_PATH = os.path.join(HOME_DIR, 'config.tmp')
 VIM_RC = os.path.join(HOME_DIR, '.vimrc')
 NVIM_RC = os.path.join(HOME_DIR, 'AppData', 'Local', 'nvim', 'init.vim')
-BASHPROFILE = os.path.join(HOME_DIR, '.bash_profile')
 
 G_PAVILION_15 = os.path.join('G:\\', 'Other computers', 'Pavilion15')
 
