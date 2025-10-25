@@ -3,7 +3,7 @@ import os
 import sys
 import argparse
 
-from EnvSync.config.Alias import *
+from EnvSync.config.Aliases import *
 CURRENT_FILE = os.path.abspath(__file__)
 
 import json
