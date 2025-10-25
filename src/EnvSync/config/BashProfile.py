@@ -96,7 +96,7 @@ if __name__ == "__main__":
     Alias('itunes').to('C:\\Program Files\\iTunes\\iTunes.exe').disown().withTag('iTunes').withScope(ConfigOption.LAPTOP),
 
     Alias('theplan').to('start').addPath(G_DRIVE.slash('My Drive').slash('THE_PLAN.xlsx')).withScope(ConfigOption.COMMON).withTag('Personal'),
-    Alias('money').to(RunPython(UTILS_PATH.slash('FinanceManager').slash('parser.py'))).withTag('Personal'),
+    Alias('money').to(RunPython(SRC_PATH.slash('finance').slash('parser.py'))).withTag('Personal'),
     Alias('updatemoney').to('money').addArg('--refresh').withTag('Personal'),
 
     Alias('grep').to('grep -i --color --binary-files=without-match --exclude-dir=".git"').withTag('Grep default options'),
