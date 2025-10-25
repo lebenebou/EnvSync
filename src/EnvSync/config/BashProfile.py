@@ -549,7 +549,7 @@ if __name__ == "__main__":
     Alias('gd').to('git diff').withTag('Git'),
     Alias('gln').to('git log -n').withTag('Git'),
 
-    Alias('netpass').to(RunPython(REPO_ROOT.slash('NetPass').slash('netpass.py'))),
+    Alias('netpass').to(RunPython(SRC_PATH.slash('NetPass').slash('netpass.py'))),
 
     Alias('jq').to(os.path.join(BIN_DIR, 'jq.exe')).withTag('JSON Query'),
 
