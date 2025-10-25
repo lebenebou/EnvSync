@@ -1,7 +1,0 @@
-README.md
-pyproject.toml
-src/EnvSync/__init__.py
-src/envsync.egg-info/PKG-INFO
-src/envsync.egg-info/SOURCES.txt
-src/envsync.egg-info/dependency_links.txt
-src/envsync.egg-info/top_level.txt
