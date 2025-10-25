@@ -7,13 +7,16 @@ import sys
 def findVimRcFile() -> str:
 
     homedir = os.path.expanduser('~')
+    vimrc = os.path.join(homedir, '.vimrc')
 
-    if os.path.exists(os.path.join(homedir, '.vimrc')):
-        return os.path.join(homedir, '.vimrc')
+    if not os.path.isfile(vimrc):
 
-    print('[WARN] No vimrc file found', file=sys.stderr)
-    return None
-    
+        # create empty vimrc file
+        with open(vimrc, 'w') as f:
+            f.write("")
+
+    return vimrc
+
 if __name__ == "__main__":
 
     VimRemap.centerOffset = 12
@@ -74,9 +77,6 @@ if __name__ == "__main__":
         vimrcContent: str = vimrc.toString(CURRENT_SCOPE | ConfigOption.NVIM)
 
         vim_rcPath = findVimRcFile()
-        if not vim_rcPath:
-            sys.exit(1)
-
         ConfigFile.writeToFile(vim_rcPath, vimrcContent)
 
     else:
