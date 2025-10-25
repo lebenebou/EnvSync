@@ -15,6 +15,7 @@ def aslinuxPath(path: str, wrapInQuotesIfSpaces: bool = True) -> str:
     if wrapInQuotesIfSpaces and ' ' in path:
         return f'"{path}"'
 
+    assert '\\' not in path, "Linux path contains backslashes"
     return path
 
 def asWindowsPath(path: str) -> str:
