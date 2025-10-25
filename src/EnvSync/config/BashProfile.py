@@ -454,7 +454,7 @@ if __name__ == "__main__":
     Alias('money').to(RunPython(UTILS_PATH.slash('FinanceManager').slash('parser.py'))).withTag('Personal'),
     Alias('updatemoney').to('money').addArg('--refresh').withTag('Personal'),
 
-    Alias('grep').to('grep -i --color --binary-files=without-match').withTag('Grep default options'),
+    Alias('grep').to('grep -i --color --binary-files=without-match --exclude-dir=".git"').withTag('Grep default options'),
     Alias('grepdefects').to('grep').addArg('-Eo').addQuoted('DEF[0-9]+').withTag('grep').withScope(ConfigOption.MUREX),
 
     InlinePython(runImmediately=True).linesAre([
