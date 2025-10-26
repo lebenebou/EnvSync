@@ -41,13 +41,13 @@ def readJsonFile(filePath: str) -> dict:
     return data
 
 @dataclass(frozen=True) # these values cannot be changed
-class EnvValues:
+class GlobalEnv:
 
     REPO_ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     REPO_SRC_PATH = os.path.join(REPO_ROOT_PATH, 'src', 'EnvSync')
 
     CONFIG_JSON_FILE = os.path.join(REPO_ROOT_PATH, 'config.json')
-    CONFIG_DATA: dict = field(default_factory=lambda: readJsonFile(EnvValues.CONFIG_JSON_FILE)) # a CONST dict
+    CONFIG_DATA: dict = field(default_factory=lambda: readJsonFile(GlobalEnv.CONFIG_JSON_FILE)) # a CONST dict
 
     ENCRYPTED_PATH = os.path.join(REPO_ROOT_PATH, 'encrypted')
     DECRYPTED_PATH = os.path.join(REPO_ROOT_PATH, 'decrypted')
@@ -61,12 +61,12 @@ class EnvValues:
 
     @staticmethod
     def getConfigValue(configName: str) -> any:
-        return EnvValues.CONFIG_DATA.get(configName, None)
+        return GlobalEnv.CONFIG_DATA.get(configName, None)
 
     @staticmethod
     def getEcryptionPassphrase(cmdFallback: bool = False) -> str:
         
-        passphrase: str = EnvValues.getConfigValue('passphrase')
+        passphrase: str = GlobalEnv.getConfigValue('passphrase')
         if passphrase:
             return passphrase
 
@@ -79,17 +79,17 @@ class EnvValues:
     @staticmethod
     def encryptFiles(deleteDecrypted: bool = False, cmdFallback: bool = False):
     
-        for root, dirs, files in os.walk(EnvValues.DECRYPTED_PATH):
+        for root, dirs, files in os.walk(GlobalEnv.DECRYPTED_PATH):
 
             for file in files:
 
                 decryptedFilePath = os.path.join(root, file)
-                relativePath = os.path.relpath(decryptedFilePath, EnvValues.DECRYPTED_PATH)
-                encryptedFilePath = os.path.join(EnvValues.ENCRYPTED_PATH, relativePath + '.age')
+                relativePath = os.path.relpath(decryptedFilePath, GlobalEnv.DECRYPTED_PATH)
+                encryptedFilePath = os.path.join(GlobalEnv.ENCRYPTED_PATH, relativePath + '.age')
 
                 os.makedirs(os.path.dirname(encryptedFilePath), exist_ok=True)
 
-                passphrase: str = EnvValues.getEcryptionPassphrase(cmdFallback)
+                passphrase: str = GlobalEnv.getEcryptionPassphrase(cmdFallback)
                 result = subprocess.run(
                     [ 'age', decryptedFilePath, '-o', encryptedFilePath, '-p'],
                     input=passphrase.encode(),

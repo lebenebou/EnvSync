@@ -7,7 +7,7 @@ import os
 import sys
 
 from EnvSync.utils import aspath
-from EnvSync import EnvValues
+from EnvSync import GlobalEnv
 
 class Variable(ConfigOption):
 
@@ -61,7 +61,7 @@ class Path(Variable):
         self.withScope(ConfigOption.COMMON)
 
         if not CURRENT_SCOPE == ConfigOption.LAPTOP:
-            self.value = os.path.join(EnvValues.G_PAVILION_15, os.path.basename(self.value))
+            self.value = os.path.join(GlobalEnv.G_PAVILION_15, os.path.basename(self.value))
 
         return self
 

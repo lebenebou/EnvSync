@@ -4,7 +4,7 @@ import sys
 import argparse
 
 from EnvSync.config.Aliases import *
-from EnvSync import EnvValues
+from EnvSync import GlobalEnv
 
 CURRENT_FILE = os.path.abspath(__file__)
 
@@ -30,17 +30,17 @@ if __name__ == "__main__":
     D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigOption.COMMON)
     C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigOption.COMMON)
 
-    REPO_ROOT = Path(EnvValues.REPO_ROOT_PATH).withName('REPO ROOT PATH')
-    SRC_PATH = Path(EnvValues.REPO_SRC_PATH).withName('SRC PATH')
+    REPO_ROOT = Path(GlobalEnv.REPO_ROOT_PATH).withName('REPO ROOT PATH')
+    SRC_PATH = Path(GlobalEnv.REPO_SRC_PATH).withName('SRC PATH')
 
     UTILS_PATH = SRC_PATH.slash('utils').withName('UTILS PATH')
 
     G_DRIVE = Path("G:\\").withName('G Drive').withScope(ConfigOption.COMMON)
     ONEDRIVE_MUREX = Path("D:\\OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigOption.MUREX)
 
-    DESKTOP = Path(os.path.join(EnvValues.USER_HOME_DIR, 'Desktop')).withName('DESKTOP').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Desktop'))
-    DOWNLOADS = Path(os.path.join(EnvValues.USER_HOME_DIR, 'Downloads')).withName('DOWNLOADS').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Downloads'))
-    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, os.path.join(EnvValues.G_PAVILION_15, 'MyDocuments'))
+    DESKTOP = Path(os.path.join(GlobalEnv.USER_HOME_DIR, 'Desktop')).withName('DESKTOP').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Desktop'))
+    DOWNLOADS = Path(os.path.join(GlobalEnv.USER_HOME_DIR, 'Downloads')).withName('DOWNLOADS').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Downloads'))
+    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, os.path.join(GlobalEnv.G_PAVILION_15, 'MyDocuments'))
 
     MUREX_CLI = C_DRIVE.slash('murexcli').withScope(ConfigOption.MUREX)
     MUREX_SETTINGS_JSON = D_DRIVE.slash('.mxdevenvpp').slash('settings').slash('python_scripts_settings.json').withScope(ConfigOption.MUREX)
@@ -96,7 +96,7 @@ if __name__ == "__main__":
         'pyautogui.hotkey("ctrl", "+")',
     ]),
 
-    cdInto(EnvValues.USER_HOME_DIR).withScope(ConfigOption.LAPTOP).withTag("Init"),
+    cdInto(GlobalEnv.USER_HOME_DIR).withScope(ConfigOption.LAPTOP).withTag("Init"),
     cdInto('D:\\').withScope(ConfigOption.MUREX).withTag("Init"),
 
     Alias('home').to(cdInto('~').withScope(ConfigOption.LAPTOP)),
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     Alias('csv').to('bat --language=csv').withTag('bash'),
     Alias(':r').to('restart').withTag('bash'),
     Alias(':q').to('win 2').andThen('exit').withTag('bash'),
-    Alias('bashprofile').to('code').addPath(EnvValues.BASH_PROFILE_PATH).withTag('bash'),
+    Alias('bashprofile').to('code').addPath(GlobalEnv.BASH_PROFILE_PATH).withTag('bash'),
 
     Alias('teeclip').to('tee').addArg(' >(clip)').withTag('bash'),
     Alias('first').to('head -n 1').withTag('bash'),
@@ -147,7 +147,7 @@ if __name__ == "__main__":
         cdInto('"$1"').andThen('ls'),
         ]).withTag('Quick cd'),
 
-    Alias('editvimrc').to('code').addPath(EnvValues.VIM_RC_PATH).withTag('Config'),
+    Alias('editvimrc').to('code').addPath(GlobalEnv.VIM_RC_PATH).withTag('Config'),
     Alias('editbashprofile').to('code').addPath(CURRENT_FILE).withTag('Config'),
     Alias('runbashprofile').to(RunPython(CURRENT_FILE)).withTag('Config'),
     Alias('updatebashprofile').to(RunPython(CURRENT_FILE)).addArg('--in_place').withTag('Config'),
@@ -300,7 +300,7 @@ if __name__ == "__main__":
 
     if args.in_place:
         bashprofileContent: str = bashprofile.toString(scopeFilter=CURRENT_SCOPE)
-        ConfigFile.writeToFile(EnvValues.BASH_PROFILE_PATH, bashprofileContent)
+        ConfigFile.writeToFile(GlobalEnv.BASH_PROFILE_PATH, bashprofileContent)
     else:
         print(bashprofile.toString(), file=sys.stdout)
 
