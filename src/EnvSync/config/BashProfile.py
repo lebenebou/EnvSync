@@ -4,27 +4,14 @@ import sys
 import argparse
 
 from EnvSync.config.Aliases import *
+from EnvSync import EnvValues
+
 CURRENT_FILE = os.path.abspath(__file__)
 
 import json
 def readJsonFromFile(filePath: str) -> dict:
     with open(filePath, 'r') as file:
         return json.load(file)
-
-def findBashProfilePath() -> str:
-
-    homeDir = os.path.expanduser('~')
-    options = ['.bash_profile', '.bashrc', '.profile']
-
-    for filename in options:
-
-        fullPath = os.path.join(homeDir, filename)
-
-        if os.path.exists(fullPath):
-            return fullPath
-
-    print("[WARN]: No bash profile file found in home directory.", file=sys.stderr)
-    return None
 
 if __name__ == "__main__":
 
@@ -43,17 +30,17 @@ if __name__ == "__main__":
     D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigOption.COMMON)
     C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigOption.COMMON)
 
-    REPO_ROOT = Path(REPO_ROOT).withName('REPO ROOT PATH')
-    assert os.path.exists(REPO_ROOT.slash('.git').value), "Repo root does not contain .git folder"
-    SRC_PATH = REPO_ROOT.slash('src').slash('envsync').withName('SRC PATH')
+    REPO_ROOT = Path(EnvValues.REPO_ROOT_PATH).withName('REPO ROOT PATH')
+    SRC_PATH = Path(EnvValues.REPO_SRC_PATH).withName('SRC PATH')
+
     UTILS_PATH = SRC_PATH.slash('utils').withName('UTILS PATH')
 
     G_DRIVE = Path("G:\\").withName('G Drive').withScope(ConfigOption.COMMON)
     ONEDRIVE_MUREX = Path("D:\\OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigOption.MUREX)
 
-    DESKTOP = Path(os.path.join(HOME_DIR, 'Desktop')).withName('DESKTOP').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Desktop'))
-    DOWNLOADS = Path(os.path.join(HOME_DIR, 'Downloads')).withName('DOWNLOADS').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Downloads'))
-    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, os.path.join(G_PAVILION_15, 'MyDocuments'))
+    DESKTOP = Path(os.path.join(EnvValues.USER_HOME_DIR, 'Desktop')).withName('DESKTOP').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Desktop'))
+    DOWNLOADS = Path(os.path.join(EnvValues.USER_HOME_DIR, 'Downloads')).withName('DOWNLOADS').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Downloads'))
+    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, os.path.join(EnvValues.G_PAVILION_15, 'MyDocuments'))
 
     MUREX_CLI = C_DRIVE.slash('murexcli').withScope(ConfigOption.MUREX)
     MUREX_SETTINGS_JSON = D_DRIVE.slash('.mxdevenvpp').slash('settings').slash('python_scripts_settings.json').withScope(ConfigOption.MUREX)
@@ -76,7 +63,6 @@ if __name__ == "__main__":
     CURRENT_VERSION = murexSettings.get('version', None)
     OLD_VERSION = murexSettings.get('previous_version', None)
 
-    jqUpdateCommand = Exec('curl -L -o').addPath(os.path.join(BIN_DIR, 'jq.exe')).addArg('https://github.com/stedolan/jq/releases/latest/download/jq-win64.exe')
     updateGitBashCommand = Exec('git').addArg('update-git-for-windows')
 
     GQAF_SCRIPTS = MUREX_CLI.slash('gqaf').withScope(ConfigOption.MUREX)
@@ -110,7 +96,7 @@ if __name__ == "__main__":
         'pyautogui.hotkey("ctrl", "+")',
     ]),
 
-    cdInto(HOME_DIR).withScope(ConfigOption.LAPTOP).withTag("Init"),
+    cdInto(EnvValues.USER_HOME_DIR).withScope(ConfigOption.LAPTOP).withTag("Init"),
     cdInto('D:\\').withScope(ConfigOption.MUREX).withTag("Init"),
 
     Alias('home').to(cdInto('~').withScope(ConfigOption.LAPTOP)),
@@ -126,8 +112,6 @@ if __name__ == "__main__":
     Alias('vids').to(cdInto('D:\\Videos')).withScope(ConfigOption.LAPTOP),
     Alias('movies').to(cdInto('D:\\Videos\\Movies')).withScope(ConfigOption.LAPTOP),
 
-    # Alias('vim').to('nvim').withComment('nvim as default vim editor'),
-
     Alias('exp').to(RunPython(UTILS_PATH.slash('exp.py'))),
     Alias('start').to(RunPython(UTILS_PATH.slash('start.py'))),
     Alias('win').to(RunPython(UTILS_PATH.slash('win.py'))),
@@ -137,13 +121,13 @@ if __name__ == "__main__":
         Exec('exit'),
         ]).withTag('bash'),
 
+    Alias('reload').to('updatebashprofile').andThen('restart').withTag('bash'),
     Alias('cat').to('bat').withTag('bash'),
     Alias('json').to('bat --language=json').withTag('bash'),
     Alias('csv').to('bat --language=csv').withTag('bash'),
     Alias(':r').to('restart').withTag('bash'),
     Alias(':q').to('win 2').andThen('exit').withTag('bash'),
-    Alias('vimrc').to('code').addPath(os.path.join(HOME_DIR, '.vimrc')).withTag('bash'),
-    Alias('bashprofile').to('code').addPath(os.path.join(HOME_DIR, '.bash_profile')).withTag('bash'),
+    Alias('bashprofile').to('code').addPath(EnvValues.BASH_PROFILE_PATH).withTag('bash'),
 
     Alias('teeclip').to('tee').addArg(' >(clip)').withTag('bash'),
     Alias('first').to('head -n 1').withTag('bash'),
@@ -163,15 +147,10 @@ if __name__ == "__main__":
         cdInto('"$1"').andThen('ls'),
         ]).withTag('Quick cd'),
 
-    Alias('editvimrc').to('code').addPath(os.path.join(CURRENT_DIR, 'VimRC.py')).withTag('Config'),
+    Alias('editvimrc').to('code').addPath(EnvValues.VIM_RC_PATH).withTag('Config'),
     Alias('editbashprofile').to('code').addPath(CURRENT_FILE).withTag('Config'),
-    Alias('editnvim').to('vim').addPath(NVIM_RC).withTag('Config'),
     Alias('runbashprofile').to(RunPython(CURRENT_FILE)).withTag('Config'),
-
-    Function('updatebashprofile').thenExecute([
-        Exec('echo Updating...'),
-        Exec(RunPython(CURRENT_FILE).addArg('--in_place'))
-        ]).withTag('Config'),
+    Alias('updatebashprofile').to(RunPython(CURRENT_FILE)).addArg('--in_place').withTag('Config'),
 
     Alias('switch').to(InlinePython().linesAre([
         'import pyautogui',
@@ -209,16 +188,6 @@ if __name__ == "__main__":
     Alias('gln').to('git log -n').withTag('Git'),
 
     Alias('netpass').to(RunPython(SRC_PATH.slash('NetPass').slash('netpass.py'))),
-
-    Alias('jq').to(os.path.join(BIN_DIR, 'jq.exe')).withTag('JSON Query'),
-
-    Function('updatejq').thenExecute([
-        jqUpdateCommand,
-        Exec('echo').withComment('new line'),
-        Exec('alias jq'),
-        Exec('echo').withComment('new line'),
-        Exec('jq').addArg('--version'),
-        ]).withTag('JSON Query'),
 
     Alias('updategitbash').to(updateGitBashCommand).withTag('Update Git Bash'),
 
@@ -331,6 +300,8 @@ if __name__ == "__main__":
 
     if args.in_place:
         bashprofileContent: str = bashprofile.toString(scopeFilter=CURRENT_SCOPE)
-        ConfigFile.writeToFile(findBashProfilePath(), bashprofileContent)
+        ConfigFile.writeToFile(EnvValues.BASH_PROFILE_PATH, bashprofileContent)
     else:
         print(bashprofile.toString(), file=sys.stdout)
+
+    exit(0)

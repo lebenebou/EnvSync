@@ -2,10 +2,12 @@
 from __future__ import annotations
 from EnvSync.config.ConfigFile import *
 
-import os
-from EnvSync.utils import aspath
-
 import re
+import os
+import sys
+
+from EnvSync.utils import aspath
+from EnvSync import EnvValues
 
 class Variable(ConfigOption):
 
@@ -59,7 +61,7 @@ class Path(Variable):
         self.withScope(ConfigOption.COMMON)
 
         if not CURRENT_SCOPE == ConfigOption.LAPTOP:
-            self.value = os.path.join(G_PAVILION_15, os.path.basename(self.value))
+            self.value = os.path.join(EnvValues.G_PAVILION_15, os.path.basename(self.value))
 
         return self
 

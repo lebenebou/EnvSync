@@ -81,3 +81,5 @@ if __name__ == "__main__":
 
     else:
         print(vimrc.toString(CURRENT_SCOPE), file=sys.stdout)
+
+    exit(0)

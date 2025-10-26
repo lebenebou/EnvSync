@@ -1,21 +1,4 @@
 
-import os
-import sys
-
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PARENT_DIR = os.path.dirname(CURRENT_DIR)
-REPO_ROOT = os.path.dirname(os.path.dirname(PARENT_DIR))
-BIN_DIR = os.path.join(PARENT_DIR, 'Bin')
-
-sys.path.append(PARENT_DIR)
-
-HOME_DIR = os.path.expanduser('~')
-TMP_FOLDER_PATH = os.path.join(HOME_DIR, 'config.tmp')
-VIM_RC = os.path.join(HOME_DIR, '.vimrc')
-NVIM_RC = os.path.join(HOME_DIR, 'AppData', 'Local', 'nvim', 'init.vim')
-
-G_PAVILION_15 = os.path.join('G:\\', 'Other computers', 'Pavilion15')
-
 from EnvSync.utils.cli import commandOutput
 
 HOSTNAME = commandOutput('hostname').strip()
