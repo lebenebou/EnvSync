@@ -42,6 +42,8 @@ def readJsonFile(filePath: str) -> dict:
 
 class GlobalEnv:
 
+    DEBUG_LOGS: bool = False
+
     REPO_ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     REPO_SRC_PATH = os.path.join(REPO_ROOT_PATH, 'src', 'EnvSync')
 
