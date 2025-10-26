@@ -3,8 +3,6 @@ import os
 import sys
 import json
 
-import subprocess
-
 def findBashProfilePath(homeDir: str) -> str:
 
     options = ['.bash_profile', '.bashrc', '.profile']
@@ -79,7 +77,14 @@ class GlobalEnv:
         return passphrase
 
     @staticmethod
+    def encryptFile(inputFile: str, outputFile: str, passphrase: str):
+
+        assert False, 'Not implemented yet'
+
+    @staticmethod
     def encryptFiles(deleteDecryptedWhenDone: bool = False, cmdFallback: bool = False):
+
+        passphrase: str = GlobalEnv.getEcryptionPassphrase(cmdFallback)
 
         for root, dirs, files in os.walk(GlobalEnv.DECRYPTED_PATH):
 
@@ -91,16 +96,7 @@ class GlobalEnv:
 
                 os.makedirs(os.path.dirname(encryptedFilePath), exist_ok=True)
 
-                passphrase: str = GlobalEnv.getEcryptionPassphrase(cmdFallback)
-                result = subprocess.run(
-                    [ 'age', decryptedFilePath, '-o', encryptedFilePath, '-p'],
-                    input=passphrase.encode(),
-                    check=True
-                    )
-
-                if result.returncode != 0:
-                    print(f'[ERROR]: Failed to encrypt file: {decryptedFilePath}', file=sys.stderr)
-                    continue
+                GlobalEnv.encryptFile(decryptedFilePath, encryptedFilePath, passphrase)
 
                 if deleteDecryptedWhenDone:
                     os.remove(decryptedFilePath)
