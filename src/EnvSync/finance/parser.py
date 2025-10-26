@@ -9,7 +9,7 @@ import argparse
 
 from EnvSync import GlobalEnv
 
-REPORTS_DIR = os.path.join(GlobalEnv.ENCRYPTED_PATH, "finance")
+REPORTS_DIR = os.path.join(GlobalEnv.DECRYPTED_PATH, "finance")
 CACHED_DIR = os.path.join(REPORTS_DIR, "Cached")
 MASTER_EXCEL_FILE = os.path.join(REPORTS_DIR, "master.xlsx")
 
