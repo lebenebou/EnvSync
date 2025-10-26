@@ -42,7 +42,8 @@ def readJsonFile(filePath: str) -> dict:
 
 class GlobalEnv:
 
-    DEBUG_LOGS: bool = False
+    DEBUG_LOGS: bool = bool(0) # only set when tracing issues
+    if DEBUG_LOGS: print('[INIT] Initializing global env...', file=sys.stderr)
 
     REPO_ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     REPO_SRC_PATH = os.path.join(REPO_ROOT_PATH, 'src', 'EnvSync')
@@ -54,7 +55,9 @@ class GlobalEnv:
 
     USER_HOME_DIR = os.path.expanduser('~')
 
+    if DEBUG_LOGS: print('[INIT] Finding bashprofile file...', file=sys.stderr)
     BASH_PROFILE_PATH = findBashProfilePath(USER_HOME_DIR)
+    if DEBUG_LOGS: print('[INIT] Finding vimrc file...', file=sys.stderr)
     VIM_RC_PATH = findVimRcPath(USER_HOME_DIR)
 
     G_PAVILION_15 = os.path.join('G:\\', 'Other computers', 'Pavilion15')
