@@ -1,3 +1,4 @@
 {
-    "passphrase": null
+    "passphrase": null,
+    "log_verbosity": 0
 }

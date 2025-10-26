@@ -3,7 +3,6 @@ import os
 import sys
 import json
 
-from dataclasses import dataclass, field
 import subprocess
 
 def findBashProfilePath(homeDir: str) -> str:
@@ -40,14 +39,14 @@ def readJsonFile(filePath: str) -> dict:
 
     return data
 
-@dataclass(frozen=True) # these values cannot be changed
 class GlobalEnv:
 
     REPO_ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     REPO_SRC_PATH = os.path.join(REPO_ROOT_PATH, 'src', 'EnvSync')
 
     CONFIG_JSON_FILE = os.path.join(REPO_ROOT_PATH, 'config.json')
-    CONFIG_DATA: dict = field(default_factory=lambda: readJsonFile(GlobalEnv.CONFIG_JSON_FILE)) # a CONST dict
+    CONFIG_DATA: dict = readJsonFile(CONFIG_JSON_FILE)
+    LOG_VERBOSITY: int = CONFIG_DATA.get('log_verbosity', 0)
 
     ENCRYPTED_PATH = os.path.join(REPO_ROOT_PATH, 'encrypted')
     DECRYPTED_PATH = os.path.join(REPO_ROOT_PATH, 'decrypted')
@@ -60,7 +59,7 @@ class GlobalEnv:
     G_PAVILION_15 = os.path.join('G:\\', 'Other computers', 'Pavilion15')
 
     @staticmethod
-    def getConfigValue(configName: str) -> any:
+    def getConfigValue(configName: str, defaultValue: any = None) -> any:
         return GlobalEnv.CONFIG_DATA.get(configName, None)
 
     @staticmethod
@@ -74,11 +73,14 @@ class GlobalEnv:
             print('No encryption passphrase found in config.json. Please input manually', file=sys.stderr)
             passphrase = input('Enter encryption passphrase: ')
 
+        if not passphrase:
+            print('[WARN]: No encryption passphrase found.', file=sys.stderr)
+
         return passphrase
 
     @staticmethod
-    def encryptFiles(deleteDecrypted: bool = False, cmdFallback: bool = False):
-    
+    def encryptFiles(deleteDecryptedWhenDone: bool = False, cmdFallback: bool = False):
+
         for root, dirs, files in os.walk(GlobalEnv.DECRYPTED_PATH):
 
             for file in files:
@@ -100,12 +102,14 @@ class GlobalEnv:
                     print(f'[ERROR]: Failed to encrypt file: {decryptedFilePath}', file=sys.stderr)
                     continue
 
-                if deleteDecrypted:
+                if deleteDecryptedWhenDone:
                     os.remove(decryptedFilePath)
 
                 continue
 
             continue
+
+        return
 
     @staticmethod
     def decryptFiles(cmdFallback: bool = False):
