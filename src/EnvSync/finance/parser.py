@@ -7,9 +7,9 @@ from tabulate import tabulate
 import time
 import argparse
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
-PARENT_DIR = os.path.dirname(CURRENT_DIR)
-REPORTS_DIR = os.path.join(CURRENT_DIR, "REPORTS")
+from EnvSync import EnvValues
+
+REPORTS_DIR = os.path.join(EnvValues.ENCRYPTED_PATH, "finance")
 CACHED_DIR = os.path.join(REPORTS_DIR, "Cached")
 MASTER_EXCEL_FILE = os.path.join(REPORTS_DIR, "master.xlsx")
 
