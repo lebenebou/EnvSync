@@ -46,8 +46,6 @@ class GlobalEnv:
     REPO_SRC_PATH = os.path.join(REPO_ROOT_PATH, 'src', 'EnvSync')
 
     CONFIG_JSON_FILE = os.path.join(REPO_ROOT_PATH, 'config.json')
-    CONFIG_DATA: dict = readJsonFile(CONFIG_JSON_FILE)
-    LOG_VERBOSITY: int = CONFIG_DATA.get('log_verbosity', 0)
 
     ENCRYPTED_PATH = os.path.join(REPO_ROOT_PATH, 'encrypted')
     DECRYPTED_PATH = os.path.join(REPO_ROOT_PATH, 'decrypted')
@@ -60,8 +58,10 @@ class GlobalEnv:
     G_PAVILION_15 = os.path.join('G:\\', 'Other computers', 'Pavilion15')
 
     @staticmethod
-    def getConfigValue(configName: str, defaultValue: any = None) -> any:
-        return GlobalEnv.CONFIG_DATA.get(configName, None)
+    def getConfigValue(configName: str, valueIfNotFound: any = None) -> any:
+
+        configData: dict = readJsonFile(GlobalEnv.CONFIG_JSON_FILE)
+        return configData.get(configName, valueIfNotFound)
 
     @staticmethod
     def getEcryptionPassphrase(cmdFallback: bool = False) -> str:
