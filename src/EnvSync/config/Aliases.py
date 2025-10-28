@@ -61,7 +61,7 @@ class Path(Variable):
         self.withScope(ConfigOption.COMMON)
 
         if not CURRENT_SCOPE == ConfigOption.LAPTOP:
-            self.value = os.path.join(GlobalEnv.G_PAVILION_15, os.path.basename(self.value))
+            self.value = os.path.join(GlobalEnv().gPavilion15Path, os.path.basename(self.value))
 
         return self
 

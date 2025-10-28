@@ -1,21 +1,9 @@
 
 from EnvSync.config.Remaps import *
+from EnvSync import GlobalEnv
 
 import argparse
 import sys
-
-def findVimRcFile() -> str:
-
-    homedir = os.path.expanduser('~')
-    vimrc = os.path.join(homedir, '.vimrc')
-
-    if not os.path.isfile(vimrc):
-
-        # create empty vimrc file
-        with open(vimrc, 'w') as f:
-            f.write("")
-
-    return vimrc
 
 if __name__ == "__main__":
 
@@ -76,7 +64,7 @@ if __name__ == "__main__":
 
         vimrcContent: str = vimrc.toString(CURRENT_SCOPE | ConfigOption.NVIM)
 
-        vim_rcPath = findVimRcFile()
+        vim_rcPath = GlobalEnv().getVimrcPath()
         ConfigFile.writeToFile(vim_rcPath, vimrcContent)
 
     else:

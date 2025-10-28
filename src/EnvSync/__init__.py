@@ -5,30 +5,6 @@ import json
 
 from EnvSync.utils import zip, encryption, cli
 
-def findBashProfilePath(homeDir: str) -> str:
-
-    options = ['.bash_profile', '.bashrc', '.profile']
-    for filename in options:
-
-        fullPath = os.path.join(homeDir, filename)
-        if os.path.exists(fullPath):
-            return fullPath
-
-    print('[WARN] No bash profile file found in home directory.', file=sys.stderr)
-    return None
-
-def findVimRcPath(homeDir: str) -> str:
-
-    options = ['.vimrc', '_vimrc']
-    for filename in options:
-
-        fullPath = os.path.join(homeDir, filename)
-        if os.path.exists(fullPath):
-            return fullPath
-
-    print('[WARN] No vimrc file found in home directory.', file=sys.stderr)
-    return None
-
 def readJsonFile(filePath: str) -> dict:
 
     assert os.path.isfile(filePath), f'error while reading json, file does not exist: {filePath}'
@@ -39,52 +15,100 @@ def readJsonFile(filePath: str) -> dict:
 
     return data
 
-def initConfigJson(jsonFilePath: str):
-    
-    defaultConfig: dict = {
-        "passphrase": None
-    }
-
-    if os.path.isfile(jsonFilePath):
-        return
-
-    print(f'[INFO] Creating config json: {jsonFilePath}', file=sys.stderr)
-    with open(jsonFilePath, 'w') as f:
-        json.dump(defaultConfig, f, indent=4)
-
 class GlobalEnv:
 
-    DEBUG_LOGS: bool = bool(0) # only set when tracing issues
-    if DEBUG_LOGS: print('[INIT] Initializing global env...', file=sys.stderr)
+    _instance = None
 
-    REPO_ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    initConfigJson(os.path.join(REPO_ROOT_PATH, 'config.json'))
+    # singleton
+    def __new__(globalEnv):
 
-    REPO_SRC_PATH = os.path.join(REPO_ROOT_PATH, 'src', 'EnvSync')
+        if globalEnv._instance is None:
+            print('[INIT] GlobalEnv', file=sys.stderr)
+            globalEnv._instance = super().__new__(globalEnv)
+            globalEnv._instance._initialized = False
 
-    CONFIG_JSON_FILE = os.path.join(REPO_ROOT_PATH, 'config.json')
+        return globalEnv._instance
 
-    ENCRYPTED_PATH = os.path.join(REPO_ROOT_PATH, 'encrypted')
+    def __init__(self):
 
-    USER_HOME_DIR = os.path.expanduser('~')
+        if self._initialized:
+            return # singleton
+            
+        self._initialized = True
 
-    if DEBUG_LOGS: print('[INIT] Finding bashprofile file...', file=sys.stderr)
-    BASH_PROFILE_PATH = findBashProfilePath(USER_HOME_DIR)
-    if DEBUG_LOGS: print('[INIT] Finding vimrc file...', file=sys.stderr)
-    VIM_RC_PATH = findVimRcPath(USER_HOME_DIR)
+        self.loggingEnabled: bool = bool(0) # only set when tracing issues
+        if self.loggingEnabled: print('[INIT] Initializing global env...', file=sys.stderr)
 
-    G_PAVILION_15 = os.path.join('G:\\', 'Other computers', 'Pavilion15')
+        self.repoRootPath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        self.repoSrcPath = os.path.join(self.repoRootPath, 'src', 'EnvSync')
+        self.configJsonFile = os.path.join(self.repoRootPath, 'config.json')
+        self.encryptedPath = os.path.join(self.repoRootPath, 'encrypted')
 
-    @staticmethod
-    def getConfigValue(configName: str, valueIfNotFound: any = None) -> any:
+        self.userHomeDir = os.path.expanduser('~')
+        self._bashProfilePath: str = None
+        self._vimRcPath: str = None
 
-        configData: dict = readJsonFile(GlobalEnv.CONFIG_JSON_FILE)
+        self.gPavilion15Path = os.path.join('G:\\', 'Other computers', 'Pavilion15')
+
+    def getBashProfilePath(self) -> str:
+
+        if self._bashProfilePath is not None:
+            return self._bashProfilePath
+
+        print('Finding bashprofile file...', file=sys.stderr)
+
+        options = ['.bash_profile', '.bashrc', '.profile']
+        for filename in options:
+
+            fullPath = os.path.join(self.userHomeDir, filename)
+            if os.path.exists(fullPath):
+                return fullPath
+
+        print('[WARN] No bash profile file found in home directory.', file=sys.stderr)
+        return None
+
+    def getVimrcPath(self) -> str:
+
+        if self._vimRcPath is not None:
+            return self._vimRcPath
+
+        print('Finding vimrc file...', file=sys.stderr)
+
+        options = ['.vimrc', '_vimrc']
+        for filename in options:
+
+            fullPath = os.path.join(self.userHomeDir, filename)
+            if os.path.exists(fullPath):
+                return fullPath
+
+        print('[WARN] No vimrc file found in home directory.', file=sys.stderr)
+        return None
+
+    def initJsonConfig(self):
+
+        defaultConfig: dict = {
+            "passphrase": None,
+        }
+
+        if os.path.isfile(self.configJsonFile):
+            return
+
+        print(f'[INFO] Creating config json: {self.configJsonFile}', file=sys.stderr)
+
+        with open(self.configJsonFile, 'w') as f:
+            json.dump(defaultConfig, f, indent=4)
+
+    def getConfigValue(self, configName: str, valueIfNotFound: any = None) -> any:
+
+        if not os.path.isfile(self.configJsonFile):
+            self.initJsonConfig()
+
+        configData: dict = readJsonFile(self.configJsonFile)
         return configData.get(configName, valueIfNotFound)
 
-    @staticmethod
-    def getEncryptionPassphrase(cmdFallback: bool = False) -> str:
-        
-        passphrase: str = GlobalEnv.getConfigValue('passphrase')
+    def getEncryptionPassphrase(self, cmdFallback: bool = False) -> str:
+
+        passphrase: str = self.getConfigValue('passphrase')
         if passphrase:
             print('[INFO] Using encryption passphrase from config.json', file=sys.stderr)
             return passphrase
@@ -99,40 +123,38 @@ class GlobalEnv:
 
         return passphrase
 
-    @staticmethod
-    def accessEncryptedFiles(cmdFallback: bool = False) -> int:
+    def accessEncryptedFiles(self, cmdFallback: bool = False) -> int:
 
-        if os.path.isdir(GlobalEnv.ENCRYPTED_PATH):
+        if os.path.isdir(self.encryptedPath):
             return 0
 
         print('[INFO] Accessing encrypted files...', file=sys.stderr)
 
-        tmpZipFile: str = os.path.join(GlobalEnv.REPO_ROOT_PATH, 'encrypted.zip')
-        lockedZipFile: str = os.path.join(GlobalEnv.REPO_ROOT_PATH, 'encrypted.zip.locked')
+        tmpZipFile: str = os.path.join(self.repoRootPath, 'encrypted.zip')
+        lockedZipFile: str = os.path.join(self.repoRootPath, 'encrypted.zip.locked')
 
-        passphrase: str = GlobalEnv.getEncryptionPassphrase(cmdFallback=cmdFallback)
+        passphrase: str = self.getEncryptionPassphrase(cmdFallback=cmdFallback)
         returnCode: int = encryption.decryptFile(lockedZipFile, tmpZipFile, passphrase)
 
         if returnCode != 0:
             print('[ERROR] Could not access encrypted files. Bad passphrase?', file=sys.stderr)
             return returnCode
 
-        zip.unzipFile(tmpZipFile, GlobalEnv.REPO_ROOT_PATH)
+        zip.unzipFile(tmpZipFile, self.repoRootPath)
         os.remove(tmpZipFile)
 
         return 0
 
-    @staticmethod
-    def updateEncryptedFiles(commitMessage: str, cmdFallback: bool = False):
+    def updateEncryptedFiles(self, commitMessage: str, cmdFallback: bool = False):
 
-        repoRoot: str = GlobalEnv.REPO_ROOT_PATH
+        repoRoot: str = self.repoRootPath
         cli.runCommand(command='git stash', workingDir=repoRoot)
 
-        tmpZipFile: str = os.path.join(GlobalEnv.REPO_ROOT_PATH, 'encrypted.zip')
-        lockedZipFile: str = os.path.join(GlobalEnv.REPO_ROOT_PATH, 'encrypted.zip.locked')
+        tmpZipFile: str = os.path.join(self.repoRootPath, 'encrypted.zip')
+        lockedZipFile: str = os.path.join(self.repoRootPath, 'encrypted.zip.locked')
 
-        zip.zipFolder(GlobalEnv.ENCRYPTED_PATH, tmpZipFile)
-        passphrase: str = GlobalEnv.getEncryptionPassphrase(cmdFallback=cmdFallback)
+        zip.zipFolder(self.encryptedPath, tmpZipFile)
+        passphrase: str = self.getEncryptionPassphrase(cmdFallback=cmdFallback)
 
         # overwrite encrypted.zip.locked
         encryption.encryptFile(tmpZipFile, lockedZipFile, passphrase)
