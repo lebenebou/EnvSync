@@ -92,8 +92,8 @@ class GlobalEnv:
             print('[INFO] Already decrypted.', file=sys.stderr)
             return 0
 
-        tmpZipFile: str = os.path.join(GlobalEnv.REPO_SRC_PATH, 'encrypted.zip')
-        lockedZipFile: str = os.path.join(GlobalEnv.REPO_SRC_PATH, 'encrypted.zip.locked')
+        tmpZipFile: str = os.path.join(GlobalEnv.REPO_ROOT_PATH, 'encrypted.zip')
+        lockedZipFile: str = os.path.join(GlobalEnv.REPO_ROOT_PATH, 'encrypted.zip.locked')
 
         passphrase: str = GlobalEnv.getEncryptionPassphrase(cmdFallback=cmdFallback)
         returnCode: int = encryption.decryptFile(lockedZipFile, tmpZipFile, passphrase)
@@ -113,8 +113,8 @@ class GlobalEnv:
         repoRoot: str = GlobalEnv.REPO_ROOT_PATH
         cli.runCommand(command='git stash', workingDir=repoRoot)
 
-        tmpZipFile: str = os.path.join(GlobalEnv.REPO_SRC_PATH, 'encrypted.zip')
-        lockedZipFile: str = os.path.join(GlobalEnv.REPO_SRC_PATH, 'encrypted.zip.locked')
+        tmpZipFile: str = os.path.join(GlobalEnv.REPO_ROOT_PATH, 'encrypted.zip')
+        lockedZipFile: str = os.path.join(GlobalEnv.REPO_ROOT_PATH, 'encrypted.zip.locked')
 
         zip.zipFolder(GlobalEnv.ENCRYPTED_PATH, tmpZipFile)
         passphrase: str = GlobalEnv.getEncryptionPassphrase(cmdFallback=cmdFallback)
