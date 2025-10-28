@@ -85,7 +85,7 @@ class GlobalEnv:
         return passphrase
 
     @staticmethod
-    def encryptFile(inputFile: str, outputFile: str, passphrase: str):
+    def _encryptFile(inputFile: str, outputFile: str, passphrase: str):
 
         assert os.path.isfile(inputFile), f'cannot ecnrypt file that does not exist: {inputFile}'
 
@@ -99,7 +99,7 @@ class GlobalEnv:
         return
 
     @staticmethod
-    def decryptFile(inputFile: str, outputFile: str, passphrase: str) -> int:
+    def _decryptFile(inputFile: str, outputFile: str, passphrase: str) -> int:
 
         assert os.path.isfile(inputFile), f'cannot decrypt file that does not exist: {inputFile}'
 
@@ -127,7 +127,7 @@ class GlobalEnv:
 
                 os.makedirs(os.path.dirname(encryptedFilePath), exist_ok=True)
 
-                GlobalEnv.encryptFile(decryptedFilePath, encryptedFilePath, passphrase)
+                GlobalEnv._encryptFile(decryptedFilePath, encryptedFilePath, passphrase)
 
                 if deleteDecryptedWhenDone:
                     os.remove(decryptedFilePath)
@@ -139,18 +139,17 @@ class GlobalEnv:
         return
 
     @staticmethod
-    def decryptFiles(overwriteDecryptedDir: bool = False, cmdFallback: bool = False):
-        
+    def decryptFiles(overwriteDecryptedDir: bool = False, cmdFallback: bool = False) -> int:
+
         if not overwriteDecryptedDir and os.path.exists(GlobalEnv.DECRYPTED_PATH):
-            print(f'[WARN] Decrypted directory already exists: {GlobalEnv.DECRYPTED_PATH}', file=sys.stderr)
-            print(f'[WARN] NO DECRYPTION was done.', file=sys.stderr)
-            return
+            return -1
 
         if overwriteDecryptedDir and os.path.exists(GlobalEnv.DECRYPTED_PATH):
             shutil.rmtree(GlobalEnv.DECRYPTED_PATH, ignore_errors=False)
 
         passphrase: str = GlobalEnv.getEcryptionPassphrase(cmdFallback)
 
+        print(f'Decrypting files...', end='\r', file=sys.stderr)
         for root, dirs, files in os.walk(GlobalEnv.ENCRYPTED_PATH):
 
             encryptedFiles = (f for f in files if f.endswith('.age'))
@@ -162,14 +161,14 @@ class GlobalEnv:
 
                 os.makedirs(os.path.dirname(decryptedFilePath), exist_ok=True)
 
-                errorCode = GlobalEnv.decryptFile(encryptedFilePath, decryptedFilePath, passphrase)
+                errorCode = GlobalEnv._decryptFile(encryptedFilePath, decryptedFilePath, passphrase)
 
                 if errorCode == 0:
                     continue
 
                 elif errorCode == 1:
                     print(f'Bad passphrase. Cannot decrypt files', file=sys.stderr)
-                    return
+                    return 1
 
                 else:
                     print(f'[ERROR] Could not dectypt file: {encryptedFilePath}', file=sys.stderr)
@@ -177,3 +176,17 @@ class GlobalEnv:
                 continue
 
             continue
+
+        return 0
+
+    @staticmethod
+    def accessEncryptedFiles(cmdFallback: bool = False) -> int:
+
+        returnCode: int = GlobalEnv.decryptFiles(overwriteDecryptedDir=False, cmdFallback=True)
+        return returnCode
+
+    @staticmethod
+    def updateEncryptedFiles(cmdFallback: bool = False):
+
+        GlobalEnv.encryptFiles(deleteDecryptedWhenDone=False, cmdFallback=cmdFallback)
+        return
