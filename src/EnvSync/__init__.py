@@ -39,12 +39,27 @@ def readJsonFile(filePath: str) -> dict:
 
     return data
 
+def initConfigJson(jsonFilePath: str):
+    
+    defaultConfig: dict = {
+        "passphrase": None
+    }
+
+    if os.path.isfile(jsonFilePath):
+        return
+
+    print(f'[INFO] Creating config json: {jsonFilePath}', file=sys.stderr)
+    with open(jsonFilePath, 'w') as f:
+        json.dump(defaultConfig, f, indent=4)
+
 class GlobalEnv:
 
     DEBUG_LOGS: bool = bool(0) # only set when tracing issues
     if DEBUG_LOGS: print('[INIT] Initializing global env...', file=sys.stderr)
 
     REPO_ROOT_PATH = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    initConfigJson(os.path.join(REPO_ROOT_PATH, 'config.json'))
+
     REPO_SRC_PATH = os.path.join(REPO_ROOT_PATH, 'src', 'EnvSync')
 
     CONFIG_JSON_FILE = os.path.join(REPO_ROOT_PATH, 'config.json')
@@ -71,6 +86,7 @@ class GlobalEnv:
         
         passphrase: str = GlobalEnv.getConfigValue('passphrase')
         if passphrase:
+            print('[INFO] Using encryption passphrase from config.json', file=sys.stderr)
             return passphrase
 
         if cmdFallback:
@@ -86,11 +102,10 @@ class GlobalEnv:
     @staticmethod
     def accessEncryptedFiles(cmdFallback: bool = False) -> int:
 
-        print('Accessing encrypted files...', end='\r', file=sys.stderr)
-
         if os.path.isdir(GlobalEnv.ENCRYPTED_PATH):
-            print('[INFO] Already decrypted.', file=sys.stderr)
             return 0
+
+        print('[INFO] Accessing encrypted files...', file=sys.stderr)
 
         tmpZipFile: str = os.path.join(GlobalEnv.REPO_ROOT_PATH, 'encrypted.zip')
         lockedZipFile: str = os.path.join(GlobalEnv.REPO_ROOT_PATH, 'encrypted.zip.locked')
