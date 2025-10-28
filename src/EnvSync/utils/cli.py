@@ -23,7 +23,7 @@ def runCommand(command: str, workingDir: str = None) -> subprocess.CompletedProc
     result.stderr = result.stderr.strip()
     return result
 
-def commandOutput(command: str, workingDir: str) -> str: return runCommand(command, workingDir = workingDir).stdout
+def commandOutput(command: str, workingDir: str = None) -> str: return runCommand(command, workingDir = workingDir).stdout
 
 if __name__ == "__main__":
 
