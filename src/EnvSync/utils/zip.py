@@ -2,15 +2,12 @@
 import os
 import shutil
 
-def zipFolder(folderPath: str, outputZipPath: str, deleteAfter: bool = False):
+def zipFolder(folderPath: str, outputZipPath: str):
 
     assert os.path.isdir(folderPath), f'Cannot zip folder that does not exist: {folderPath}'
 
     baseName = os.path.splitext(outputZipPath)[0]
     shutil.make_archive(baseName, 'zip', folderPath)
-
-    if deleteAfter:
-        shutil.rmtree(folderPath, ignore_errors=False)
 
     return
 
