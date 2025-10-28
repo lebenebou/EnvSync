@@ -10,7 +10,7 @@ import argparse
 from EnvSync import GlobalEnv
 GlobalEnv.accessEncryptedFiles(cmdFallback=True)
 
-REPORTS_DIR = os.path.join(GlobalEnv.DECRYPTED_PATH, "finance")
+REPORTS_DIR = os.path.join(GlobalEnv.ENCRYPTED_PATH, "finance")
 CACHED_DIR = os.path.join(REPORTS_DIR, "Cached")
 MASTER_EXCEL_FILE = os.path.join(REPORTS_DIR, "master.xlsx")
 
@@ -36,6 +36,7 @@ def cacheSeries(series: Series):
     dataFrame = series.toDataFrame()
     print(f'(to {csvFilePath})', flush=True, file=sys.stderr)
     dataFrame.to_csv(csvFilePath, index=False)
+    # GlobalEnv.updateEncryptedFiles(f'update finance transactions as of {today}', cmdFallback=True)
 
 def transactionsFromBankAudiPDF(pdfPath: str) -> list[Transaction]:
 

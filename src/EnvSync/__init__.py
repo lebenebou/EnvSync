@@ -3,6 +3,8 @@ import os
 import sys
 import json
 
+from EnvSync.utils import zip, encryption
+
 def findBashProfilePath(homeDir: str) -> str:
 
     options = ['.bash_profile', '.bashrc', '.profile']
@@ -48,7 +50,6 @@ class GlobalEnv:
     CONFIG_JSON_FILE = os.path.join(REPO_ROOT_PATH, 'config.json')
 
     ENCRYPTED_PATH = os.path.join(REPO_ROOT_PATH, 'encrypted')
-    DECRYPTED_PATH = os.path.join(REPO_ROOT_PATH, 'decrypted')
 
     USER_HOME_DIR = os.path.expanduser('~')
 
@@ -78,19 +79,45 @@ class GlobalEnv:
 
         if not passphrase:
             print('[WARN] No encryption passphrase found.', file=sys.stderr)
+            return None
 
         return passphrase
 
     @staticmethod
     def accessEncryptedFiles(cmdFallback: bool = False) -> int:
 
-        raise NotImplementedError('Not implemented yet')
-        returnCode: int = 1
-        return returnCode
+        print('Accessing encrypted files...', end='\r', file=sys.stderr)
+
+        if os.path.isdir(GlobalEnv.ENCRYPTED_PATH):
+            print('[INFO] Already decrypted.', file=sys.stderr)
+            return 0
+
+        tmpZipFile: str = os.path.join(GlobalEnv.REPO_SRC_PATH, 'encrypted.zip')
+        lockedZipFile: str = os.path.join(GlobalEnv.REPO_SRC_PATH, 'encrypted.zip.locked')
+
+        passphrase: str = GlobalEnv.getEcryptionPassphrase(cmdFallback=cmdFallback)
+        returnCode: int = encryption.decryptFile(lockedZipFile, tmpZipFile, passphrase)
+
+        if returnCode != 0:
+            print('[ERROR] Could not access encrypted files. Bad passphrase?', file=sys.stderr)
+            return returnCode
+
+        zip.unzipFile(tmpZipFile, GlobalEnv.REPO_ROOT_PATH)
+        os.remove(tmpZipFile)
+
+        return 0
 
     @staticmethod
-    def updateEncryptedFiles(cmdFallback: bool = False):
+    def updateEncryptedFiles(CommitMessage: str, cmdFallback: bool = False):
 
-        raise NotImplementedError('Not implemented yet')
-        returnCode: int = 1
+        tmpZipFile: str = os.path.join(GlobalEnv.REPO_SRC_PATH, 'encrypted.zip')
+        lockedZipFile: str = os.path.join(GlobalEnv.REPO_SRC_PATH, 'encrypted.zip.locked')
+
+        zip.zipFolder(GlobalEnv.ENCRYPTED_PATH, tmpZipFile)
+        passphrase: str = GlobalEnv.getEcryptionPassphrase(cmdFallback=cmdFallback)
+        encryption.encryptFile(tmpZipFile, lockedZipFile, passphrase)
+
+        os.remove(tmpZipFile)
+
+        returnCode: int = 0
         return returnCode
