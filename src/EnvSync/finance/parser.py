@@ -8,6 +8,7 @@ import time
 import argparse
 
 from EnvSync import GlobalEnv
+GlobalEnv.accessEncryptedFiles(cmdFallback=True)
 
 REPORTS_DIR = os.path.join(GlobalEnv.DECRYPTED_PATH, "finance")
 CACHED_DIR = os.path.join(REPORTS_DIR, "Cached")
