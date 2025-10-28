@@ -1,5 +1,7 @@
 
 **/__pycache__/
 src/envsync.egg-info/
-decrypted/
+
+encrypted/
+
 config.json

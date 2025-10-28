@@ -3,9 +3,6 @@ import os
 import sys
 import json
 
-import shutil
-import subprocess
-
 def findBashProfilePath(homeDir: str) -> str:
 
     options = ['.bash_profile', '.bashrc', '.profile']
@@ -85,108 +82,15 @@ class GlobalEnv:
         return passphrase
 
     @staticmethod
-    def _encryptFile(inputFile: str, outputFile: str, passphrase: str):
-
-        assert os.path.isfile(inputFile), f'cannot ecnrypt file that does not exist: {inputFile}'
-
-        command = f'openssl enc -aes-256-cbc -pbkdf2 -in {inputFile} -out {outputFile} -pass pass:{passphrase}'
-        result = subprocess.run(command.split())
-
-        if result.returncode != 0:
-            print(f'[ERROR] Failed to encrypt file: {inputFile}', file=sys.stderr)
-            return
-
-        return
-
-    @staticmethod
-    def _decryptFile(inputFile: str, outputFile: str, passphrase: str) -> int:
-
-        assert os.path.isfile(inputFile), f'cannot decrypt file that does not exist: {inputFile}'
-
-        command = f'openssl enc -d -aes-256-cbc -pbkdf2 -in {inputFile} -out {outputFile} -pass pass:{passphrase}'
-        result = subprocess.run(command.split())
-
-        if result.returncode != 0:
-            print(f'[ERROR] Failed to decrypt file: {inputFile}', file=sys.stderr)
-            return result.returncode
-        
-        return 0
-
-    @staticmethod
-    def encryptFiles(deleteDecryptedWhenDone: bool = False, cmdFallback: bool = False):
-
-        passphrase: str = GlobalEnv.getEcryptionPassphrase(cmdFallback)
-
-        for root, dirs, files in os.walk(GlobalEnv.DECRYPTED_PATH):
-
-            for file in files:
-
-                decryptedFilePath = os.path.join(root, file)
-                relativePath = os.path.relpath(decryptedFilePath, GlobalEnv.DECRYPTED_PATH)
-                encryptedFilePath = os.path.join(GlobalEnv.ENCRYPTED_PATH, relativePath + '.age')
-
-                os.makedirs(os.path.dirname(encryptedFilePath), exist_ok=True)
-
-                GlobalEnv._encryptFile(decryptedFilePath, encryptedFilePath, passphrase)
-
-                if deleteDecryptedWhenDone:
-                    os.remove(decryptedFilePath)
-
-                continue
-
-            continue
-
-        return
-
-    @staticmethod
-    def decryptFiles(overwriteDecryptedDir: bool = False, cmdFallback: bool = False) -> int:
-
-        if not overwriteDecryptedDir and os.path.exists(GlobalEnv.DECRYPTED_PATH):
-            return -1
-
-        if overwriteDecryptedDir and os.path.exists(GlobalEnv.DECRYPTED_PATH):
-            shutil.rmtree(GlobalEnv.DECRYPTED_PATH, ignore_errors=False)
-
-        passphrase: str = GlobalEnv.getEcryptionPassphrase(cmdFallback)
-
-        print(f'Decrypting files...', end='\r', file=sys.stderr)
-        for root, dirs, files in os.walk(GlobalEnv.ENCRYPTED_PATH):
-
-            encryptedFiles = (f for f in files if f.endswith('.age'))
-            for file in encryptedFiles:
-
-                encryptedFilePath = os.path.join(root, file)
-                relativePath = os.path.relpath(encryptedFilePath, GlobalEnv.ENCRYPTED_PATH)
-                decryptedFilePath = os.path.join(GlobalEnv.DECRYPTED_PATH, relativePath[:-4])  # remove .age
-
-                os.makedirs(os.path.dirname(decryptedFilePath), exist_ok=True)
-
-                errorCode = GlobalEnv._decryptFile(encryptedFilePath, decryptedFilePath, passphrase)
-
-                if errorCode == 0:
-                    continue
-
-                elif errorCode == 1:
-                    print(f'Bad passphrase. Cannot decrypt files', file=sys.stderr)
-                    return 1
-
-                else:
-                    print(f'[ERROR] Could not dectypt file: {encryptedFilePath}', file=sys.stderr)
-
-                continue
-
-            continue
-
-        return 0
-
-    @staticmethod
     def accessEncryptedFiles(cmdFallback: bool = False) -> int:
 
-        returnCode: int = GlobalEnv.decryptFiles(overwriteDecryptedDir=False, cmdFallback=True)
+        raise NotImplementedError('Not implemented yet')
+        returnCode: int = 1
         return returnCode
 
     @staticmethod
     def updateEncryptedFiles(cmdFallback: bool = False):
 
-        GlobalEnv.encryptFiles(deleteDecryptedWhenDone=False, cmdFallback=cmdFallback)
-        return
+        raise NotImplementedError('Not implemented yet')
+        returnCode: int = 1
+        return returnCode
