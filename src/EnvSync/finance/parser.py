@@ -40,7 +40,7 @@ def cacheSeries(series: Series):
 
 def transactionsFromBankAudiPDF(pdfPath: str) -> list[Transaction]:
 
-    print(f'Parsing Bank Audi {os.path.basename(pdfPath)}...', end=' ', flush=True, file=sys.stderr)
+    print(f'Parsing Bank Audi {os.path.basename(pdfPath)}', end=' ', flush=True, file=sys.stderr)
 
     data: list[list[str]] = []
     with pdfplumber.open(pdfPath) as pdf:
@@ -110,7 +110,7 @@ def transactionsFromBankAudiPDF(pdfPath: str) -> list[Transaction]:
 
 def transactionsFromRevolutCSV(csvFilePath: str) -> list[Transaction]:
 
-    print(f'Parsing Revolut {os.path.basename(csvFilePath)}...', end=' ', flush=True, file=sys.stderr)
+    print(f'Parsing Revolut {os.path.basename(csvFilePath)}', end=' ', flush=True, file=sys.stderr)
 
     dataFrame: pandas.DataFrame = pandas.read_csv(csvFilePath)
     transactions: list[Transaction] = []
@@ -156,7 +156,7 @@ def transactionsFromCachedCsv(csvFilePath: str) -> list[Transaction]:
     dataFrame: pandas.DataFrame = pandas.read_csv(csvFilePath)
     transactions: list[Transaction] = []
     
-    print(f'Parsing transactions from dataframe {csvFilePath}...', flush=True, file=sys.stderr)
+    print(f'Parsing transactions from dataframe {csvFilePath}', flush=True, file=sys.stderr)
 
     for _, row in dataFrame.iterrows():
         t = Transaction.fromDataFrameRow(row)
