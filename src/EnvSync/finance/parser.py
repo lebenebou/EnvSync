@@ -36,7 +36,7 @@ def cacheSeries(series: Series):
     dataFrame = series.toDataFrame()
     print(f'(to {csvFilePath})', flush=True, file=sys.stderr)
     dataFrame.to_csv(csvFilePath, index=False)
-    # GlobalEnv.updateEncryptedFiles(f'update finance transactions as of {today}', cmdFallback=True)
+    GlobalEnv.updateEncryptedFiles(f'update finance transactions as of {today}', cmdFallback=True)
 
 def transactionsFromBankAudiPDF(pdfPath: str) -> list[Transaction]:
 

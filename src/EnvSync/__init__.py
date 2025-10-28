@@ -3,7 +3,7 @@ import os
 import sys
 import json
 
-from EnvSync.utils import zip, encryption
+from EnvSync.utils import zip, encryption, cli
 
 def findBashProfilePath(homeDir: str) -> str:
 
@@ -67,7 +67,7 @@ class GlobalEnv:
         return configData.get(configName, valueIfNotFound)
 
     @staticmethod
-    def getEcryptionPassphrase(cmdFallback: bool = False) -> str:
+    def getEncryptionPassphrase(cmdFallback: bool = False) -> str:
         
         passphrase: str = GlobalEnv.getConfigValue('passphrase')
         if passphrase:
@@ -95,7 +95,7 @@ class GlobalEnv:
         tmpZipFile: str = os.path.join(GlobalEnv.REPO_SRC_PATH, 'encrypted.zip')
         lockedZipFile: str = os.path.join(GlobalEnv.REPO_SRC_PATH, 'encrypted.zip.locked')
 
-        passphrase: str = GlobalEnv.getEcryptionPassphrase(cmdFallback=cmdFallback)
+        passphrase: str = GlobalEnv.getEncryptionPassphrase(cmdFallback=cmdFallback)
         returnCode: int = encryption.decryptFile(lockedZipFile, tmpZipFile, passphrase)
 
         if returnCode != 0:
@@ -108,14 +108,23 @@ class GlobalEnv:
         return 0
 
     @staticmethod
-    def updateEncryptedFiles(CommitMessage: str, cmdFallback: bool = False):
+    def updateEncryptedFiles(commitMessage: str, cmdFallback: bool = False):
+
+        repoRoot: str = GlobalEnv.REPO_ROOT_PATH
+        cli.runCommand(command='git stash', workingDir=repoRoot)
 
         tmpZipFile: str = os.path.join(GlobalEnv.REPO_SRC_PATH, 'encrypted.zip')
         lockedZipFile: str = os.path.join(GlobalEnv.REPO_SRC_PATH, 'encrypted.zip.locked')
 
         zip.zipFolder(GlobalEnv.ENCRYPTED_PATH, tmpZipFile)
-        passphrase: str = GlobalEnv.getEcryptionPassphrase(cmdFallback=cmdFallback)
+        passphrase: str = GlobalEnv.getEncryptionPassphrase(cmdFallback=cmdFallback)
+
+        # overwrite encrypted.zip.locked
         encryption.encryptFile(tmpZipFile, lockedZipFile, passphrase)
+
+        cli.runCommand(command=f'git add {lockedZipFile}', workingDir=repoRoot)
+        cli.runCommand(command=f'git commit -m "{commitMessage}"', workingDir=repoRoot)
+        cli.runCommand(command='git stash pop', workingDir=repoRoot)
 
         os.remove(tmpZipFile)
 
