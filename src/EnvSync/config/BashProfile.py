@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     globalEnv = GlobalEnv()
     REPO_ROOT = Path(globalEnv.repoRootPath).withName('REPO ROOT PATH')
-    SRC_PATH = Path(globalEnv.repoRootPath).withName('SRC PATH')
+    SRC_PATH = Path(globalEnv.repoSrcPath).withName('SRC PATH')
 
     UTILS_PATH = SRC_PATH.slash('utils').withName('UTILS PATH')
 
@@ -216,10 +216,6 @@ if __name__ == "__main__":
     Alias('startbpversion').to('start').addArg('/d/$(bpversion)/mx-$(bpversion).sln.lnk').withScope(ConfigOption.MUREX).withTag('MxVersion'),
     Alias('cdapps').to(cdInto('/d/apps')).withScope(ConfigOption.MUREX).withTag('MxVersion'),
     Alias('appsversion').to(cdInto('/d/apps/$(version)*')).withScope(ConfigOption.MUREX).withTag('MxVersion'),
-
-    Variable(Exec('jq .backport_version -r <').addPath(MUREX_SETTINGS_JSON)).withName('BPVERSION').withScope(ConfigOption.MUREX).withTag('Backport'),
-    Alias('bpversion').to('echo $BPVERSION').withScope(ConfigOption.MUREX).withTag('Backport'),
-    Alias('cdbpversion').to(cdInto('/d/$(bpversion)')).withScope(ConfigOption.MUREX).withTag('Backport'),
 
     Exec(f'echo Hello {USERNAME}!').withScope(ConfigOption.MUREX).withTag('Welcome message'),
     Exec('echo You are on ALIEN version').addArg('$(version)').withScope(ConfigOption.MUREX).withTag('Welcome message'),
