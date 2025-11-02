@@ -1,5 +1,5 @@
 
-from EnvSync.GlobalEnv import GlobalEnv, ConfigScope
+from GlobalEnv import GlobalEnv, ConfigScope
 
 class ConfigOption:
 

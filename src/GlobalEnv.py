@@ -5,7 +5,7 @@ import json
 
 import time
 
-from EnvSync.utils import zip, encryption, cli
+from utils import zip, encryption, cli
 
 def readJsonFile(filePath: str) -> dict:
 
@@ -92,8 +92,8 @@ class GlobalEnv:
         self.loggingEnabled: bool = bool(0) # only set when tracing issues
         if self.loggingEnabled: print('[INIT] Initializing global env...', file=sys.stderr)
 
-        self.repoRootPath = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        self.repoSrcPath = os.path.join(self.repoRootPath, 'src', 'EnvSync')
+        self.repoRootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        self.repoSrcPath = os.path.join(self.repoRootPath, 'src')
         self.configJsonFile = os.path.join(self.repoRootPath, 'config.json')
         self.encryptedPath = os.path.join(self.repoRootPath, 'encrypted')
 

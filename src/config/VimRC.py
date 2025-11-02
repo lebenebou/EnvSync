@@ -1,6 +1,6 @@
 
-from EnvSync.config.Remaps import *
-from EnvSync.GlobalEnv import GlobalEnv, ConfigScope
+from config.Remaps import *
+from GlobalEnv import GlobalEnv, ConfigScope
 
 import argparse
 import sys

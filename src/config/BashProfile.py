@@ -3,8 +3,8 @@ import os
 import sys
 import argparse
 
-from EnvSync.GlobalEnv import GlobalEnv, ConfigScope
-from EnvSync.config.Aliases import *
+from GlobalEnv import GlobalEnv, ConfigScope
+from config.Aliases import *
 
 CURRENT_FILE = os.path.abspath(__file__)
 

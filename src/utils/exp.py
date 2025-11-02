@@ -1,7 +1,7 @@
 
 import os
 import argparse
-from EnvSync.utils.start import startItemOrProcess
+from start import startItemOrProcess
 
 CURRENT_DIR = os.getcwd()
 

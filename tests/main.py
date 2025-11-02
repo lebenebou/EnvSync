@@ -1,7 +1,8 @@
 
-from EnvSync.GlobalEnv import GlobalEnv, ConfigScope
-from EnvSync.utils import cli
 import sys, os
+
+from GlobalEnv import GlobalEnv, ConfigScope
+from utils import cli
 
 class Color:
 

@@ -7,7 +7,7 @@ from tabulate import tabulate
 import time
 import argparse
 
-from EnvSync.GlobalEnv import GlobalEnv
+from GlobalEnv import GlobalEnv
 GlobalEnv().accessEncryptedFiles(cmdFallback=True)
 
 REPORTS_DIR = os.path.join(GlobalEnv().encryptedPath, "finance")
@@ -19,8 +19,8 @@ import pandas
 from openpyxl import load_workbook
 import pdfplumber
 
-from EnvSync.finance.Transaction import Transaction, Series, Currency, TransactionLocation
-from EnvSync.finance.helpers import parseDate, parseFloat, tryParseFloat
+from finance.Transaction import Transaction, Series, Currency, TransactionLocation
+from finance.helpers import parseDate, parseFloat, tryParseFloat
 
 def cacheSeries(series: Series):
 

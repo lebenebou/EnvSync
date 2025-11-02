@@ -5,7 +5,7 @@ import datetime
 import pandas
 from enum import Enum, auto
 
-from EnvSync.finance.helpers import parseDate, percentageDifference, parseFloat, StringComparator
+from finance.helpers import parseDate, percentageDifference, parseFloat, StringComparator
 
 import unicodedata
 

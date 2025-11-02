@@ -1,5 +1,5 @@
 
-from EnvSync.config.ConfigFile import ConfigFile, ConfigOption
+from config.ConfigFile import ConfigFile, ConfigOption
 import os
 
 CURRENT_FILE = os.path.abspath(__file__)

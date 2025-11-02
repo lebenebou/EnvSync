@@ -1,13 +1,13 @@
 
 from __future__ import annotations
-from EnvSync.config.ConfigFile import ConfigOption, ConfigFile
-from EnvSync.GlobalEnv import GlobalEnv, ConfigScope
+from config.ConfigFile import ConfigOption, ConfigFile
+from GlobalEnv import GlobalEnv, ConfigScope
 
 import re
 import os
 import sys
 
-from EnvSync.utils import aspath
+from utils import aspath
 
 class Variable(ConfigOption):
 
