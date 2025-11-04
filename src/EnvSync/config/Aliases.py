@@ -7,7 +7,6 @@ import os
 import sys
 
 from EnvSync.utils import aspath
-from EnvSync.GlobalEnv import GlobalEnv
 
 class Variable(ConfigOption):
 
@@ -54,16 +53,6 @@ class Path(Variable):
     def slash(self, otherPath):
         otherPath = Path(otherPath)
         return Path(os.path.join(self.value, otherPath.value)).withScope(self.scope)
-
-    def asGoogleShared(self):
-
-        assert not self.hasBeenGivenAlternate, "This folder has been given an alternate path, it cannot be shared on google drive"
-        self.withScope(ConfigOption.COMMON)
-
-        if not CURRENT_SCOPE == ConfigOption.LAPTOP:
-            self.value = os.path.join(GlobalEnv().gPavilion15Path, os.path.basename(self.value))
-
-        return self
 
     def withAlternateValueForScope(self, scope, alternateValue: str | Path):
 
