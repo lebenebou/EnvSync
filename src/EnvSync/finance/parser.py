@@ -7,7 +7,7 @@ from tabulate import tabulate
 import time
 import argparse
 
-from EnvSync import GlobalEnv
+from EnvSync.GlobalEnv import GlobalEnv
 GlobalEnv().accessEncryptedFiles(cmdFallback=True)
 
 REPORTS_DIR = os.path.join(GlobalEnv().encryptedPath, "finance")

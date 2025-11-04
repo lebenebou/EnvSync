@@ -1,7 +1,7 @@
 
 from EnvSync.config.ConfigFile import ConfigScope
 from EnvSync.config.Remaps import *
-from EnvSync import GlobalEnv
+from EnvSync.GlobalEnv import GlobalEnv
 
 import argparse
 import sys

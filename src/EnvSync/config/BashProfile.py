@@ -4,7 +4,7 @@ import sys
 import argparse
 
 from EnvSync.config.Aliases import *
-from EnvSync import GlobalEnv
+from EnvSync.GlobalEnv import GlobalEnv
 
 CURRENT_FILE = os.path.abspath(__file__)
 

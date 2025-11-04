@@ -7,7 +7,7 @@ import os
 import sys
 
 from EnvSync.utils import aspath
-from EnvSync import GlobalEnv
+from EnvSync.GlobalEnv import GlobalEnv
 
 class Variable(ConfigOption):
 
