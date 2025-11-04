@@ -5,9 +5,9 @@ HOSTNAME = commandOutput('hostname').strip()
 PERSONAL_PC_NAME = 'LebenebouPC'
 HOME_PC_NAME = 'LebenebouPC'
 
-class ConfigOption:
+from enum import IntFlag
+class ConfigScope(IntFlag):
 
-    # Scopes
     MUREX = 1
     LAPTOP = 2
     HOME_PC = 4
@@ -17,11 +17,13 @@ class ConfigOption:
 
     COMMON = MUREX | LAPTOP | HOME_PC
 
+class ConfigOption:
+
     def __init__(self):
 
         self.tag = None
         self.comment = None
-        self.scope = ConfigOption.COMMON
+        self.scope = ConfigScope.COMMON
 
     def withTag(self, tag: str):
 
@@ -34,7 +36,7 @@ class ConfigOption:
 
     def withScope(self, newScope):
 
-        if self.scope == ConfigOption.COMMON:
+        if self.scope == ConfigScope.COMMON:
             self.scope = 0
 
         self.scope |= newScope
@@ -48,13 +50,13 @@ class ConfigOption:
     def toString(self) -> str:
         raise NotImplementedError("This method is virtual, please override")
 
-CURRENT_SCOPE = ConfigOption.LAPTOP
+CURRENT_SCOPE = ConfigScope.LAPTOP
 
 if HOSTNAME.lower() == 'dell163rws'.lower():
-    CURRENT_SCOPE = ConfigOption.MUREX
+    CURRENT_SCOPE = ConfigScope.MUREX
 
 if HOSTNAME.lower() == 'home-pc'.lower():
-    CURRENT_SCOPE = ConfigOption.HOME_PC
+    CURRENT_SCOPE = ConfigScope.HOME_PC
 
 class ConfigFile:
 
@@ -100,3 +102,21 @@ class ConfigFile:
     @staticmethod
     def writeToFile(path: str, stringStream: str):
         open(path, 'w').write(stringStream)
+
+
+def runUnitTests():
+    
+    assert (ConfigScope.MUREX | ConfigScope.LAPTOP) == 3
+
+def printCurrentScope():
+    
+    print('Current config scope includes:')
+
+    for scope in ConfigScope:
+        if scope & CURRENT_SCOPE:
+            print(f'- {scope.name}')
+
+if __name__ == '__main__':
+
+    runUnitTests()
+    printCurrentScope()

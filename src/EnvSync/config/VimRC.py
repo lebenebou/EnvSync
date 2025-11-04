@@ -1,4 +1,5 @@
 
+from EnvSync.config.ConfigFile import ConfigScope
 from EnvSync.config.Remaps import *
 from EnvSync import GlobalEnv
 
@@ -62,7 +63,7 @@ if __name__ == "__main__":
 
     if args.in_place:
 
-        vimrcContent: str = vimrc.toString(CURRENT_SCOPE | ConfigOption.NVIM)
+        vimrcContent: str = vimrc.toString(CURRENT_SCOPE | ConfigScope.NVIM)
 
         vim_rcPath = GlobalEnv().getVimrcPath()
         ConfigFile.writeToFile(vim_rcPath, vimrcContent)

@@ -27,10 +27,10 @@ if __name__ == "__main__":
         CURRENT_SCOPE = args.force_scope
 
     # Windows drives
-    D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigOption.COMMON)
-    C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigOption.COMMON)
-    G_DRIVE = Path("G:\\").withName('G Drive').withScope(ConfigOption.COMMON)
-    ONEDRIVE_MUREX = G_DRIVE.slash("OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigOption.MUREX)
+    D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigScope.COMMON)
+    C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigScope.COMMON)
+    G_DRIVE = Path("G:\\").withName('G Drive').withScope(ConfigScope.COMMON)
+    ONEDRIVE_MUREX = G_DRIVE.slash("OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX)
 
     # Repo paths
     globalEnv = GlobalEnv()
@@ -38,29 +38,29 @@ if __name__ == "__main__":
     SRC_PATH = Path(globalEnv.repoSrcPath).withName('SRC PATH')
     UTILS_PATH = SRC_PATH.slash('utils').withName('UTILS PATH')
 
-    DESKTOP = Path(os.path.join(globalEnv.userHomeDir, 'Desktop')).withName('DESKTOP').withScope(ConfigOption.LAPTOP)\
-        .withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Desktop'))
+    DESKTOP = Path(os.path.join(globalEnv.userHomeDir, 'Desktop')).withName('DESKTOP').withScope(ConfigScope.LAPTOP)\
+        .withAlternateValueForScope(ConfigScope.MUREX, ONEDRIVE_MUREX.slash('Desktop'))
 
-    DOWNLOADS = Path(os.path.join(globalEnv.userHomeDir, 'Downloads')).withName('DOWNLOADS').withScope(ConfigOption.LAPTOP)\
-        .withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Downloads'))
+    DOWNLOADS = Path(os.path.join(globalEnv.userHomeDir, 'Downloads')).withName('DOWNLOADS').withScope(ConfigScope.LAPTOP)\
+        .withAlternateValueForScope(ConfigScope.MUREX, ONEDRIVE_MUREX.slash('Downloads'))
 
-    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigOption.LAPTOP)\
-        .withAlternateValueForScope(ConfigOption.MUREX, os.path.join(globalEnv.gPavilion15Path, 'MyDocuments'))
+    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigScope.LAPTOP)\
+        .withAlternateValueForScope(ConfigScope.MUREX, os.path.join(globalEnv.gPavilion15Path, 'MyDocuments'))
 
-    MUREX_CLI = C_DRIVE.slash('murexcli').withScope(ConfigOption.MUREX)
-    MUREX_SETTINGS_JSON = D_DRIVE.slash('.mxdevenvpp').slash('settings').slash('python_scripts_settings.json').withScope(ConfigOption.MUREX)
+    MUREX_CLI = C_DRIVE.slash('murexcli').withScope(ConfigScope.MUREX)
+    MUREX_SETTINGS_JSON = D_DRIVE.slash('.mxdevenvpp').slash('settings').slash('python_scripts_settings.json').withScope(ConfigScope.MUREX)
 
     murexSettings = dict()
-    if CURRENT_SCOPE == ConfigOption.MUREX:
+    if CURRENT_SCOPE == ConfigScope.MUREX:
         murexSettings = readJsonFromFile(MUREX_SETTINGS_JSON.value)
 
-    MUREX_SETTINGS_PY = MUREX_CLI.slash('settings.py').withScope(ConfigOption.MUREX)
-    U_MXDEVENV = Path('U:\\tools\\mxdevenv\\mxdevenvpp').withScope(ConfigOption.MUREX)
-    D_MXDEVENV = Path('D:\\.mxdevenvpp').withScope(ConfigOption.MUREX)
-    REPO_MXDEVENV = Path('C:\\mxdevenv').withScope(ConfigOption.MUREX)
+    MUREX_SETTINGS_PY = MUREX_CLI.slash('settings.py').withScope(ConfigScope.MUREX)
+    U_MXDEVENV = Path('U:\\tools\\mxdevenv\\mxdevenvpp').withScope(ConfigScope.MUREX)
+    D_MXDEVENV = Path('D:\\.mxdevenvpp').withScope(ConfigScope.MUREX)
+    REPO_MXDEVENV = Path('C:\\mxdevenv').withScope(ConfigScope.MUREX)
 
-    UNMAP_DRIVES_SCRIPT = REPO_MXDEVENV.slash('Mxdevenvpp').slash('_Scripts').slash('mapsremove.bat').withScope(ConfigOption.MUREX)
-    MAP_DRIVES_SCRIPT = REPO_MXDEVENV.slash('Mxdevenvpp').slash('_Scripts').slash('mapsFR.vbs').withScope(ConfigOption.MUREX)
+    UNMAP_DRIVES_SCRIPT = REPO_MXDEVENV.slash('Mxdevenvpp').slash('_Scripts').slash('mapsremove.bat').withScope(ConfigScope.MUREX)
+    MAP_DRIVES_SCRIPT = REPO_MXDEVENV.slash('Mxdevenvpp').slash('_Scripts').slash('mapsFR.vbs').withScope(ConfigScope.MUREX)
 
     USERNAME = murexSettings.get('username', HOSTNAME)
     PASSWORD = murexSettings.get('password', None)
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     updateGitBashCommand = Exec('git').addArg('update-git-for-windows')
 
     # Murex scripts
-    GQAF_SCRIPTS = MUREX_CLI.slash('gqaf').withScope(ConfigOption.MUREX)
+    GQAF_SCRIPTS = MUREX_CLI.slash('gqaf').withScope(ConfigScope.MUREX)
     p4helperScript = RunPython(MUREX_CLI.slash('p4helper.py'))
     jiraScript = RunPython(MUREX_CLI.slash('JiraRequestHandler.py'))
     jenkinsScript = RunPython(MUREX_CLI.slash('JenkinsRequestHandler.py'))
@@ -90,14 +90,14 @@ if __name__ == "__main__":
     Alias('aspath').to(RunPython(UTILS_PATH.slash('aspath.py')).addArg('--from_stdin')).withTag(None),
     Alias('file').to('paste').pipe('aspath -linux').withTag(None),
 
-    Alias('itunes').to('C:\\Program Files\\iTunes\\iTunes.exe').disown().withTag('iTunes').withScope(ConfigOption.LAPTOP),
+    Alias('itunes').to('C:\\Program Files\\iTunes\\iTunes.exe').disown().withTag('iTunes').withScope(ConfigScope.LAPTOP),
 
-    Alias('theplan').to('start').addPath(G_DRIVE.slash('My Drive').slash('THE_PLAN.xlsx')).withScope(ConfigOption.COMMON).withTag('Personal'),
+    Alias('theplan').to('start').addPath(G_DRIVE.slash('My Drive').slash('THE_PLAN.xlsx')).withScope(ConfigScope.COMMON).withTag('Personal'),
     Alias('money').to(RunPython(SRC_PATH.slash('finance').slash('parser.py'))).withTag('Personal'),
     Alias('updatemoney').to('money').addArg('--refresh').withTag('Personal'),
 
     Alias('grep').to('grep -i --color --binary-files=without-match --exclude-dir=".git"').withTag('Grep default options'),
-    Alias('grepdefects').to('grep').addArg('-Eo').addQuoted('DEF[0-9]+').withTag('grep').withScope(ConfigOption.MUREX),
+    Alias('grepdefects').to('grep').addArg('-Eo').addQuoted('DEF[0-9]+').withTag('grep').withScope(ConfigScope.MUREX),
 
     InlinePython(runImmediately=True).linesAre([
         'import pyautogui',
@@ -107,21 +107,21 @@ if __name__ == "__main__":
         'pyautogui.hotkey("ctrl", "+")',
     ]),
 
-    cdInto(globalEnv.userHomeDir).withScope(ConfigOption.LAPTOP).withTag("Init"),
-    cdInto('D:\\').withScope(ConfigOption.MUREX).withTag("Init"),
+    cdInto(globalEnv.userHomeDir).withScope(ConfigScope.LAPTOP).withTag("Init"),
+    cdInto('D:\\').withScope(ConfigScope.MUREX).withTag("Init"),
 
-    Alias('home').to(cdInto('~').withScope(ConfigOption.LAPTOP)),
-    Alias('home').to('murexcli').withScope(ConfigOption.MUREX),
+    Alias('home').to(cdInto('~').withScope(ConfigScope.LAPTOP)),
+    Alias('home').to('murexcli').withScope(ConfigScope.MUREX),
     Alias('src').to(cdInto(SRC_PATH)),
     Alias('back').to('cd').addArg('..').andThen('ls'),
     Alias('desk').to(cdInto(DESKTOP)),
     Alias('downloads').to(cdInto(DOWNLOADS)),
     Alias('docs').to(cdInto(DOCUMENTS)),
 
-    Alias('music').to(cdInto('D:\\Music')).withScope(ConfigOption.LAPTOP),
-    Alias('pics').to(cdInto('D:\\Camera Roll')).withScope(ConfigOption.LAPTOP),
-    Alias('vids').to(cdInto('D:\\Videos')).withScope(ConfigOption.LAPTOP),
-    Alias('movies').to(cdInto('D:\\Videos\\Movies')).withScope(ConfigOption.LAPTOP),
+    Alias('music').to(cdInto('D:\\Music')).withScope(ConfigScope.LAPTOP),
+    Alias('pics').to(cdInto('D:\\Camera Roll')).withScope(ConfigScope.LAPTOP),
+    Alias('vids').to(cdInto('D:\\Videos')).withScope(ConfigScope.LAPTOP),
+    Alias('movies').to(cdInto('D:\\Videos\\Movies')).withScope(ConfigScope.LAPTOP),
 
     Alias('exp').to(RunPython(UTILS_PATH.slash('exp.py'))),
     Alias('start').to(RunPython(UTILS_PATH.slash('start.py'))),
@@ -201,67 +201,67 @@ if __name__ == "__main__":
     Alias('clip').to(copy).withTag('Clipboard'),
     Alias('paste').to(paste).pipe('tr -d').addArg(r'"\r"').withTag('Clipboard'),
 
-    Alias('settings').to('code').addPath(MUREX_SETTINGS_JSON).withScope(ConfigOption.MUREX).withTag('MxSettings'),
+    Alias('settings').to('code').addPath(MUREX_SETTINGS_JSON).withScope(ConfigScope.MUREX).withTag('MxSettings'),
 
-    Variable(CURRENT_VERSION).withName('VERSION').withScope(ConfigOption.MUREX).withTag('MxVersion'),
-    Variable(OLD_VERSION).withName('OLD_VERSION').withScope(ConfigOption.MUREX).withTag('MxVersion'),
-    Alias('allMxVersions').to(RunPython(GQAF_SCRIPTS.slash('allMxVersions.py'))).withScope(ConfigOption.MUREX).withTag('MxVersion'),
-    Alias('version').to('echo $VERSION').withScope(ConfigOption.MUREX).withTag('MxVersion'),
-    Alias('versionUpgrade').to(RunPython(DOWNLOADS.slash('scripts').slash('upgradeVersion.py'))).withScope(ConfigOption.MUREX).withTag('MxVersion'),
-    Alias('richVersionView').to(RunPython(MUREX_CLI.slash('gqaf').slash('richVersionView.py'))).withScope(ConfigOption.MUREX).withTag('Status'),
-    Alias('displayAlien').to(RunPython(MUREX_CLI.slash('display_alien').slash('excel_refresher.py')).andThen('start').addPath(MUREX_CLI.slash('display_alien').slash('display_alien.xlsx'))).withScope(ConfigOption.MUREX).withTag('Status'),
-    Alias('richVersionViewCsv').to('richVersionView').addArg('--csv').addArg('> tmp.csv').andThen('start tmp.csv').withScope(ConfigOption.MUREX).withTag('Status'),
-    Alias('safetyNetStatus').to(RunPython(MUREX_CLI.slash('gqaf').slash('safetyNetStatus.py'))).withScope(ConfigOption.MUREX).withTag('Status'),
-    Alias('oldversion').to('echo $OLD_VERSION').withScope(ConfigOption.MUREX).withTag('MxVersion'),
+    Variable(CURRENT_VERSION).withName('VERSION').withScope(ConfigScope.MUREX).withTag('MxVersion'),
+    Variable(OLD_VERSION).withName('OLD_VERSION').withScope(ConfigScope.MUREX).withTag('MxVersion'),
+    Alias('allMxVersions').to(RunPython(GQAF_SCRIPTS.slash('allMxVersions.py'))).withScope(ConfigScope.MUREX).withTag('MxVersion'),
+    Alias('version').to('echo $VERSION').withScope(ConfigScope.MUREX).withTag('MxVersion'),
+    Alias('versionUpgrade').to(RunPython(DOWNLOADS.slash('scripts').slash('upgradeVersion.py'))).withScope(ConfigScope.MUREX).withTag('MxVersion'),
+    Alias('richVersionView').to(RunPython(MUREX_CLI.slash('gqaf').slash('richVersionView.py'))).withScope(ConfigScope.MUREX).withTag('Status'),
+    Alias('displayAlien').to(RunPython(MUREX_CLI.slash('display_alien').slash('excel_refresher.py')).andThen('start').addPath(MUREX_CLI.slash('display_alien').slash('display_alien.xlsx'))).withScope(ConfigScope.MUREX).withTag('Status'),
+    Alias('richVersionViewCsv').to('richVersionView').addArg('--csv').addArg('> tmp.csv').andThen('start tmp.csv').withScope(ConfigScope.MUREX).withTag('Status'),
+    Alias('safetyNetStatus').to(RunPython(MUREX_CLI.slash('gqaf').slash('safetyNetStatus.py'))).withScope(ConfigScope.MUREX).withTag('Status'),
+    Alias('oldversion').to('echo $OLD_VERSION').withScope(ConfigScope.MUREX).withTag('MxVersion'),
 
-    Alias('clipVersion').to('version').tee('clip').andThen('echo Copied.').withScope(ConfigOption.MUREX).withTag('MxVersion'),
+    Alias('clipVersion').to('version').tee('clip').andThen('echo Copied.').withScope(ConfigScope.MUREX).withTag('MxVersion'),
 
-    Alias('cdversion').to(cdInto('/d/$(version)')).withScope(ConfigOption.MUREX).withTag('MxVersion'),
-    Alias('startversion').to('start').addArg('/d/$(version)/mx-$(version).sln.lnk').withScope(ConfigOption.MUREX).withTag('MxVersion'),
-    Alias('startbpversion').to('start').addArg('/d/$(bpversion)/mx-$(bpversion).sln.lnk').withScope(ConfigOption.MUREX).withTag('MxVersion'),
-    Alias('cdapps').to(cdInto('/d/apps')).withScope(ConfigOption.MUREX).withTag('MxVersion'),
-    Alias('appsversion').to(cdInto('/d/apps/$(version)*')).withScope(ConfigOption.MUREX).withTag('MxVersion'),
+    Alias('cdversion').to(cdInto('/d/$(version)')).withScope(ConfigScope.MUREX).withTag('MxVersion'),
+    Alias('startversion').to('start').addArg('/d/$(version)/mx-$(version).sln.lnk').withScope(ConfigScope.MUREX).withTag('MxVersion'),
+    Alias('startbpversion').to('start').addArg('/d/$(bpversion)/mx-$(bpversion).sln.lnk').withScope(ConfigScope.MUREX).withTag('MxVersion'),
+    Alias('cdapps').to(cdInto('/d/apps')).withScope(ConfigScope.MUREX).withTag('MxVersion'),
+    Alias('appsversion').to(cdInto('/d/apps/$(version)*')).withScope(ConfigScope.MUREX).withTag('MxVersion'),
 
-    Exec(f'echo Hello {USERNAME}!').withScope(ConfigOption.MUREX).withTag('Welcome message'),
-    Exec('echo You are on ALIEN version').addArg('$(version)').withScope(ConfigOption.MUREX).withTag('Welcome message'),
-    Exec('echo -e \n').withScope(ConfigOption.MUREX).withTag('Welcome message'),
-    Exec(p4helperScript).addArg('--unmerged').muteOutput(2).withScope(ConfigOption.MUREX).withTag('Welcome message'),
-    Exec('ls /u').muteOutput(3).ifFailed('echo "[WARNING]: Drives aren\'t mapped!"').withScope(ConfigOption.MUREX).withTag('Welcome message'),
+    Exec(f'echo Hello {USERNAME}!').withScope(ConfigScope.MUREX).withTag('Welcome message'),
+    Exec('echo You are on ALIEN version').addArg('$(version)').withScope(ConfigScope.MUREX).withTag('Welcome message'),
+    Exec('echo -e \n').withScope(ConfigScope.MUREX).withTag('Welcome message'),
+    Exec(p4helperScript).addArg('--unmerged').muteOutput(2).withScope(ConfigScope.MUREX).withTag('Welcome message'),
+    Exec('ls /u').muteOutput(3).ifFailed('echo "[WARNING]: Drives aren\'t mapped!"').withScope(ConfigScope.MUREX).withTag('Welcome message'),
 
-    Alias('p4helper').to(p4helperScript).withScope(ConfigOption.MUREX).withTag('Perforce P4'),
-    Alias('psubmit').to('p4helper').addArg('--submit').addArg('$(paste)').withScope(ConfigOption.MUREX).withTag('Perforce P4'),
-    Alias('jira').to(jiraScript).withScope(ConfigOption.MUREX).withTag('Jira Request Handler'),
-    Alias('jenkins').to(jenkinsScript).withScope(ConfigOption.MUREX).withTag('Jenkins Request Handler'),
-    Alias('integrate').to(integrationScript).withScope(ConfigOption.MUREX).withTag('Integration Handler'),
+    Alias('p4helper').to(p4helperScript).withScope(ConfigScope.MUREX).withTag('Perforce P4'),
+    Alias('psubmit').to('p4helper').addArg('--submit').addArg('$(paste)').withScope(ConfigScope.MUREX).withTag('Perforce P4'),
+    Alias('jira').to(jiraScript).withScope(ConfigScope.MUREX).withTag('Jira Request Handler'),
+    Alias('jenkins').to(jenkinsScript).withScope(ConfigScope.MUREX).withTag('Jenkins Request Handler'),
+    Alias('integrate').to(integrationScript).withScope(ConfigScope.MUREX).withTag('Integration Handler'),
 
-    Alias('submit').to('p4helper --submit').withScope(ConfigOption.MUREX).withTag('Create a perfoce changelist from jira ID'),
-    Alias('isItMerged').to('echo "looking for $(paste)..."').andThen('p4helper --me --build').pipe('greppaste').withScope(ConfigOption.MUREX).withTag('Quick check if defect is in mainstream'),
+    Alias('submit').to('p4helper --submit').withScope(ConfigScope.MUREX).withTag('Create a perfoce changelist from jira ID'),
+    Alias('isItMerged').to('echo "looking for $(paste)..."').andThen('p4helper --me --build').pipe('greppaste').withScope(ConfigScope.MUREX).withTag('Quick check if defect is in mainstream'),
 
-    Alias('mxbot').to('start').addArg(f'https://integrationweb.gqaf.fr.murex.com').withScope(ConfigOption.MUREX).withTag('Open MxBot Integration link'),
-    Alias('ci').to('start').addArg(f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{CURRENT_VERSION}/').withScope(ConfigOption.MUREX).withTag('Open CI pipeline link'),
-    Alias('freyja').to('start').addArg(f'https://cje-core.fr.murex.com/assets/job/FreyjaAlien/job/{CURRENT_VERSION}/').withScope(ConfigOption.MUREX).withTag('Open CI pipeline link'),
+    Alias('mxbot').to('start').addArg(f'https://integrationweb.gqaf.fr.murex.com').withScope(ConfigScope.MUREX).withTag('Open MxBot Integration link'),
+    Alias('ci').to('start').addArg(f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{CURRENT_VERSION}/').withScope(ConfigScope.MUREX).withTag('Open CI pipeline link'),
+    Alias('freyja').to('start').addArg(f'https://cje-core.fr.murex.com/assets/job/FreyjaAlien/job/{CURRENT_VERSION}/').withScope(ConfigScope.MUREX).withTag('Open CI pipeline link'),
 
-    Alias('mxOpen').to(RunPython(DOWNLOADS.slash('scripts').slash('mxOpen.py'))).withScope(ConfigOption.MUREX).withTag('MxOpen'),
-    Alias('coco').to(RunPython(DOWNLOADS.slash('scripts').slash('mxOpen.py'))).addArg('--coconut').withScope(ConfigOption.MUREX).withTag('Search Coconut'),
+    Alias('mxOpen').to(RunPython(DOWNLOADS.slash('scripts').slash('mxOpen.py'))).withScope(ConfigScope.MUREX).withTag('MxOpen'),
+    Alias('coco').to(RunPython(DOWNLOADS.slash('scripts').slash('mxOpen.py'))).addArg('--coconut').withScope(ConfigScope.MUREX).withTag('Search Coconut'),
 
-    Alias('auth').to(RunPython(DOWNLOADS.slash('scripts').slash('auth.py'))).withScope(ConfigOption.MUREX).withTag('Auto Auth'),
+    Alias('auth').to(RunPython(DOWNLOADS.slash('scripts').slash('auth.py'))).withScope(ConfigScope.MUREX).withTag('Auto Auth'),
 
-    Alias('mde').to('D:\\.mxdevenvpp\\bin\\mde++.cmd').withScope(ConfigOption.MUREX).withTag('Mxdevenv'),
-    Alias('mdeversion').to('mde about').pipe('grep -o').addArg('^0.[0-9]*.0.[0-9]*').withScope(ConfigOption.MUREX).withTag('Mxdevenv'),
+    Alias('mde').to('D:\\.mxdevenvpp\\bin\\mde++.cmd').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
+    Alias('mdeversion').to('mde about').pipe('grep -o').addArg('^0.[0-9]*.0.[0-9]*').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
 
-    Alias('mdelatest').to(U_MXDEVENV.slash('latest').slash('mde++.cmd')).withScope(ConfigOption.MUREX).withTag('Mxdevenv'),
-    Alias('mdelatestversion').to('mdelatest about').pipe('grep -o').addArg('^0.[0-9]*.0.[0-9]*').withScope(ConfigOption.MUREX).withTag('Mxdevenv'),
+    Alias('mdelatest').to(U_MXDEVENV.slash('latest').slash('mde++.cmd')).withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
+    Alias('mdelatestversion').to('mdelatest about').pipe('grep -o').addArg('^0.[0-9]*.0.[0-9]*').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
 
-    Alias('umxdevenv').to(cdInto(U_MXDEVENV)).withScope(ConfigOption.MUREX).withTag('Mxdevenv'),
-    Alias('dmxdevenv').to(cdInto(D_MXDEVENV)).withScope(ConfigOption.MUREX).withTag('Mxdevenv'),
-    Alias('repomxdevenv').to(cdInto(REPO_MXDEVENV)).withScope(ConfigOption.MUREX).withTag('Mxdevenv'),
-    Alias('murexcli').to(cdInto(MUREX_CLI)).withScope(ConfigOption.MUREX).withTag('Mxdevenv'),
+    Alias('umxdevenv').to(cdInto(U_MXDEVENV)).withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
+    Alias('dmxdevenv').to(cdInto(D_MXDEVENV)).withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
+    Alias('repomxdevenv').to(cdInto(REPO_MXDEVENV)).withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
+    Alias('murexcli').to(cdInto(MUREX_CLI)).withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
 
-    Alias('prepareVersion').to('mde prepareVersion').withScope(ConfigOption.MUREX).withTag('Mxdevenv'),
-    Alias('prepareVersionFromClipBoard').to('mde prepareVersion -v $(paste) &').withScope(ConfigOption.MUREX).withTag('Mxdevenv'),
-    Alias('versionManager').to('mde versionManager').inParallel().withScope(ConfigOption.MUREX).withTag('Mxdevenv'),
-    Alias('logsVisualizer').to('mde logsVisualizer').inParallel().withScope(ConfigOption.MUREX).withTag('Mxdevenv'),
-    Alias('setupsViewer').to('mde setupsViewer').withScope(ConfigOption.MUREX).withTag('Mxdevenv'),
+    Alias('prepareVersion').to('mde prepareVersion').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
+    Alias('prepareVersionFromClipBoard').to('mde prepareVersion -v $(paste) &').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
+    Alias('versionManager').to('mde versionManager').inParallel().withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
+    Alias('logsVisualizer').to('mde logsVisualizer').inParallel().withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
+    Alias('setupsViewer').to('mde setupsViewer').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
 
     Alias('revertfile').to(InlinePython().linesAre([
         'import pyautogui',
@@ -275,28 +275,28 @@ if __name__ == "__main__":
         'pyautogui.press("right")',
         'pyautogui.press("down", 3)',
         'pyautogui.press("enter")',
-    ])).withScope(ConfigOption.MUREX).withTag('Quick Automations'),
+    ])).withScope(ConfigScope.MUREX).withTag('Quick Automations'),
 
-    Alias('debugme').to('/d/apps/$(version)*/debugMe++.cmd').inParallel().withScope(ConfigOption.MUREX).withTag('Debugging'),
-    Alias('debugmebackport').to('/d/apps/$(bpversion)*/debugMe++.cmd').inParallel().withScope(ConfigOption.MUREX).withTag('Debugging'),
+    Alias('debugme').to('/d/apps/$(version)*/debugMe++.cmd').inParallel().withScope(ConfigScope.MUREX).withTag('Debugging'),
+    Alias('debugmebackport').to('/d/apps/$(bpversion)*/debugMe++.cmd').inParallel().withScope(ConfigScope.MUREX).withTag('Debugging'),
 
-    Alias('drivesmapped').to('[ -d "/u" ]').then('echo $?').withScope(ConfigOption.MUREX).withTag('Drive Mapping'),
-    Alias('unmapdrives').to('start').addPath(UNMAP_DRIVES_SCRIPT).withScope(ConfigOption.MUREX).withTag('Drive Mapping'),
-    Alias('mapdrives').to('unmapdrives').delay(1).andThen('start').addPath(MAP_DRIVES_SCRIPT).delay(0.5).andThen('ls /u').withScope(ConfigOption.MUREX).withTag('Drive Mapping'),
+    Alias('drivesmapped').to('[ -d "/u" ]').then('echo $?').withScope(ConfigScope.MUREX).withTag('Drive Mapping'),
+    Alias('unmapdrives').to('start').addPath(UNMAP_DRIVES_SCRIPT).withScope(ConfigScope.MUREX).withTag('Drive Mapping'),
+    Alias('mapdrives').to('unmapdrives').delay(1).andThen('start').addPath(MAP_DRIVES_SCRIPT).delay(0.5).andThen('ls /u').withScope(ConfigScope.MUREX).withTag('Drive Mapping'),
 
-    Alias('sessionInfo').to(RunPython(MUREX_CLI.slash('SessionInfo.py'))).withScope(ConfigOption.MUREX).withTag('Murex Session Info'),
+    Alias('sessionInfo').to(RunPython(MUREX_CLI.slash('SessionInfo.py'))).withScope(ConfigScope.MUREX).withTag('Murex Session Info'),
 
-    Alias('setups').to(RunPython(GQAF_SCRIPTS.slash('setups.py'))).withScope(ConfigOption.MUREX).withTag('GQAF API'),
-    Alias('setupscsv').to('setups --csv 2>&1').grep('-vE').addQuoted(r'^getting|^fetching|^[0-9]|^\s*$').pipe('sed').addQuoted(r's/\s*,\s*/,/g').addArg('> tmp.csv && start tmp.csv').withScope(ConfigOption.MUREX).withTag('GQAF API'),
-    Alias('pushsetups').to(RunPython(GQAF_SCRIPTS.slash('pushsetups.py'))).withScope(ConfigOption.MUREX).withTag('GQAF API'),
-    Alias('pushsetupsAtHead').to('pushsetups').addArg('--head').addArg('--linux').withScope(ConfigOption.MUREX).withTag('GQAF API'),
-    Alias('pushJobs').to(RunPython(GQAF_SCRIPTS.slash('pushJobs.py'))).withScope(ConfigOption.MUREX).withTag('GQAF API'),
-    Alias('tpks').to(RunPython(GQAF_SCRIPTS.slash('jobs.py'))).withScope(ConfigOption.MUREX).withTag('GQAF API'),
+    Alias('setups').to(RunPython(GQAF_SCRIPTS.slash('setups.py'))).withScope(ConfigScope.MUREX).withTag('GQAF API'),
+    Alias('setupscsv').to('setups --csv 2>&1').grep('-vE').addQuoted(r'^getting|^fetching|^[0-9]|^\s*$').pipe('sed').addQuoted(r's/\s*,\s*/,/g').addArg('> tmp.csv && start tmp.csv').withScope(ConfigScope.MUREX).withTag('GQAF API'),
+    Alias('pushsetups').to(RunPython(GQAF_SCRIPTS.slash('pushsetups.py'))).withScope(ConfigScope.MUREX).withTag('GQAF API'),
+    Alias('pushsetupsAtHead').to('pushsetups').addArg('--head').addArg('--linux').withScope(ConfigScope.MUREX).withTag('GQAF API'),
+    Alias('pushJobs').to(RunPython(GQAF_SCRIPTS.slash('pushJobs.py'))).withScope(ConfigScope.MUREX).withTag('GQAF API'),
+    Alias('tpks').to(RunPython(GQAF_SCRIPTS.slash('jobs.py'))).withScope(ConfigScope.MUREX).withTag('GQAF API'),
 
-    Alias('dtk').to('start').addPath('D:\\tools\\dtk\\tk.3.rc.1\\toolkit.bat').withScope(ConfigOption.MUREX).withTag('DTK'),
+    Alias('dtk').to('start').addPath('D:\\tools\\dtk\\tk.3.rc.1\\toolkit.bat').withScope(ConfigScope.MUREX).withTag('DTK'),
 
-    cdInto(MUREX_CLI).withTag('Starting dir').withScope(ConfigOption.MUREX),
-    cdInto(SRC_PATH).withTag('Starting dir').withScope(ConfigOption.LAPTOP),
+    cdInto(MUREX_CLI).withTag('Starting dir').withScope(ConfigScope.MUREX),
+    cdInto(SRC_PATH).withTag('Starting dir').withScope(ConfigScope.LAPTOP),
 
     ]
 
