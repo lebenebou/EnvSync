@@ -26,22 +26,26 @@ if __name__ == "__main__":
     if CURRENT_SCOPE != args.force_scope:
         CURRENT_SCOPE = args.force_scope
 
-    # Paths
+    # Windows drives
     D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigOption.COMMON)
     C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigOption.COMMON)
+    G_DRIVE = Path("G:\\").withName('G Drive').withScope(ConfigOption.COMMON)
+    ONEDRIVE_MUREX = G_DRIVE.slash("OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigOption.MUREX)
 
+    # Repo paths
     globalEnv = GlobalEnv()
     REPO_ROOT = Path(globalEnv.repoRootPath).withName('REPO ROOT PATH')
     SRC_PATH = Path(globalEnv.repoSrcPath).withName('SRC PATH')
-
     UTILS_PATH = SRC_PATH.slash('utils').withName('UTILS PATH')
 
-    G_DRIVE = Path("G:\\").withName('G Drive').withScope(ConfigOption.COMMON)
-    ONEDRIVE_MUREX = Path("D:\\OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigOption.MUREX)
+    DESKTOP = Path(os.path.join(globalEnv.userHomeDir, 'Desktop')).withName('DESKTOP').withScope(ConfigOption.LAPTOP)\
+        .withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Desktop'))
 
-    DESKTOP = Path(os.path.join(globalEnv.userHomeDir, 'Desktop')).withName('DESKTOP').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Desktop'))
-    DOWNLOADS = Path(os.path.join(globalEnv.userHomeDir, 'Downloads')).withName('DOWNLOADS').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Downloads'))
-    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigOption.LAPTOP).withAlternateValueForScope(ConfigOption.MUREX, os.path.join(globalEnv.gPavilion15Path, 'MyDocuments'))
+    DOWNLOADS = Path(os.path.join(globalEnv.userHomeDir, 'Downloads')).withName('DOWNLOADS').withScope(ConfigOption.LAPTOP)\
+        .withAlternateValueForScope(ConfigOption.MUREX, ONEDRIVE_MUREX.slash('Downloads'))
+
+    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigOption.LAPTOP)\
+        .withAlternateValueForScope(ConfigOption.MUREX, os.path.join(globalEnv.gPavilion15Path, 'MyDocuments'))
 
     MUREX_CLI = C_DRIVE.slash('murexcli').withScope(ConfigOption.MUREX)
     MUREX_SETTINGS_JSON = D_DRIVE.slash('.mxdevenvpp').slash('settings').slash('python_scripts_settings.json').withScope(ConfigOption.MUREX)
@@ -66,16 +70,20 @@ if __name__ == "__main__":
 
     updateGitBashCommand = Exec('git').addArg('update-git-for-windows')
 
+    # Murex scripts
     GQAF_SCRIPTS = MUREX_CLI.slash('gqaf').withScope(ConfigOption.MUREX)
     p4helperScript = RunPython(MUREX_CLI.slash('p4helper.py'))
     jiraScript = RunPython(MUREX_CLI.slash('JiraRequestHandler.py'))
     jenkinsScript = RunPython(MUREX_CLI.slash('JenkinsRequestHandler.py'))
     integrationScript = RunPython(MUREX_CLI.slash('IntegrationRequestHandler.py'))
 
+    # clipborad utilities
     copy = RunPython(UTILS_PATH.slash('clipboard.py')).addArg('--copy').withTag('Clipboard Utility')
     paste = RunPython(UTILS_PATH.slash('clipboard.py')).addArg('--paste').withTag('Clipboard Utility')
 
     # Main script
+    runUnitTests()
+
     bashprofile: ConfigFile = BashProfile()
     bashprofile.options = [
 
