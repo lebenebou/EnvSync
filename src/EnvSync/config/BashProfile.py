@@ -71,7 +71,9 @@ if __name__ == "__main__":
     jiraScript = RunPython(MUREX_CLI.slash('JiraRequestHandler.py'))
     jenkinsScript = RunPython(MUREX_CLI.slash('JenkinsRequestHandler.py'))
     integrationScript = RunPython(MUREX_CLI.slash('IntegrationRequestHandler.py'))
-    pasteScript = RunPython(UTILS_PATH.slash('paste.py')).withTag('Clipboard Utility')
+
+    copy = RunPython(UTILS_PATH.slash('clipboard.py')).addArg('--copy').withTag('Clipboard Utility')
+    paste = RunPython(UTILS_PATH.slash('clipboard.py')).addArg('--paste').withTag('Clipboard Utility')
 
     # Main script
     bashprofile: ConfigFile = BashProfile()
@@ -129,12 +131,6 @@ if __name__ == "__main__":
     Alias(':r').to('restart').withTag('bash'),
     Alias(':q').to('win 2').andThen('exit').withTag('bash'),
     Alias('bashprofile').to('code').addPath(globalEnv.getBashProfilePath()).withTag('bash'),
-
-    Alias('teeclip').to('tee').addArg(' >(clip)').withTag('bash'),
-    Alias('first').to('head -n 1').withTag('bash'),
-    Alias('recent').to('head -n 10').withTag('bash'),
-    Alias('latest').to('tail -n 10').withTag('bash'),
-    Alias('last').to('tail -n 1').withTag('bash'),
 
     Function('color').thenExecute([
         Exec('grep').addArg('--color').addArg('-E').addArg('"$1|^"'),
@@ -194,8 +190,8 @@ if __name__ == "__main__":
 
     Alias('count').to('wc').addArg('-l').withTag('Quick count lines'),
 
-    Alias('copy').to('clip').withTag('Clipboard'),
-    Alias('paste').to(pasteScript).pipe('tr -d').addArg(r'"\r"').withTag('Clipboard'),
+    Alias('clip').to(copy).withTag('Clipboard'),
+    Alias('paste').to(paste).pipe('tr -d').addArg(r'"\r"').withTag('Clipboard'),
 
     Alias('settings').to('code').addPath(MUREX_SETTINGS_JSON).withScope(ConfigOption.MUREX).withTag('MxSettings'),
 
