@@ -205,6 +205,7 @@ if __name__ == "__main__":
     Alias('version').to('echo $VERSION').withScope(ConfigOption.MUREX).withTag('MxVersion'),
     Alias('versionUpgrade').to(RunPython(DOWNLOADS.slash('scripts').slash('upgradeVersion.py'))).withScope(ConfigOption.MUREX).withTag('MxVersion'),
     Alias('richVersionView').to(RunPython(MUREX_CLI.slash('gqaf').slash('richVersionView.py'))).withScope(ConfigOption.MUREX).withTag('Status'),
+    Alias('displayAlien').to(RunPython(MUREX_CLI.slash('display_alien').slash('excel_refresher.py')).andThen('start').addPath(MUREX_CLI.slash('display_alien').slash('display_alien.xlsx'))).withScope(ConfigOption.MUREX).withTag('Status'),
     Alias('richVersionViewCsv').to('richVersionView').addArg('--csv').addArg('> tmp.csv').andThen('start tmp.csv').withScope(ConfigOption.MUREX).withTag('Status'),
     Alias('safetyNetStatus').to(RunPython(MUREX_CLI.slash('gqaf').slash('safetyNetStatus.py'))).withScope(ConfigOption.MUREX).withTag('Status'),
     Alias('oldversion').to('echo $OLD_VERSION').withScope(ConfigOption.MUREX).withTag('MxVersion'),
