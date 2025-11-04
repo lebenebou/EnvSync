@@ -17,17 +17,17 @@ def readJsonFile(filePath: str) -> dict:
 
 class GlobalEnv:
 
-    _instance = None
+    _singletonInstance = None
 
     # singleton
     def __new__(globalEnv):
 
-        if globalEnv._instance is None:
+        if globalEnv._singletonInstance is None:
             print('[INIT] GlobalEnv', file=sys.stderr)
-            globalEnv._instance = super().__new__(globalEnv)
-            globalEnv._instance._initialized = False
+            globalEnv._singletonInstance = super().__new__(globalEnv)
+            globalEnv._singletonInstance._initialized = False
 
-        return globalEnv._instance
+        return globalEnv._singletonInstance
 
     def __init__(self):
 
