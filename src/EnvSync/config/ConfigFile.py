@@ -1,17 +1,21 @@
 
+import sys
 from EnvSync.utils.cli import commandOutput
 
 HOSTNAME = commandOutput('hostname').strip()
 
-from enum import IntFlag
+from enum import IntFlag, auto
 class ConfigScope(IntFlag):
 
-    MUREX = 1
-    LAPTOP = 2
-    HOME_PC = 4
+    def _generate_next_value_(name, start, count, last_values):
+        return 1 << count  # 1, 2, 4, 8, 16, ...
 
-    NVIM = 8
-    OBSIDIAN = 16
+    MUREX = auto()
+    LAPTOP = auto()
+    HOME_PC = auto()
+
+    NVIM = auto()
+    OBSIDIAN = auto()
 
     COMMON = MUREX | LAPTOP | HOME_PC
 
@@ -104,7 +108,11 @@ class ConfigFile:
 
 def runUnitTests():
     
+    print('Running ConfigFile unit tests...', file=sys.stderr)
+
     assert (ConfigScope.MUREX | ConfigScope.LAPTOP) == 3
+
+    print('Unit tests passed.', file=sys.stderr)
 
 def printCurrentScope():
     
@@ -117,4 +125,5 @@ def printCurrentScope():
 if __name__ == '__main__':
 
     runUnitTests()
+    print(end='\n', file=sys.stderr)
     printCurrentScope()
