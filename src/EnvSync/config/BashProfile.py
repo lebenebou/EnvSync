@@ -30,7 +30,7 @@ if __name__ == "__main__":
     D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigScope.COMMON)
     C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigScope.COMMON)
     G_DRIVE = Path("G:\\").withName('G Drive').withScope(ConfigScope.COMMON)
-    ONEDRIVE_MUREX = G_DRIVE.slash("OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX)
+    ONEDRIVE_MUREX = D_DRIVE.slash("OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX)
 
     # Repo paths
     globalEnv = GlobalEnv()
