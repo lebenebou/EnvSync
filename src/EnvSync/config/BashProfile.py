@@ -3,8 +3,8 @@ import os
 import sys
 import argparse
 
+from EnvSync.GlobalEnv import GlobalEnv, ConfigScope
 from EnvSync.config.Aliases import *
-from EnvSync.GlobalEnv import GlobalEnv
 
 CURRENT_FILE = os.path.abspath(__file__)
 
@@ -15,16 +15,15 @@ def readJsonFromFile(filePath: str) -> dict:
 
 if __name__ == "__main__":
 
+    globalEnv = GlobalEnv()
+
     # parse args
     parser = argparse.ArgumentParser(description='Update your bashprofile through Python')
 
     optionGroup = parser.add_mutually_exclusive_group()
     optionGroup.add_argument('--in_place', action='store_true', help='Directly modify ~/.bash_profile')
-    optionGroup.add_argument('--force_scope', type=int, help='Mock run in a custom scope', required=False, default=CURRENT_SCOPE)
 
     args = parser.parse_args()
-    if CURRENT_SCOPE != args.force_scope:
-        CURRENT_SCOPE = args.force_scope
 
     # Windows drives
     D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigScope.COMMON)
@@ -33,7 +32,6 @@ if __name__ == "__main__":
     ONEDRIVE_MUREX = D_DRIVE.slash("OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX)
 
     # Repo paths
-    globalEnv = GlobalEnv()
     REPO_ROOT = Path(globalEnv.repoRootPath).withName('REPO ROOT PATH')
     SRC_PATH = Path(globalEnv.repoSrcPath).withName('SRC PATH')
     UTILS_PATH = SRC_PATH.slash('utils').withName('UTILS PATH')
@@ -51,7 +49,7 @@ if __name__ == "__main__":
     MUREX_SETTINGS_JSON = D_DRIVE.slash('.mxdevenvpp').slash('settings').slash('python_scripts_settings.json').withScope(ConfigScope.MUREX)
 
     murexSettings = dict()
-    if CURRENT_SCOPE == ConfigScope.MUREX:
+    if globalEnv.currentScope == ConfigScope.MUREX:
         murexSettings = readJsonFromFile(MUREX_SETTINGS_JSON.value)
 
     MUREX_SETTINGS_PY = MUREX_CLI.slash('settings.py').withScope(ConfigScope.MUREX)
@@ -62,7 +60,7 @@ if __name__ == "__main__":
     UNMAP_DRIVES_SCRIPT = REPO_MXDEVENV.slash('Mxdevenvpp').slash('_Scripts').slash('mapsremove.bat').withScope(ConfigScope.MUREX)
     MAP_DRIVES_SCRIPT = REPO_MXDEVENV.slash('Mxdevenvpp').slash('_Scripts').slash('mapsFR.vbs').withScope(ConfigScope.MUREX)
 
-    USERNAME = murexSettings.get('username', HOSTNAME)
+    USERNAME = murexSettings.get('username', globalEnv.hostname)
     PASSWORD = murexSettings.get('password', None)
 
     CURRENT_VERSION = murexSettings.get('version', None)
@@ -301,7 +299,7 @@ if __name__ == "__main__":
     ]
 
     if args.in_place:
-        bashprofileContent: str = bashprofile.toString(scopeFilter=CURRENT_SCOPE)
+        bashprofileContent: str = bashprofile.toString(scopeFilter=globalEnv.currentScope)
         ConfigFile.writeToFile(globalEnv.getBashProfilePath(), bashprofileContent)
     else:
         print(bashprofile.toString(), file=sys.stdout)

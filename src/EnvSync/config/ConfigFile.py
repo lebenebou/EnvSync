@@ -1,23 +1,5 @@
 
-import sys
-from EnvSync.utils.cli import commandOutput
-
-HOSTNAME = commandOutput('hostname').strip()
-
-from enum import IntFlag, auto
-class ConfigScope(IntFlag):
-
-    def _generate_next_value_(name, start, count, last_values):
-        return 1 << count  # 1, 2, 4, 8, 16, ...
-
-    MUREX = auto()
-    LAPTOP = auto()
-    HOME_PC = auto()
-
-    NVIM = auto()
-    OBSIDIAN = auto()
-
-    COMMON = MUREX | LAPTOP | HOME_PC
+from EnvSync.GlobalEnv import GlobalEnv, ConfigScope
 
 class ConfigOption:
 
@@ -25,7 +7,7 @@ class ConfigOption:
 
         self.tag = None
         self.comment = None
-        self.scope = ConfigScope.COMMON
+        self.scope: ConfigScope = ConfigScope.COMMON
 
     def withTag(self, tag: str):
 
@@ -36,7 +18,7 @@ class ConfigOption:
         self.tag = tag.strip().capitalize()
         return self
 
-    def withScope(self, newScope):
+    def withScope(self, newScope: ConfigScope):
 
         if self.scope == ConfigScope.COMMON:
             self.scope = 0
@@ -51,14 +33,6 @@ class ConfigOption:
 
     def toString(self) -> str:
         raise NotImplementedError("This method is virtual, please override")
-
-CURRENT_SCOPE = ConfigScope.LAPTOP
-
-if HOSTNAME.lower() == 'dell163rws'.lower():
-    CURRENT_SCOPE = ConfigScope.MUREX
-
-if HOSTNAME.lower() == 'home-pc'.lower():
-    CURRENT_SCOPE = ConfigScope.HOME_PC
 
 class ConfigFile:
 
@@ -78,7 +52,7 @@ class ConfigFile:
 
         return f'{self.commentChar()} {optionTagOrComment}\n'
 
-    def toString(self, scopeFilter = CURRENT_SCOPE):
+    def toString(self, scopeFilter = GlobalEnv().currentScope):
         
         res = '\n'
         currentTag = None
@@ -104,26 +78,3 @@ class ConfigFile:
     @staticmethod
     def writeToFile(path: str, stringStream: str):
         open(path, 'w').write(stringStream)
-
-
-def runUnitTests():
-    
-    print('Running ConfigFile unit tests...', file=sys.stderr)
-
-    assert (ConfigScope.MUREX | ConfigScope.LAPTOP) == 3
-
-    print('Unit tests passed.', file=sys.stderr)
-
-def printCurrentScope():
-    
-    print('Current config scope includes:')
-
-    for scope in ConfigScope:
-        if scope & CURRENT_SCOPE:
-            print(f'- {scope.name}')
-
-if __name__ == '__main__':
-
-    runUnitTests()
-    print(end='\n', file=sys.stderr)
-    printCurrentScope()

@@ -1,5 +1,5 @@
 
-from EnvSync.config.ConfigFile import ConfigFile, ConfigOption, CURRENT_SCOPE
+from EnvSync.config.ConfigFile import ConfigFile, ConfigOption
 import os
 
 CURRENT_FILE = os.path.abspath(__file__)
@@ -155,7 +155,7 @@ class VimRC(ConfigFile):
         return '"'
 
     # override
-    def toString(self, scopeFilter = CURRENT_SCOPE):
+    def toString(self, scopeFilter):
 
         if not self.leaderKey:
             return super().toString(scopeFilter)

@@ -1,6 +1,7 @@
 
 from __future__ import annotations
-from EnvSync.config.ConfigFile import *
+from EnvSync.config.ConfigFile import ConfigOption, ConfigFile
+from EnvSync.GlobalEnv import GlobalEnv
 
 import re
 import os
@@ -58,7 +59,7 @@ class Path(Variable):
 
         assert not self.isSharedOnGoogleDrive, "This folder is shared on google drive, it cannot be given an alternate path"
 
-        if CURRENT_SCOPE == scope:
+        if GlobalEnv().currentScope == scope:
             self.value = alternateValue.value if isinstance(alternateValue, Path) else alternateValue
 
         return self

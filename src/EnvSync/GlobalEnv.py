@@ -15,6 +15,48 @@ def readJsonFile(filePath: str) -> dict:
 
     return data
 
+from enum import IntFlag, auto
+class ConfigScope(IntFlag):
+
+    def _generate_next_value_(name, start, count, last_values):
+        return 1 << count  # 1, 2, 4, 8, 16, ...
+
+    MUREX = auto()
+    LAPTOP = auto()
+    HOME_PC = auto()
+
+    WINDOWS = auto()
+    LINUX = auto()
+
+    NVIM = auto()
+    OBSIDIAN = auto()
+
+    COMMON = LAPTOP | MUREX | HOME_PC | WINDOWS | LINUX
+
+    @staticmethod
+    def getCurrentScope() -> 'ConfigScope':
+
+        currentScope: ConfigScope = 0
+        hostname: str = cli.commandOutput('hostname').strip()
+
+        # detect OS
+        if os.name == 'nt':
+            currentScope |= ConfigScope.WINDOWS
+        elif os.name == 'posix':
+            currentScope |= ConfigScope.LINUX
+
+        # detect machine
+        if 'lebenebou' in hostname.lower():
+            currentScope |= ConfigScope.LAPTOP
+
+        elif hostname.lower() == 'dell163rws'.lower():
+            currentScope |= ConfigScope.MUREX
+
+        elif hostname.lower() == 'home-pc'.lower():
+            currentScope |= ConfigScope.HOME_PC
+
+        return currentScope
+
 class GlobalEnv:
 
     _singletonInstance = None
@@ -35,6 +77,9 @@ class GlobalEnv:
             return # singleton
             
         self._initialized = True
+
+        self.currentScope: ConfigScope = ConfigScope.getCurrentScope()
+        self.hostname: str = cli.commandOutput('hostname').strip()
 
         self.loggingEnabled: bool = bool(0) # only set when tracing issues
         if self.loggingEnabled: print('[INIT] Initializing global env...', file=sys.stderr)
@@ -167,3 +212,25 @@ class GlobalEnv:
 
         returnCode: int = 0
         return returnCode
+
+def runUnitTests():
+    
+    print('Running ConfigFile unit tests...', file=sys.stderr)
+
+    assert (ConfigScope.MUREX | ConfigScope.LAPTOP) == 3
+
+    print('Unit tests passed.', file=sys.stderr)
+
+def printCurrentScope():
+    
+    print('Current config scope includes:')
+
+    for scope in ConfigScope:
+        if scope & GlobalEnv().currentScope:
+            print(f'- {scope.name}')
+
+if __name__ == '__main__':
+
+    runUnitTests()
+    print(end='\n', file=sys.stderr)
+    printCurrentScope()
