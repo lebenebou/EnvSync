@@ -2,8 +2,6 @@
 from EnvSync.utils.cli import commandOutput
 
 HOSTNAME = commandOutput('hostname').strip()
-PERSONAL_PC_NAME = 'LebenebouPC'
-HOME_PC_NAME = 'LebenebouPC'
 
 from enum import IntFlag
 class ConfigScope(IntFlag):
