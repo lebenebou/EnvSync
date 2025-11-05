@@ -3,6 +3,8 @@ import os
 import sys
 import json
 
+import time
+
 from EnvSync.utils import zip, encryption, cli
 
 def readJsonFile(filePath: str) -> dict:
@@ -76,6 +78,7 @@ class GlobalEnv:
         if self._initialized:
             return # singleton
             
+        self._creationTime: float = time.perf_counter()
         self._initialized = True
 
         self.currentScope: ConfigScope = ConfigScope.getCurrentScope()
@@ -213,24 +216,16 @@ class GlobalEnv:
         returnCode: int = 0
         return returnCode
 
-def runUnitTests():
-    
-    print('Running ConfigFile unit tests...', file=sys.stderr)
+    # destructor
+    def __del__(self):
 
-    assert (ConfigScope.MUREX | ConfigScope.LAPTOP) == 3
+        if self.loggingEnabled:
+            print('[DEL] Deleting GlobalEnv singleton instance...', file=sys.stderr)
 
-    print('Unit tests passed.', file=sys.stderr)
+        elapsedMs: float = (time.perf_counter() - self._creationTime)*1000
+        if elapsedMs < 10**3:
+            print(f'\n{elapsedMs} ms', file=sys.stderr)
+        else:
+            print(f'\n{round(elapsedMs/1000, 1)} s', file=sys.stderr)
 
-def printCurrentScope():
-    
-    print('Current config scope includes:')
-
-    for scope in ConfigScope:
-        if scope & GlobalEnv().currentScope:
-            print(f'- {scope.name}')
-
-if __name__ == '__main__':
-
-    runUnitTests()
-    print(end='\n', file=sys.stderr)
-    printCurrentScope()
+        return
