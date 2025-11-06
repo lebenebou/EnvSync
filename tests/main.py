@@ -3,22 +3,38 @@ from EnvSync.GlobalEnv import GlobalEnv, ConfigScope
 from EnvSync.utils import cli
 import sys, os
 
+class Color:
+
+    RED = '\033[91m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    MAGENTA = '\033[95m'
+    CYAN = '\033[96m'
+
+def printColored(text: str, color: Color, file = sys.stdout):
+
+    RESET_CODE = '\033[0m'
+    print(f'{color}{text}{RESET_CODE}', file=file)
+
 def assertSuccessful(command: str, workingDir: str, verbose: bool = True):
 
-    print(f'[CMD] {command}', file=sys.stderr)
+    print(f'\n[CMD] {command}')
     result = cli.runCommand(command, workingDir=workingDir)
 
     if verbose and result.stderr.strip():
         resultStderr: str = result.stderr.strip()
         resultStderr = ''.join('\t' + line + '\n' for line in resultStderr.splitlines())
-        print(resultStderr, file=sys.stderr)
+        print(resultStderr)
 
-    assert result.returncode == 0, f"Command failed: {command}"
-    print(f'[ OK] {command}', end='\n\n', file=sys.stderr)
+    if result.returncode != 0:
+        printColored(f'[RED] {command}', Color.RED)
+        sys.exit(result.returncode)
+
+    printColored(f'[OK] {command}', Color.GREEN)
 
 def runAllPythonFilesInFolder(folderPath: str):
 
-    print('[INFO] Running some python files...', file=sys.stderr)
     for file in os.listdir(folderPath):
 
         if not file.endswith('.py'):
@@ -50,6 +66,5 @@ if __name__ == '__main__':
     print(end='\n', file=sys.stderr)
 
     printCurrentScope()
-    print(end='\n', file=sys.stderr)
 
     del globalEnv
