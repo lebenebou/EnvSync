@@ -61,7 +61,6 @@ if __name__ == '__main__':
 
     # python files return code 0
     runAllPythonFilesInFolder(os.path.join(globalEnv.repoSrcPath, 'config'))
-    print(end='\n', file=sys.stderr)
     runAllPythonFilesInFolder(os.path.join(globalEnv.repoSrcPath, 'finance'))
     print(end='\n', file=sys.stderr)
 
