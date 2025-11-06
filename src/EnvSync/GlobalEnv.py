@@ -64,14 +64,15 @@ class GlobalEnv:
     _singletonInstance = None
 
     # singleton
-    def __new__(globalEnv):
+    def __new__(cls, verbose: bool = False):
 
-        if globalEnv._singletonInstance is None:
+        if cls._singletonInstance is None:
             print('[INIT] GlobalEnv', file=sys.stderr)
-            globalEnv._singletonInstance = super().__new__(globalEnv)
-            globalEnv._singletonInstance._initialized = False
+            cls._singletonInstance = super().__new__(cls)
+            cls._singletonInstance._initialized = False
 
-        return globalEnv._singletonInstance
+        cls._singletonInstance.loggingEnabled = verbose
+        return cls._singletonInstance
 
     def __init__(self):
 

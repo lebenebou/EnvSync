@@ -67,4 +67,6 @@ if __name__ == '__main__':
 
     printCurrentScope()
 
+    secondGlobalEnv = GlobalEnv()
+    assert globalEnv is secondGlobalEnv, "GlobalEnv is not a singleton!"
     del globalEnv
