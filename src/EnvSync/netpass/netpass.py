@@ -7,23 +7,23 @@ if __name__=="__main__":
     parser = argparse.ArgumentParser(description="Network Passwords")
 
     filterGroup = parser.add_mutually_exclusive_group()
-    filterGroup.add_argument("-name", type=str, help="case-insensitive network name filter")
-    filterGroup.add_argument("-all", action="store_true", help="fetch all networks")
+    filterGroup.add_argument("--name", type=str, help="case-insensitive network name filter")
+    filterGroup.add_argument("-a", "--all", action="store_true", help="fetch all networks")
     filterGroup.required = True
 
     formatGroup = parser.add_mutually_exclusive_group()
-    formatGroup.add_argument("-json", action="store_true", help="output as json format")
-    formatGroup.add_argument("-csv", action="store_true", help="output as csv format")
+    formatGroup.add_argument("-j", "--json", action="store_true", help="output as json format")
+    formatGroup.add_argument("--csv", action="store_true", help="output as csv format")
     formatGroup.required = False
 
-    parser.add_argument("-sep", default="|", type=str, help="network name | password separator")
+    parser.add_argument("-F", "--sep", default="|", type=str, help="network name | password separator")
 
     args = parser.parse_args()
 
     # SCRIPT START
     sep: str = args.sep
     
-    networks = network.getNetworks(args.name)
+    networks = network.getNetworks(nameFilter=args.name)
 
     if args.json:
 
