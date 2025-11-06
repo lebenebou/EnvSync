@@ -31,7 +31,7 @@ def assertSuccessful(command: str, workingDir: str, verbose: bool = True):
         printColored(f'[RED] {command}', Color.RED)
         sys.exit(result.returncode)
 
-    printColored(f'[OK] {command}', Color.GREEN)
+    printColored(f'[ OK] {command}', Color.GREEN)
 
 def runAllPythonFilesInFolder(folderPath: str):
 
