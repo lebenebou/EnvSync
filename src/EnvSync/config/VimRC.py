@@ -10,9 +10,9 @@ if __name__ == "__main__":
     VimRemap.centerOffset = 12
     VimRemap.pageOffset = 10
 
-    vimrc: ConfigFile = VimRC()
-    vimrc.setLeaderKey(r'\<Space>')
-    vimrc.options = [
+    vimConfig: ConfigFile = VimRC()
+    vimConfig.setLeaderKey(r'\<Space>')
+    vimConfig.options = [
 
     VimOption('relativenumber'),
     VimOption('ignorecase'),
@@ -62,12 +62,13 @@ if __name__ == "__main__":
 
     if args.in_place:
 
-        vimrcContent: str = vimrc.toString(GlobalEnv().currentScope | ConfigScope.NVIM)
-
         vim_rcPath = GlobalEnv().getVimrcPath()
-        ConfigFile.writeToFile(vim_rcPath, vimrcContent)
+        ConfigFile.writeToFile(vim_rcPath, vimConfig.toString(GlobalEnv().currentScope))
+
+        nvim_rcPath = GlobalEnv().getNvimrcPath()
+        ConfigFile.writeToFile(nvim_rcPath, vimConfig.toString(GlobalEnv().currentScope | ConfigScope.NVIM))
 
     else:
-        print(vimrc.toString(GlobalEnv().currentScope), file=sys.stdout)
+        print(vimConfig.toString(GlobalEnv().currentScope), file=sys.stdout)
 
     exit(0)

@@ -100,6 +100,7 @@ class GlobalEnv:
         self.userHomeDir = os.path.expanduser('~')
         self._bashProfilePath: str = None
         self._vimRcPath: str = None
+        self._nvimRcPath: str = None
 
         self.gPavilion15Path = os.path.join('G:\\', 'Other computers', 'Pavilion15')
 
@@ -136,6 +137,27 @@ class GlobalEnv:
 
         print('[WARN] No vimrc file found in home directory.', file=sys.stderr)
         return None
+
+    def getNvimrcPath(self) -> str:
+
+        if self._nvimRcPath:
+            return self._nvimRcPath
+
+        if self.currentScope & ConfigScope.WINDOWS:
+            self._nvimRcPath = os.path.join(self.userHomeDir, 'AppData', 'Local', 'nvim', 'init.vim')
+
+        if self.currentScope & ConfigScope.LINUX:
+            self._nvimRcPath = os.path.join(self.userHomeDir, '.config', 'nvim', 'init.vim')
+
+        if not os.path.isfile(self._nvimRcPath):
+
+            print(f'[INFO] Creating empty nvim config file: {self._nvimRcPath}', file=sys.stderr)
+            os.makedirs(os.path.dirname(self._nvimRcPath), exist_ok=True)
+
+            with open(self._nvimRcPath, 'w') as f:
+                f.write('" Neovim init.vim created by EnvSync')
+
+        return self._nvimRcPath
 
     def initJsonConfig(self):
 
