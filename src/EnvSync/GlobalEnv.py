@@ -126,17 +126,17 @@ class GlobalEnv:
         if self._vimRcPath is not None:
             return self._vimRcPath
 
-        print('Finding vimrc file...', file=sys.stderr)
+        print('Getting .vimrc file...', file=sys.stderr)
 
-        options = ['.vimrc', '_vimrc']
-        for filename in options:
+        self._vimRcPath = os.path.join(self.userHomeDir, '.vimrc')
 
-            fullPath = os.path.join(self.userHomeDir, filename)
-            if os.path.exists(fullPath):
-                return fullPath
+        if not os.path.isfile(self._vimRcPath):
 
-        print('[WARN] No vimrc file found in home directory.', file=sys.stderr)
-        return None
+            print(f'[INFO] Creating empty vim config file: {self._vimRcPath}', file=sys.stderr)
+            with open(self._vimRcPath, 'w') as f:
+                f.write('" Vim config file created by EnvSync')
+
+        return self._vimRcPath
 
     def getNvimrcPath(self) -> str:
 
