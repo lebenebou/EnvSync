@@ -1,7 +1,7 @@
 
 from __future__ import annotations
 from EnvSync.config.ConfigFile import ConfigOption, ConfigFile
-from EnvSync.GlobalEnv import GlobalEnv
+from EnvSync.GlobalEnv import GlobalEnv, ConfigScope
 
 import re
 import os
@@ -49,18 +49,18 @@ class Path(Variable):
         self.value = fileOrFolder
         self.name: str = None
         self.hasBeenGivenAlternate: bool = False
-        self.isSharedOnGoogleDrive: bool = False
 
     def slash(self, otherPath):
         otherPath = Path(otherPath)
         return Path(os.path.join(self.value, otherPath.value)).withScope(self.scope)
 
-    def withAlternateValueForScope(self, scope, alternateValue: str | Path):
+    def withAlternateValueForScope(self, scope: ConfigScope, alternateValue: str | Path):
 
-        assert not self.isSharedOnGoogleDrive, "This folder is shared on google drive, it cannot be given an alternate path"
+        if isinstance(alternateValue, Path):
+            alternateValue = str(alternateValue.value)
 
-        if GlobalEnv().currentScope == scope:
-            self.value = alternateValue.value if isinstance(alternateValue, Path) else alternateValue
+        if GlobalEnv().currentScope & scope:
+            self.value = alternateValue
 
         return self
 
