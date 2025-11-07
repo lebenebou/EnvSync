@@ -26,6 +26,7 @@ class ConfigScope(IntFlag):
     MUREX = auto()
     LAPTOP = auto()
     HOME_PC = auto()
+    SERVER_PC = auto()
 
     WINDOWS = auto()
     LINUX = auto()
@@ -50,6 +51,9 @@ class ConfigScope(IntFlag):
         # detect machine
         if 'lebenebou' in hostname.lower():
             currentScope |= ConfigScope.LAPTOP
+
+        elif hostname.lower() == 'server-pc'.lower():
+            currentScope |= ConfigScope.SERVER_PC
 
         elif hostname.lower() == 'dell163rws'.lower():
             currentScope |= ConfigScope.MUREX
