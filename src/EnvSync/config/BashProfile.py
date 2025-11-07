@@ -26,30 +26,31 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Windows drives
-    D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigScope.COMMON)
-    C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigScope.COMMON)
-    G_DRIVE = Path("G:\\").withName('G Drive').withScope(ConfigScope.COMMON)
-    ONEDRIVE_MUREX = D_DRIVE.slash("OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX)
+    D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigScope.WINDOWS)
+    C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigScope.WINDOWS)
+    G_DRIVE = Path("G:\\").withName('G Drive').withScope(ConfigScope.WINDOWS)
+    ONEDRIVE_MUREX = D_DRIVE.slash("OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX | ConfigScope.WINDOWS)
 
     # Repo paths
     REPO_ROOT = Path(globalEnv.repoRootPath).withName('REPO ROOT PATH')
     SRC_PATH = Path(globalEnv.repoSrcPath).withName('SRC PATH')
     UTILS_PATH = SRC_PATH.slash('utils').withName('UTILS PATH')
 
-    DESKTOP = Path(os.path.join(globalEnv.userHomeDir, 'Desktop')).withName('DESKTOP').withScope(ConfigScope.LAPTOP)\
+    DESKTOP = Path(os.path.join(globalEnv.userHomeDir, 'Desktop')).withName('DESKTOP').withScope(ConfigScope.LAPTOP | ConfigScope.LINUX)\
         .withAlternateValueForScope(ConfigScope.MUREX, ONEDRIVE_MUREX.slash('Desktop'))
 
     DOWNLOADS = Path(os.path.join(globalEnv.userHomeDir, 'Downloads')).withName('DOWNLOADS').withScope(ConfigScope.LAPTOP)\
         .withAlternateValueForScope(ConfigScope.MUREX, ONEDRIVE_MUREX.slash('Downloads'))
 
     DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigScope.LAPTOP)\
-        .withAlternateValueForScope(ConfigScope.MUREX, os.path.join(globalEnv.gPavilion15Path, 'MyDocuments'))
+        .withAlternateValueForScope(ConfigScope.MUREX, os.path.join(globalEnv.gPavilion15Path, 'MyDocuments'))\
+        .withAlternateValueForScope(ConfigScope.LINUX, os.path.join(globalEnv.userHomeDir, 'Documents'))
 
     MUREX_CLI = C_DRIVE.slash('murexcli').withScope(ConfigScope.MUREX)
     MUREX_SETTINGS_JSON = D_DRIVE.slash('.mxdevenvpp').slash('settings').slash('python_scripts_settings.json').withScope(ConfigScope.MUREX)
 
     murexSettings = dict()
-    if globalEnv.currentScope == ConfigScope.MUREX:
+    if globalEnv.currentScope & ConfigScope.MUREX:
         murexSettings = readJsonFromFile(MUREX_SETTINGS_JSON.value)
 
     MUREX_SETTINGS_PY = MUREX_CLI.slash('settings.py').withScope(ConfigScope.MUREX)
@@ -66,16 +67,16 @@ if __name__ == "__main__":
     CURRENT_VERSION = murexSettings.get('version', None)
     OLD_VERSION = murexSettings.get('previous_version', None)
 
-    updateGitBashCommand = Exec('git').addArg('update-git-for-windows')
+    updateGitBashCommand = Exec('git').addArg('update-git-for-windows').withScope(ConfigScope.WINDOWS)
 
     # Murex scripts
     GQAF_SCRIPTS = MUREX_CLI.slash('gqaf').withScope(ConfigScope.MUREX)
-    p4helperScript = RunPython(MUREX_CLI.slash('p4helper.py'))
-    jiraScript = RunPython(MUREX_CLI.slash('JiraRequestHandler.py'))
-    jenkinsScript = RunPython(MUREX_CLI.slash('JenkinsRequestHandler.py'))
-    integrationScript = RunPython(MUREX_CLI.slash('IntegrationRequestHandler.py'))
+    p4helperScript = RunPython(MUREX_CLI.slash('p4helper.py')).withScope(ConfigScope.MUREX)
+    jiraScript = RunPython(MUREX_CLI.slash('JiraRequestHandler.py')).withScope(ConfigScope.MUREX)
+    jenkinsScript = RunPython(MUREX_CLI.slash('JenkinsRequestHandler.py')).withScope(ConfigScope.MUREX)
+    integrationScript = RunPython(MUREX_CLI.slash('IntegrationRequestHandler.py')).withScope(ConfigScope.MUREX)
 
-    # clipborad utilities
+    # clipboard utilities
     copy = RunPython(UTILS_PATH.slash('clipboard.py')).addArg('--copy').withTag('Clipboard Utility')
     paste = RunPython(UTILS_PATH.slash('clipboard.py')).addArg('--paste').withTag('Clipboard Utility')
 
@@ -86,16 +87,14 @@ if __name__ == "__main__":
     bashprofile.options = [
 
     Alias('aspath').to(RunPython(UTILS_PATH.slash('aspath.py')).addArg('--from_stdin')).withTag(None),
-    Alias('file').to('paste').pipe('aspath -linux').withTag(None),
 
-    Alias('itunes').to('C:\\Program Files\\iTunes\\iTunes.exe').disown().withTag('iTunes').withScope(ConfigScope.LAPTOP),
-
-    Alias('theplan').to('start').addPath(G_DRIVE.slash('My Drive').slash('THE_PLAN.xlsx')).withScope(ConfigScope.COMMON).withTag('Personal'),
+    Alias('theplan').to('start').addPath(G_DRIVE.slash('My Drive').slash('THE_PLAN.xlsx')).withScope(ConfigScope.WINDOWS).withTag('Personal'),
     Alias('money').to(RunPython(SRC_PATH.slash('finance').slash('parser.py'))).withTag('Personal'),
-    Alias('updatemoney').to('money').addArg('--refresh').withTag('Personal'),
 
-    Alias('grep').to('grep -i --color --binary-files=without-match --exclude-dir=".git"').withTag('Grep default options'),
-    Alias('grepdefects').to('grep').addArg('-Eo').addQuoted('DEF[0-9]+').withTag('grep').withScope(ConfigScope.MUREX),
+    Alias('grep').to('grep -i --color --binary-files=without-match --exclude-dir=".git"').withTag('Grep Options'),
+    Alias('greppaste').to('grep').addArg('"$(paste)"').withTag('Grep Options'),
+    Alias('gp').to('greppaste').withTag('Grep Options'),
+    Alias('grepdefects').to('grep').addArg('-Eo').addQuoted('DEF[0-9]+').withTag('Grep Options').withScope(ConfigScope.MUREX),
 
     InlinePython(runImmediately=True).linesAre([
         'import pyautogui',
@@ -103,18 +102,20 @@ if __name__ == "__main__":
         'pyautogui.hotkey("ctrl", "+")',
         'pyautogui.hotkey("ctrl", "+")',
         'pyautogui.hotkey("ctrl", "+")',
-    ]),
-
-    cdInto(globalEnv.userHomeDir).withScope(ConfigScope.LAPTOP).withTag("Init"),
-    cdInto('D:\\').withScope(ConfigScope.MUREX).withTag("Init"),
+    ]).withScope(ConfigScope.WINDOWS),
 
     Alias('home').to(cdInto('~').withScope(ConfigScope.LAPTOP)),
     Alias('home').to('murexcli').withScope(ConfigScope.MUREX),
     Alias('src').to(cdInto(SRC_PATH)),
-    Alias('back').to('cd').addArg('..').andThen('ls'),
     Alias('desk').to(cdInto(DESKTOP)),
     Alias('downloads').to(cdInto(DOWNLOADS)),
     Alias('docs').to(cdInto(DOCUMENTS)),
+
+    Alias('cdpaste').to(cdInto('"$(paste | aspath -linux)"')).withTag('Quick Navigation'),
+    Alias('back').to('cd').addArg('..').andThen('ls').withTag('Quick Navigation'),
+    Function('cdl').thenExecute([
+        cdInto('"$1"').andThen('ls'),
+        ]).withTag('Quick Navigation'),
 
     Alias('music').to(cdInto('D:\\Music')).withScope(ConfigScope.LAPTOP),
     Alias('pics').to(cdInto('D:\\Camera Roll')).withScope(ConfigScope.LAPTOP),
@@ -123,20 +124,19 @@ if __name__ == "__main__":
 
     Alias('exp').to(RunPython(UTILS_PATH.slash('exp.py'))),
     Alias('start').to(RunPython(UTILS_PATH.slash('start.py'))),
-    Alias('win').to(RunPython(UTILS_PATH.slash('win.py'))),
+    Alias('win').to(RunPython(UTILS_PATH.slash('win.py'))).withScope(ConfigScope.WINDOWS),
+    Alias('netpass').to(RunPython(SRC_PATH.slash('NetPass').slash('netpass.py'))).withScope(ConfigScope.WINDOWS),
 
     Function('restart').thenExecute([
         Exec('win 2').disown(),
         Exec('exit'),
-        ]).withTag('bash'),
+        ]).withTag('bash').withScope(ConfigScope.WINDOWS),
 
-    Alias('reload').to('updatebashprofile').andThen('restart').withTag('bash'),
+    Alias('reload').to('updatebashprofile').andThen('restart').withTag('bash').withScope(ConfigScope.WINDOWS),
     Alias('cat').to('bat').withTag('bash'),
-    Alias('json').to('bat --language=json').withTag('bash'),
-    Alias('csv').to('bat --language=csv').withTag('bash'),
-    Alias(':r').to('restart').withTag('bash'),
-    Alias(':q').to('win 2').andThen('exit').withTag('bash'),
-    Alias('bashprofile').to('code').addPath(globalEnv.getBashProfilePath()).withTag('bash'),
+    Alias(':r').to('restart').withTag('bash').withScope(ConfigScope.WINDOWS),
+    Alias(':q').to('win 2').andThen('exit').withTag('bash').withScope(ConfigScope.WINDOWS),
+    Alias('bashprofile').to('code').addPath(globalEnv.getBashProfilePath()).withTag('bash').withScope(ConfigScope.WINDOWS),
 
     Function('color').thenExecute([
         Exec('grep').addArg('--color').addArg('-E').addArg('"$1|^"'),
@@ -146,53 +146,32 @@ if __name__ == "__main__":
         Exec('awk').addArg('-v column="$1"').addArg("'{print $column}'"),
         ]).withTag('awk shortcut'),
 
-    Function('cdl').thenExecute([
-        cdInto('"$1"').andThen('ls'),
-        ]).withTag('Quick cd'),
-
     Alias('editvimrc').to('code').addPath(globalEnv.getVimrcPath()).withTag('Config'),
     Alias('editbashprofile').to('code').addPath(CURRENT_FILE).withTag('Config'),
-    Alias('runbashprofile').to(RunPython(CURRENT_FILE)).withTag('Config'),
     Alias('updatebashprofile').to(RunPython(CURRENT_FILE)).addArg('--in_place').withTag('Config'),
+    Alias('updatevimrc').to(RunPython(SRC_PATH.slash('config').slash('VimRC.py')).addArg('--in_place')).withTag('Config'),
 
-    Alias('switch').to(InlinePython().linesAre([
-        'import pyautogui',
-        'pyautogui.hotkey("alt", "tab")'
-    ])).withTag('Quick Automations'),
-
-    Function('updatevimrc').thenExecute([
-        Exec('echo Updating...'),
-        Exec(RunPython(SRC_PATH.slash('config').slash('VimRC.py')).addArg('--in_place')),
-        Exec('echo Done.'),
-        ]).withTag('Config'),
-
-    Alias('path').to('echo $PATH').pipe('tr').addArg('":"').addArg(r'"\n"').pipe('sort -u').withTag('OS'),
     Alias('cls').to('clear').then('jobs').withTag('OS'),
-    Alias('cmd').to('start').addPath('C:\\Windows\\System32\\cmd.exe').withTag('OS'),
+    Alias('cmd').to('start').addPath('C:\\Windows\\System32\\cmd.exe').withTag('OS').withScope(ConfigScope.WINDOWS),
+
     Alias('connected').to('curl -s www.google.com').muteOutput().withTag('OS'),
     Alias('checkConnection').to('connected').then('echo $?').withTag('OS'),
+
     Alias('size').to(RunPython(UTILS_PATH.slash('size.py'))).withTag('OS'),
 
     Alias('tm').to(InlinePython().linesAre([
         'import pyautogui',
         'pyautogui.hotkey("ctrl", "shift", "esc")'
-    ])).withTag('Windows'),
+    ])).withTag('Task Manager').withScope(ConfigScope.WINDOWS),
 
-    Alias('greppaste').to('grep').addArg('"$(paste)"').withTag('Quick Grep'),
-    Alias('gp').to('greppaste').withTag('Quick Grep'),
-
-    Alias('cdpaste').to(cdInto('"$(paste | aspath -linux)"')),
     Alias('vimpaste').to('paste').pipe('vim -').withTag('Vim'),
-    Alias('vimfile').to('vim').addExecOutput(Exec('file')).withTag('Vim'),
     Alias('pastevim').to('paste').pipe('vim -').withTag('Vim'),
 
     Alias('gs').to('git status').withTag('Git'),
     Alias('gd').to('git diff').withTag('Git'),
     Alias('gln').to('git log -n').withTag('Git'),
 
-    Alias('netpass').to(RunPython(SRC_PATH.slash('NetPass').slash('netpass.py'))),
-
-    Alias('updategitbash').to(updateGitBashCommand).withTag('Update Git Bash'),
+    Alias('updategitbash').to(updateGitBashCommand).withTag('Update Git Bash').withScope(ConfigScope.WINDOWS),
 
     Alias('count').to('wc').addArg('-l').withTag('Quick count lines'),
 
@@ -261,22 +240,7 @@ if __name__ == "__main__":
     Alias('logsVisualizer').to('mde logsVisualizer').inParallel().withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
     Alias('setupsViewer').to('mde setupsViewer').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
 
-    Alias('revertfile').to(InlinePython().linesAre([
-        'import pyautogui',
-        'pyautogui.PAUSE = 0.1',
-        'pyautogui.hotkey("win", "3")',
-        'pyautogui.press("esc", 5)',
-        'pyautogui.press("alt")',
-        'pyautogui.press("x")',
-        'pyautogui.press("enter")',
-        'pyautogui.press("down", 9)',
-        'pyautogui.press("right")',
-        'pyautogui.press("down", 3)',
-        'pyautogui.press("enter")',
-    ])).withScope(ConfigScope.MUREX).withTag('Quick Automations'),
-
     Alias('debugme').to('/d/apps/$(version)*/debugMe++.cmd').inParallel().withScope(ConfigScope.MUREX).withTag('Debugging'),
-    Alias('debugmebackport').to('/d/apps/$(bpversion)*/debugMe++.cmd').inParallel().withScope(ConfigScope.MUREX).withTag('Debugging'),
 
     Alias('drivesmapped').to('[ -d "/u" ]').then('echo $?').withScope(ConfigScope.MUREX).withTag('Drive Mapping'),
     Alias('unmapdrives').to('start').addPath(UNMAP_DRIVES_SCRIPT).withScope(ConfigScope.MUREX).withTag('Drive Mapping'),
@@ -294,7 +258,7 @@ if __name__ == "__main__":
     Alias('dtk').to('start').addPath('D:\\tools\\dtk\\tk.3.rc.1\\toolkit.bat').withScope(ConfigScope.MUREX).withTag('DTK'),
 
     cdInto(MUREX_CLI).withTag('Starting dir').withScope(ConfigScope.MUREX),
-    cdInto(SRC_PATH).withTag('Starting dir').withScope(ConfigScope.LAPTOP),
+    cdInto(SRC_PATH).withTag('Starting dir').withScope(ConfigScope.LAPTOP | ConfigScope.LINUX),
 
     ]
 
