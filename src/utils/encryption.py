@@ -1,7 +1,8 @@
 
 import os
 import sys
-import subprocess
+
+from utils import cli
 
 def encryptFile(inputFile: str, outputFile: str, passphrase: str):
 
@@ -9,7 +10,7 @@ def encryptFile(inputFile: str, outputFile: str, passphrase: str):
     assert os.path.isfile(inputFile), f'Cannot ecnrypt file that does not exist: {inputFile}'
 
     command = f'openssl enc -aes-256-cbc -pbkdf2 -in {inputFile} -out {outputFile} -pass pass:{passphrase}'
-    result = subprocess.run(command.split())
+    result = cli.runCommand(command)
 
     if result.returncode != 0:
         print(f'[ERROR] Failed to encrypt file: {inputFile}', file=sys.stderr)
@@ -22,7 +23,7 @@ def decryptFile(inputFile: str, outputFile: str, passphrase: str) -> int:
     assert os.path.isfile(inputFile), f'Cannot decrypt file that does not exist: {inputFile}'
 
     command = f'openssl enc -d -aes-256-cbc -pbkdf2 -in {inputFile} -out {outputFile} -pass pass:{passphrase}'
-    result = subprocess.run(command.split())
+    result = cli.runCommand(command, muteOutput=True)
 
     if result.returncode != 0:
         print(f'[ERROR] Failed to decrypt file: {inputFile}', file=sys.stderr)
