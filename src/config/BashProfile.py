@@ -89,7 +89,7 @@ if __name__ == "__main__":
     Alias('aspath').to(RunPython(UTILS_PATH.slash('aspath.py')).addArg('--from_stdin')).withTag(None),
 
     Alias('theplan').to('start').addPath(G_DRIVE.slash('My Drive').slash('THE_PLAN.xlsx')).withScope(ConfigScope.WINDOWS).withTag('Personal'),
-    Alias('money').to(RunPython(SRC_PATH.slash('finance').slash('parser.py'))).withTag('Personal'),
+    Alias('money').to(RunPython(SRC_PATH.slash('finance').slash('main.py'))).withTag('Personal'),
 
     Alias('grep').to('grep -i --color --binary-files=without-match --exclude-dir=".git"').withTag('Grep Options'),
     Alias('greppaste').to('grep').addArg('"$(paste)"').withTag('Grep Options'),
