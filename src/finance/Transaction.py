@@ -5,7 +5,8 @@ import datetime
 import pandas
 from enum import Enum, auto
 
-from finance.helpers import parseDate, percentageDifference, parseFloat, StringComparator
+from finance.helpers import parseDate, percentageDifference, parseFloat
+from utils.stringcompare import compareStrings
 
 import unicodedata
 
@@ -445,7 +446,7 @@ class Series:
             if candidate.credit + refTransaction.credit != 0:
                 continue
 
-            descriptionSimilarity: int = StringComparator.compareStrings(candidate.description, refTransaction.description)
+            descriptionSimilarity: int = compareStrings(candidate.description, refTransaction.description)
             if  descriptionSimilarity < Series.Confidance:
                 continue
 
@@ -466,7 +467,7 @@ class Series:
             if percentageDifference(abs(refTransaction.credit), abs(candidate.credit)) > Series.MaxPercentageFee:
                 continue
 
-            if StringComparator.compareStrings(candidate.description, refTransaction.description) < Series.Confidance:
+            if compareStrings(candidate.description, refTransaction.description) < Series.Confidance:
                 continue
 
             return i

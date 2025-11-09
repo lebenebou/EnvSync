@@ -1,44 +1,5 @@
 
 import datetime
-import re
-
-class StringComparator:
-
-    # regex patterns
-    specialChar = re.compile(r"[^a-zA-Z0-9]")
-    spaces = re.compile(r"\s+")
-
-    @staticmethod
-    # Compare 2 strings and return a similarity score /100
-    def compareStrings(left: str, right: str) -> int:
-
-        if left == right:
-            return 100
-
-        left = left.strip().lower()
-        right = right.strip().lower()
-
-        if left == right:
-            return 98
-
-        left = re.sub(StringComparator.specialChar, " ", left)
-        left = re.sub(StringComparator.spaces, " ", left)
-
-        right = re.sub(StringComparator.specialChar, " ", right)
-        right = re.sub(StringComparator.spaces, " ", right)
-
-        if left == right:
-            return 95
-
-        lWords = set(left.split())
-        rWords = set(right.split())
-
-        wordsInCommon = lWords & rWords
-        totalWords = lWords | rWords
-
-        similarity = len(wordsInCommon) / len(totalWords)
-        return int(similarity * 100)
-
 def parseDate(value: str | datetime.date, dateFormat: str = '%m/%d/%Y') -> datetime.date:
 
     assert value != None, 'date to parse is NONE'
