@@ -8,7 +8,9 @@ import time
 import argparse
 
 from GlobalEnv import GlobalEnv
-GlobalEnv().accessEncryptedFiles(cmdFallback=True)
+
+if GlobalEnv().accessEncryptedFiles(cmdFallback=True) != 0:
+    exit(1)
 
 REPORTS_DIR = os.path.join(GlobalEnv().encryptedPath, "finance")
 CACHED_DIR = os.path.join(REPORTS_DIR, "Cached")
