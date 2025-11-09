@@ -215,6 +215,7 @@ class GlobalEnv:
 
         if returnCode != 0:
             print('[ERROR] Could not access encrypted files. Bad passphrase?', file=sys.stderr)
+            if os.path.isfile(tmpZipFile): os.remove(tmpZipFile)
             return returnCode
 
         zip.unzipFile(tmpZipFile, self.repoRootPath)
