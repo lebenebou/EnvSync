@@ -3,6 +3,8 @@ import os
 import sys
 import json
 
+import argparse
+
 import time
 
 from utils import zip, encryption, cli
@@ -256,3 +258,18 @@ class GlobalEnv:
             print(f'\n{round(elapsedMs/1000, 1)} s', file=sys.stderr)
 
         return
+
+if __name__ == '__main__':
+
+    parser = argparse.ArgumentParser(description='Parse an account activity report from Bank Audi')
+    parser.add_argument('--encrypt', nargs='?', const=None, type=str, help='--encrypt=M: update encrypted zip file with M as commit message')
+
+    args = parser.parse_args()
+
+    if args.encrypt:
+
+        GlobalEnv().updateEncryptedFiles(args.encrypt, True)
+        exit(0)
+
+    parser.print_help()
+    exit(1)
