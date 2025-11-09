@@ -263,14 +263,22 @@ class GlobalEnv:
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Parse an account activity report from Bank Audi')
-    parser.add_argument('--encrypt', nargs='?', const=None, type=str, help='--encrypt=M: update encrypted zip file with M as commit message')
+    encryptionArgs = parser.add_mutually_exclusive_group(required=False)
+
+    encryptionArgs.add_argument('--encrypt', nargs='?', const=None, type=str, help='--encrypt=M: update encrypted zip file with M as commit message')
+    encryptionArgs.add_argument('--decrypt', action='store_true', help='Decrypt files from locked zip folder')
 
     args = parser.parse_args()
 
     if args.encrypt:
 
-        GlobalEnv().updateEncryptedFiles(args.encrypt, True)
+        GlobalEnv().updateEncryptedFiles(args.encrypt, cmdFallback=False)
         exit(0)
+
+    if args.decrypt:
+
+        returnCode: int = GlobalEnv().accessEncryptedFiles(cmdFallback=False)
+        exit(returnCode)
 
     parser.print_help()
     exit(1)
