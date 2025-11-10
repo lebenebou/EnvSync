@@ -290,7 +290,6 @@ class cdInto(Exec):
 
         super().__init__('cd')
         self.addCommand(dir)
-        self.tag = 'Directory Shortcuts'
 
 class RunPython(Exec):
 
