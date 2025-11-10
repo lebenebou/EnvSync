@@ -111,7 +111,10 @@ class Exec(ConfigOption):
 
         # command is str...
 
-        if os.path.exists(command):
+        commandHasSlashes: bool = ('\\' in command) or ('/' in command)
+        isPotentialPath: bool = commandHasSlashes and os.path.exists(command)
+
+        if isPotentialPath:
             self.addPath(command)
         else:
             self.addArg(command)
