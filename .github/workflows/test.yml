@@ -25,3 +25,5 @@ jobs:
 
     - name: Run ConfigScope tests
       run: python tests/main.py
+      env:
+        PYTHONPATH: ${{ github.workspace }}/src
