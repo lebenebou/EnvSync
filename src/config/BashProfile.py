@@ -257,17 +257,18 @@ if __name__ == "__main__":
 
     Alias('dtk').to('start').addPath('D:\\tools\\dtk\\tk.3.rc.1\\toolkit.bat').withScope(ConfigScope.MUREX).withTag('DTK'),
 
-    cdInto(MUREX_CLI).withTag('Starting dir').withScope(ConfigScope.MUREX),
-    cdInto(SRC_PATH).withTag('Starting dir').withScope(ConfigScope.LAPTOP | ConfigScope.LINUX),
-
-    Exec('ps aux').grep('ssh-agent').pipe('awk').addArg("'{print $1}'").pipe('xargs -r kill').withTag('Start Git SSH'),
-    Exec('eval "$(ssh-agent -s)"').muteOutput(3).withTag('Start Git SSH'),
+    Exec('ps aux').grep('ssh-agent').pipe('awk').addArg("'{print $1}'").pipe('xargs -r kill').withTag('Start Git SSH').withComment('Kill existing ssh-agents, if any'),
+    Exec('eval "$(ssh-agent -s)"').muteOutput(3).withTag('Start Git SSH').withComment('Start a new ssh-agent for this session'),
 
     RunPython(REPO_ROOT.slash('src').slash('GlobalEnv.py')).muteOutput(3).addArg('--decrypt')\
         .andThen('ssh-add').addPath(REPO_ROOT.slash('encrypted').slash('github_key')).muteOutput(3).withTag('Start Git SSH')\
             .ifFailed('echo -n SSH Failed. config.json might contain a bad passphrase'),
 
-    Exec('git remote set-url origin git@github.com:lebenebou/EnvSync.git').withTag('Start Git SSH'),
+    cdInto(REPO_MXDEVENV).withScope(ConfigScope.MUREX).withComment('Set git remote to use SSH for mxdevenv repo'),
+    Exec('git remote set-url origin https://stash.murex.com/scm/devtools/mxdevenvpp.git').withScope(ConfigScope.MUREX),
+
+    cdInto(SRC_PATH).withComment('Set git remote to use SSH for EnvSync repo'),
+    Exec('git remote set-url origin git@github.com:lebenebou/EnvSync.git'),
 
     ]
 
