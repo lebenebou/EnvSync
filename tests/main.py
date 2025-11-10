@@ -18,7 +18,7 @@ def printColored(text: str, color: Color, file = sys.stdout):
     RESET_CODE = '\033[0m'
     print(f'{color}{text}{RESET_CODE}', file=file)
 
-def assertSuccessful(command: str, workingDir: str, verbose: bool = True):
+def assertReturnCode(command: str, expectedReturnCode: int, workingDir: str, verbose: bool = True):
 
     print(f'\n[CMD] {command}')
     result = cli.runCommand(command, workingDir=workingDir)
@@ -28,11 +28,14 @@ def assertSuccessful(command: str, workingDir: str, verbose: bool = True):
         resultStderr = ''.join('\t' + line + '\n' for line in resultStderr.splitlines())
         print(resultStderr)
 
-    if result.returncode != 0:
-        printColored(f'[RED] {command}', Color.RED)
+    if result.returncode != expectedReturnCode:
+        printColored(f'[RED] {command} returned {result.returncode}, expected {expectedReturnCode}', Color.RED)
         sys.exit(result.returncode)
 
     printColored(f'[ OK] {command}', Color.GREEN)
+
+def assertSuccessful(command: str, workingDir: str, verbose: bool = True):
+    assertReturnCode(command, 0, workingDir, verbose)
 
 def runAllPythonFilesInFolder(folderPath: str):
 
@@ -60,12 +63,18 @@ if __name__ == '__main__':
 
     runConfigScopeUnitTests()
 
+    printCurrentScope()
+
     # python files return code 0
     runAllPythonFilesInFolder(os.path.join(globalEnv.repoSrcPath, 'config'))
     runAllPythonFilesInFolder(os.path.join(globalEnv.repoSrcPath, 'finance'))
     print(end='\n', file=sys.stderr)
 
-    printCurrentScope()
+    numberOfSshAgents = int(cli.commandOutput('ps aux | grep ssh.*agent | wc -l').strip())
+    if numberOfSshAgents != 1:
+        printColored(f'[WARN] Expected 1 ssh-agent process, found {numberOfSshAgents}', Color.YELLOW)
+
+    assertReturnCode('ssh -T git@github.com', 1, workingDir=globalEnv.repoRootPath, verbose=True)
 
     secondGlobalEnv = GlobalEnv()
     assert globalEnv is secondGlobalEnv, "GlobalEnv is not a singleton!"
