@@ -57,7 +57,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser(description='Update your bashprofile through Python')
 
-    parser.add_argument('--in_place', action='store_true', help='directly modify ~/.vimrc')
+    parser.add_argument('-i', '--in_place', action='store_true', help='directly modify ~/.vimrc')
     args = parser.parse_args()
 
     if args.in_place:

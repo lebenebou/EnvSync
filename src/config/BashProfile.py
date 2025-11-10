@@ -21,7 +21,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Update your bashprofile through Python')
 
     optionGroup = parser.add_mutually_exclusive_group()
-    optionGroup.add_argument('--in_place', action='store_true', help='Directly modify ~/.bash_profile')
+    optionGroup.add_argument('-i', '--in_place', action='store_true', help='Directly modify ~/.bash_profile')
 
     args = parser.parse_args()
 
