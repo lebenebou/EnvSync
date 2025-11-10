@@ -23,6 +23,9 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
+    - name: Install dependencies
+      run: pip install -r requirements.txt
+
     - name: Run ConfigScope tests
       run: python tests/main.py
       env:
