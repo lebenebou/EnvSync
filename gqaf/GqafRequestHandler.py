@@ -133,7 +133,7 @@ class DeploymentJob:
         return True
 
     def isFailed(self) -> bool:
-        return self.status in ['FAILED', 'REQUESTED_FOR_ANALYSIS', 'ANALYZEDCANCELED']
+        return self.status in ['FAILED', 'REQUESTED_FOR_ANALYSIS', 'ANALYZEDCANCELED', 'REQUESTEDFOR_PAC_ANALYSIS', 'PACREPUSHED']
 
     def isPassed(self) -> bool:
         return self.status == 'PASSED'
