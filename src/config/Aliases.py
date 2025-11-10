@@ -101,7 +101,7 @@ class Exec(ConfigOption):
     def addCommand(self, command: str | Path | Exec):
 
         if isinstance(command, Path):
-            command = command.value
+            return self.addPath(command)
 
         if isinstance(command, Exec):
             return self.addArgs(command.args)
