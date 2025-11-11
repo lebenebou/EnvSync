@@ -27,7 +27,7 @@ if __name__ == '__main__':
 
     pythonFilesInConfig = getPythonFilesInFolder(os.path.join(globalEnv.repoRootPath, 'src', 'config'))
     for file in pythonFilesInConfig:
-        tests.append(EnvSyncTest(f'python {file}').asserts(lambda: cli.runCommand(f'python {file}').returncode == 0))
+        tests.append(EnvSyncTest(f'python {file}').asserts(lambda f=file: cli.runCommand(f'python {f}').returncode == 0))
 
     allSuccessful: bool = EnvSyncTest.runTests(tests)
 
