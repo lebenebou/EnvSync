@@ -218,10 +218,10 @@ if __name__ == "__main__":
     Alias('ci').to('start').addArg(f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{CURRENT_VERSION}/').withScope(ConfigScope.MUREX).withTag('Open CI pipeline link'),
     Alias('freyja').to('start').addArg(f'https://cje-core.fr.murex.com/assets/job/FreyjaAlien/job/{CURRENT_VERSION}/').withScope(ConfigScope.MUREX).withTag('Open CI pipeline link'),
 
-    Alias('mxOpen').to(RunPython(DOWNLOADS.slash('scripts').slash('mxOpen.py'))).withScope(ConfigScope.MUREX).withTag('MxOpen'),
-    Alias('coco').to(RunPython(DOWNLOADS.slash('scripts').slash('mxOpen.py'))).addArg('--coconut').withScope(ConfigScope.MUREX).withTag('Search Coconut'),
+    Alias('mxOpen').to(RunPython(D_DRIVE.slash('Personal').slash('scripts').slash('mxOpen.py'))).withScope(ConfigScope.MUREX).withTag('MxOpen'),
+    Alias('coco').to(RunPython(D_DRIVE.slash('Personal').slash('scripts').slash('mxOpen.py'))).addArg('--coconut').withScope(ConfigScope.MUREX).withTag('Search Coconut'),
 
-    Alias('auth').to(RunPython(DOWNLOADS.slash('scripts').slash('auth.py'))).withScope(ConfigScope.MUREX).withTag('Auto Auth'),
+    Alias('auth').to(RunPython(D_DRIVE.slash('Personal').slash('scripts').slash('auth.py'))).withScope(ConfigScope.MUREX).withTag('Auto Auth'),
 
     Alias('mde').to('D:\\.mxdevenvpp\\bin\\mde++.cmd').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
     Alias('mdeversion').to('mde about').pipe('grep -o').addArg('^0.[0-9]*.0.[0-9]*').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
