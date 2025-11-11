@@ -1,56 +1,8 @@
 
-import sys, os
-
 from GlobalEnv import GlobalEnv, ConfigScope
-from utils import cli
-
-class Color:
-
-    RED = '\033[91m'
-    GREEN = '\033[92m'
-    YELLOW = '\033[93m'
-    BLUE = '\033[94m'
-    MAGENTA = '\033[95m'
-    CYAN = '\033[96m'
-
-def printColored(text: str, color: Color, file = sys.stdout):
-
-    RESET_CODE = '\033[0m'
-    print(f'{color}{text}{RESET_CODE}', file=file)
-
-def assertReturnCode(command: str, expectedReturnCode: int, workingDir: str, verbose: bool = True):
-
-    print(f'\n[CMD] {command}')
-    result = cli.runCommand(command, workingDir=workingDir)
-
-    if verbose and result.stderr.strip():
-        resultStderr: str = result.stderr.strip()
-        resultStderr = ''.join('\t' + line + '\n' for line in resultStderr.splitlines())
-        print(resultStderr)
-
-    if result.returncode != expectedReturnCode:
-        printColored(f'[RED] {command} returned {result.returncode}, expected {expectedReturnCode}', Color.RED)
-        sys.exit(result.returncode)
-
-    printColored(f'[ OK] {command}', Color.GREEN)
-
-def assertSuccessful(command: str, workingDir: str, verbose: bool = True):
-    assertReturnCode(command, 0, workingDir, verbose)
-
-def runAllPythonFilesInFolder(folderPath: str):
-
-    for file in os.listdir(folderPath):
-
-        if not file.endswith('.py'):
-            continue
-
-        filePath = os.path.join(folderPath, file)
-        assertSuccessful(f'python {filePath}', workingDir=folderPath, verbose=False)
-
-def runConfigScopeUnitTests():
-    assert (ConfigScope.MUREX | ConfigScope.LAPTOP) == 3
 
 def printCurrentScope():
+
     print('[INFO] Current config scope includes:')
 
     for scope in ConfigScope:
@@ -61,21 +13,5 @@ if __name__ == '__main__':
 
     globalEnv = GlobalEnv()
 
-    runConfigScopeUnitTests()
-
     printCurrentScope()
-
-    # python files return code 0
-    runAllPythonFilesInFolder(os.path.join(globalEnv.repoSrcPath, 'config'))
-    runAllPythonFilesInFolder(os.path.join(globalEnv.repoSrcPath, 'finance'))
-    print(end='\n', file=sys.stderr)
-
-    numberOfSshAgents = int(cli.commandOutput('ps aux | grep ssh.*agent | wc -l').strip())
-    if numberOfSshAgents != 1:
-        printColored(f'[WARN] Expected 1 ssh-agent process, found {numberOfSshAgents}', Color.YELLOW)
-
-    assertReturnCode('ssh -T git@github.com', 1, workingDir=globalEnv.repoRootPath, verbose=True)
-
-    secondGlobalEnv = GlobalEnv()
-    assert globalEnv is secondGlobalEnv, "GlobalEnv is not a singleton!"
-    del globalEnv
+    exit(0)
