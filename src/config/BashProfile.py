@@ -184,7 +184,7 @@ if __name__ == "__main__":
     Variable(OLD_VERSION).withName('OLD_VERSION').withScope(ConfigScope.MUREX).withTag('MxVersion'),
     Alias('allMxVersions').to(RunPython(GQAF_SCRIPTS.slash('allMxVersions.py'))).withScope(ConfigScope.MUREX).withTag('MxVersion'),
     Alias('version').to('echo $VERSION').withScope(ConfigScope.MUREX).withTag('MxVersion'),
-    Alias('versionUpgrade').to(RunPython(DOWNLOADS.slash('scripts').slash('upgradeVersion.py'))).withScope(ConfigScope.MUREX).withTag('MxVersion'),
+    Alias('versionUpgrade').to(RunPython(D_DRIVE.slash('Personal').slash('scripts').slash('upgradeVersion.py'))).withScope(ConfigScope.MUREX).withTag('MxVersion'),
     Alias('richVersionView').to(RunPython(MUREX_CLI.slash('gqaf').slash('richVersionView.py'))).withScope(ConfigScope.MUREX).withTag('Status'),
     Alias('displayAlien').to(RunPython(MUREX_CLI.slash('display_alien').slash('excel_refresher.py')).andThen('start').addPath(MUREX_CLI.slash('display_alien').slash('display_alien.xlsx'))).withScope(ConfigScope.MUREX).withTag('Status'),
     Alias('richVersionViewCsv').to('richVersionView').addArg('--csv').addArg('> tmp.csv').andThen('start tmp.csv').withScope(ConfigScope.MUREX).withTag('Status'),
