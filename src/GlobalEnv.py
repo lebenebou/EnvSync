@@ -117,11 +117,18 @@ class GlobalEnv:
         for filename in options:
 
             fullPath = os.path.join(self.userHomeDir, filename)
-            if os.path.exists(fullPath):
-                return fullPath
+            if not os.path.exists(fullPath):
+                continue
 
-        print('[WARN] No bash profile file found in home directory.', file=sys.stderr)
-        return None
+            self._bashProfilePath = fullPath
+            return self._bashProfilePath
+
+        print(f'[INFO] Creating empty bash profile file: {self._bashProfilePath}', file=sys.stderr)
+        self._bashProfilePath = os.path.join(self.userHomeDir, '.bash_profile')
+        with open(self._bashProfilePath, 'w') as f:
+            f.write('# Bash profile created by EnvSync\n')
+
+        return self._bashProfilePath
 
     def getVimrcPath(self) -> str:
 
