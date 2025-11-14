@@ -108,7 +108,7 @@ class Changelist:
     def isARevert(self) -> bool:
         return 'REVERT' in (tag.upper() for tag in self.tags)
 
-    def toString(self, onlyTags: bool = False, withFiles: bool = False) -> str:
+    def toString(self, onlyTags: bool = False, withFiles: bool = False, withGitCommit: bool = False) -> str:
 
         s: str = f'CL {self.value} by {self.developer}'
         s += ' - '
@@ -118,6 +118,9 @@ class Changelist:
 
         if not onlyTags:
             s += f' {self.description}'
+
+        if withGitCommit and self.gitCommit is not None:
+            s += f' (git commit {self.gitCommit})'
 
         if withFiles:
             self.fetchFullInfo()
@@ -488,7 +491,7 @@ if __name__ == '__main__':
             print(f'Could not get changelist: {session.changelist}', file=sys.stderr)
             exit(1)
 
-        print(cl.toString(withFiles=args.file))
+        print(cl.toString(withFiles=args.file, withGitCommit=True))
         exit(0)
 
     if args.unmerged is not None:
@@ -520,7 +523,7 @@ if __name__ == '__main__':
 
     showFiles: bool = args.file is not None
     for cl in cls:
-        print(cl.toString(withFiles=showFiles))
+        print(cl.toString(withFiles=showFiles, withGitCommit=True))
 
     session.close()
     exit(0)
