@@ -168,7 +168,7 @@ if __name__ == "__main__":
     Alias('pastevim').to('paste').pipe('vim -').withTag('Vim'),
 
     Alias('gs').to('git status').withTag('Git'),
-    Alias('gd').to('git diff').withTag('Git'),
+    Alias('gd').to('git diff -w').withTag('Git'),
     Alias('gln').to('git log -n').withTag('Git'),
 
     Alias('updategitbash').to(updateGitBashCommand).withTag('Update Git Bash').withScope(ConfigScope.WINDOWS),
