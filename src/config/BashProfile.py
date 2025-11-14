@@ -216,6 +216,7 @@ if __name__ == "__main__":
 
     Alias('mxbot').to('start').addArg(f'https://integrationweb.gqaf.fr.murex.com').withScope(ConfigScope.MUREX).withTag('Open MxBot Integration link'),
     Alias('ci').to('start').addArg(f'https://cje-core.fr.murex.com/assets/job/Alien/job/Git%20Alien/job/Git%20cpp%20build/').withScope(ConfigScope.MUREX).withTag('Open CI pipeline link'),
+    Alias('pullRequest').to('start').addArg(f'https://stash.murex.com/projects/ASSETS/repos/alien/pull-requests?create').withScope(ConfigScope.MUREX).withTag('Open CI pipeline link'),
     Alias('freyja').to('start').addArg(f'https://cje-core.fr.murex.com/assets/job/FreyjaAlien/job/{CURRENT_VERSION}/').withScope(ConfigScope.MUREX).withTag('Open CI pipeline link'),
 
     Alias('mxOpen').to(RunPython(D_DRIVE.slash('Personal').slash('scripts').slash('mxOpen.py'))).withScope(ConfigScope.MUREX).withTag('MxOpen'),
