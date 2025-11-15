@@ -106,7 +106,7 @@ if __name__ == "__main__":
 
     Alias('home').to(cdInto('~').withScope(ConfigScope.LAPTOP)),
     Alias('home').to('murexcli').withScope(ConfigScope.MUREX),
-    Alias('src').to(cdInto(SRC_PATH)),
+    Alias('src').to(cdInto(REPO_ROOT)),
     Alias('desk').to(cdInto(DESKTOP)),
     Alias('downloads').to(cdInto(DOWNLOADS)),
     Alias('docs').to(cdInto(DOCUMENTS)),
@@ -268,7 +268,7 @@ if __name__ == "__main__":
     cdInto(REPO_MXDEVENV).withScope(ConfigScope.MUREX).withComment('Set git remote to use SSH for mxdevenv repo'),
     Exec('git remote set-url origin https://stash.murex.com/scm/devtools/mxdevenvpp.git').withScope(ConfigScope.MUREX),
 
-    cdInto(SRC_PATH).withComment('Set git remote to use SSH for EnvSync repo'),
+    cdInto(REPO_ROOT).withComment('Set git remote to use SSH for EnvSync repo'),
     Exec('git remote set-url origin git@github.com:lebenebou/EnvSync.git'),
 
     ]
