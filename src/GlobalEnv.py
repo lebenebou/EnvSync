@@ -261,9 +261,9 @@ class GlobalEnv:
 
         elapsedMs: float = (time.perf_counter() - self._creationTime)*1000
         if elapsedMs < 10**3:
-            print(f'\n{elapsedMs} ms', file=sys.stderr)
+            print(f'\n{int(elapsedMs)} ms', file=sys.stderr)
         else:
-            print(f'\n{round(elapsedMs/1000, 1)} s', file=sys.stderr)
+            print(f'\n{elapsedMs/1000:.1f} s', file=sys.stderr)
 
         return
 
