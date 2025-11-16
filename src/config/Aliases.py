@@ -54,15 +54,8 @@ class Path(Variable):
         otherPath = Path(otherPath)
         return Path(os.path.join(self.value, otherPath.value)).withScope(self.scope)
 
-    def withAlternateValueForScope(self, scope: ConfigScope, alternateValue: str | Path):
-
-        if isinstance(alternateValue, Path):
-            alternateValue = str(alternateValue.value)
-
-        if GlobalEnv().currentScope & scope:
-            self.value = alternateValue
-
-        return self
+    def __truediv__(self, otherPath):
+        return self.slash(otherPath)
 
     def toLinuxPath(self) -> str:
         # this function does not wrap the path with " quotes
@@ -315,6 +308,14 @@ class RunPython(Exec):
         super().__init__('python')
         self.addCommand(scriptPath)
         self.tag = 'Python scripts'
+
+class OpenLink(Exec):
+
+    def __init__(self, link: str):
+
+        super().__init__('start')
+        self.addArg(link)
+        self.tag = 'Open link'
 
 class InlinePython(RunPython):
 

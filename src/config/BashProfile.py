@@ -10,8 +10,183 @@ CURRENT_FILE = os.path.abspath(__file__)
 
 import json
 def readJsonFromFile(filePath: str) -> dict:
+
+    assert os.path.isfile(filePath), f"File does not exist: {filePath}"
+
     with open(filePath, 'r') as file:
         return json.load(file)
+
+def mxdevenvOptions() -> list[ConfigOption]:
+
+    mxdevenvRepoPath = 'C:\\mxdevenv'
+    mxdevenvUtilityScriptsPath = os.path.join(mxdevenvRepoPath, 'Mxdevenvpp', '_Scripts')
+
+    options: list[ConfigOption] = [
+
+    Alias('mde').to('D:\\.mxdevenvpp\\bin\\mde++.cmd').withTag('mxdevenv runners'),
+    Alias('mde++').to('D:\\.mxdevenvpp\\bin\\mde++.cmd').withTag('mxdevenv runners'),
+    Alias('mdeversion').to('mde about').pipe('grep -o').addArg('^0.[0-9]*.0.[0-9]*').withTag('mxdevenv runners'),
+
+    # path shortcuts
+    Alias('umxdevenv').to(cdInto('U:\\tools\\mxdevenv\\mxdevenvpp')).withTag('mxdevenv path shortcuts'),
+    Alias('dmxdevenv').to(cdInto('D:\\.mxdevenvpp')).withTag('mxdevenv path shortcuts'),
+    Alias('repomxdevenv').to(cdInto(mxdevenvRepoPath)).withTag('mxdevenv path shortcuts'),
+
+    # version management
+    Alias('prepareVersionFromClipBoard').to('mde prepareVersion -v $(paste) &').withTag('MxVersion Management'),
+    Alias('versionManager').to('mde versionManager').inParallel().withTag('MxVersion Management'),
+
+    # logbook
+    Alias('logsVisualizer').to('mde logsVisualizer').inParallel().withTag('Logbook'),
+
+    # debugging
+    Alias('debugme').to('/d/apps/$(version)*/debugMe++.cmd').inParallel().withTag('DebugMe++'),
+
+    # drive mapping
+    Alias('drivesmapped').to('[ -d "/u" ]').then('echo $?').withTag('Drive Mapping'),
+    Alias('unmapdrives').to('start').addPath(os.path.join(mxdevenvUtilityScriptsPath, 'mapsremove.bat')).withTag('Drive Mapping'),
+    Alias('mapdrives').to('unmapdrives').delay(1).andThen('start').addPath(os.path.join(mxdevenvUtilityScriptsPath, 'mapsFR.vbs')).delay(0.5).andThen('ls /u').withTag('Drive Mapping'),
+
+    ]
+
+    for option in options:
+        option.withScope(ConfigScope.MUREX)
+
+    return options
+
+def mxVersionManagementOptions() -> list[ConfigOption]:
+
+    D_DRIVE = Path("D:\\")
+    murexSettingsJsonPath = os.path.join('D:\\', '.mxdevenvpp', 'settings', 'python_scripts_settings.json')
+
+    murexSettings = dict()
+    if globalEnv.currentScope & ConfigScope.MUREX:
+        murexSettings = readJsonFromFile(murexSettingsJsonPath)
+
+    CURRENT_VERSION = murexSettings.get('version', None)
+    OLD_VERSION = murexSettings.get('previous_version', None)
+
+    options: list[ConfigOption] = [
+
+    # MxVersion
+    Alias('version').to(f'echo {CURRENT_VERSION}').withTag('MxVersion'),
+    Alias('clipVersion').to('version').tee('clip').andThen('echo Copied.').withTag('MxVersion'),
+    Alias('oldversion').to(f'echo {OLD_VERSION}').withTag('MxVersion'),
+
+    # MxVersion manipulation
+    Alias('cdversion').to(cdInto('/d/$(version)')).withTag('MxVersion Manipulation'),
+    Alias('startversion').to('start').addArg('/d/$(version)/mx-$(version).sln.lnk').withTag('MxVersion Manipulation'),
+    Alias('cdapps').to(cdInto('/d/apps/$(version)*')).withTag('MxVersion Manipulation'),
+    Alias('versionUpgrade').to(RunPython(D_DRIVE / 'Personal' / 'scripts' / 'upgradeVersion.py')).withTag('MxVersion Manipulation'),
+
+    Alias('settings').to('vim').addPath(murexSettingsJsonPath),
+
+    ]
+
+    for option in options:
+        option.withScope(ConfigScope.MUREX)
+
+    return options
+
+def murexLinkShortcuts() -> list[ConfigOption]:
+
+    options: list[ConfigOption] = [
+
+    Alias('mxbot').to(OpenLink(f'https://integrationweb.gqaf.fr.murex.com')),
+    Alias('ci').to(OpenLink(f'https://cje-core.fr.murex.com/assets/job/Alien/job/Git%20Alien/job/Git%20cpp%20build/')),
+    Alias('pullRequest').to(OpenLink(f'https://stash.murex.com/projects/ASSETS/repos/alien/pull-requests?create')),
+
+    ]
+
+    for option in options:
+        option.withScope(ConfigScope.MUREX)
+        option.withTag('Murex Link Shortcuts')
+
+    return options
+
+def murexWelcomeMessage() -> list[ConfigOption]:
+
+    p4helperScript = RunPython('C:\\murexcli\\p4helper.py')
+
+    options: list[ConfigOption] = [
+
+    Exec(f'echo Hello yoyammine!'),
+    Exec('echo You are on ALIEN version').addArg('$(version)'),
+    Exec('echo -e \n'),
+    Exec(p4helperScript).addArg('--unmerged'),
+    Exec('ls /u').muteOutput(3).ifFailed('echo "[WARNING]: Drives aren\'t mapped!"'),
+
+    ]
+
+    for option in options:
+
+        if isinstance(option, Exec): option.onlyIfThroughGitBash()
+        option.withScope(ConfigScope.MUREX)
+        option.withTag('Welcome message')
+
+    return options
+
+def murexCliOptions() -> list[ConfigOption]:
+
+    MUREX_CLI = (C_DRIVE / 'murexcli').withScope(ConfigScope.MUREX)
+
+    # Murex scripts
+    GQAF_SCRIPTS = (MUREX_CLI / 'gqaf').withScope(ConfigScope.MUREX)
+    p4helperScript = RunPython(MUREX_CLI / 'p4helper.py').withScope(ConfigScope.MUREX)
+    jiraScript = RunPython(MUREX_CLI / 'JiraRequestHandler.py').withScope(ConfigScope.MUREX)
+    jenkinsScript = RunPython(MUREX_CLI / 'JenkinsRequestHandler.py').withScope(ConfigScope.MUREX)
+    integrationScript = RunPython(MUREX_CLI / 'IntegrationRequestHandler.py').withScope(ConfigScope.MUREX)
+
+    options: list[ConfigOption] = [
+
+    # Session info
+    Alias('sessionInfo').to(RunPython(MUREX_CLI / 'SessionInfo.py')).withTag('Session Info'),
+
+    Alias('murexcli').to(cdInto(MUREX_CLI)),
+
+    Alias('displayAlien').to(RunPython(MUREX_CLI / 'display_alien' / 'excel_refresher.py')\
+                             .andThen('start').addPath(MUREX_CLI / 'display_alien' / 'display_alien.xlsx')),
+
+    # P4 Helpers
+    Alias('p4helper').to(p4helperScript).withTag('P4 Helpers'),
+    Alias('psubmit').to('p4helper').addArg('--submit').addArg('$(paste)').withTag('P4 Helpers'),
+    Alias('submit').to('p4helper --submit').withTag('P4 Helpers'),
+    Alias('isItMerged').to('echo "looking for $(paste)..."').andThen('p4helper --me --build').pipe('greppaste').withTag('P4 Helpers'),
+    Alias('dtk').to('start').addPath('D:\\tools\\dtk\\tk.3.rc.1\\toolkit.bat').withTag('P4 Helpers'),
+
+    # Jira
+    Alias('jira').to(jiraScript).withTag('Jira Helpers'),
+
+    # Jenkins
+    Alias('jenkins').to(jenkinsScript).withTag('Jenkins Helpers'),
+    Alias('integrate').to(integrationScript).withTag('Jenkins Helpers'),
+
+    Alias('grepdefects').to('grep').addArg('-Eo').addQuoted('DEF[0-9]+'),
+
+    # Personal scripts
+    Alias('mxOpen').to(RunPython(D_DRIVE / 'Personal' / 'scripts' / 'mxOpen.py')).withTag('Personal Scripts'),
+    Alias('coco').to(RunPython(D_DRIVE / 'Personal' / 'scripts' / 'mxOpen.py')).addArg('--coconut').withTag('Personal Scripts'),
+    Alias('auth').to(RunPython(D_DRIVE / 'Personal' / 'scripts' / 'auth.py')).withTag('Personal Scripts'),
+
+    # GQAF scripts
+    Alias('setups').to(RunPython(GQAF_SCRIPTS / 'setups.py')).withTag('GQAF Setups'),
+    Alias('pushsetups').to(RunPython(GQAF_SCRIPTS / 'pushsetups.py')).withTag('GQAF Setups'),
+    Alias('pushsetupsAtHead').to('pushsetups').addArg('--head').addArg('--linux').withTag('GQAF Setups'),
+
+    Alias('safetyNetStatus').to(RunPython(MUREX_CLI / 'gqaf' / 'safetyNetStatus.py')).withTag('GQAF Scripts'),
+
+    Alias('richVersionView').to(RunPython(MUREX_CLI / 'gqaf' / 'richVersionView.py')).withTag('GQAF Scripts'),
+    Alias('richVersionViewCsv').to('richVersionView').addArg('--csv').addArg('> tmp.csv').andThen('start tmp.csv').withTag('GQAF Scripts'),
+
+    Alias('tpks').to(RunPython(GQAF_SCRIPTS / 'jobs.py')).withTag('GQAF Scripts'),
+    Alias('allMxVersions').to(RunPython(GQAF_SCRIPTS / 'allMxVersions.py')).withTag('GQAF Scripts'),
+
+    ]
+
+    for option in options:
+        option.withScope(ConfigScope.MUREX)
+
+    return options
 
 if __name__ == "__main__":
 
@@ -29,72 +204,49 @@ if __name__ == "__main__":
     D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigScope.WINDOWS)
     C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigScope.WINDOWS)
     G_DRIVE = Path("G:\\").withName('G Drive').withScope(ConfigScope.WINDOWS)
-    ONEDRIVE_MUREX = D_DRIVE.slash("OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX | ConfigScope.WINDOWS)
+    ONEDRIVE_MUREX = (D_DRIVE / "OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX | ConfigScope.WINDOWS)
 
     # Repo paths
-    REPO_ROOT = Path(globalEnv.repoRootPath).withName('REPO ROOT PATH')
-    SRC_PATH = Path(globalEnv.repoSrcPath).withName('SRC PATH')
-    UTILS_PATH = SRC_PATH.slash('utils').withName('UTILS PATH')
+    envSyncRepoPath = Path(globalEnv.repoRootPath).withName('REPO ROOT PATH')
+    envSyncSrcPath = Path(globalEnv.repoSrcPath).withName('SRC PATH')
+    UTILS_PATH = (envSyncSrcPath / 'utils').withName('UTILS PATH')
 
-    DESKTOP = Path(os.path.join(globalEnv.userHomeDir, 'Desktop')).withName('DESKTOP').withScope(ConfigScope.LAPTOP | ConfigScope.LINUX)\
-        .withAlternateValueForScope(ConfigScope.MUREX, ONEDRIVE_MUREX.slash('Desktop'))
+    # User folders
+    DESKTOP = Path(os.path.join(globalEnv.userHomeDir, 'Desktop')).withName('DESKTOP').withScope(ConfigScope.LAPTOP | ConfigScope.LINUX)
+    DOWNLOADS = Path(os.path.join(globalEnv.userHomeDir, 'Downloads')).withName('DOWNLOADS').withScope(ConfigScope.LAPTOP)
+    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigScope.LAPTOP)
 
-    DOWNLOADS = Path(os.path.join(globalEnv.userHomeDir, 'Downloads')).withName('DOWNLOADS').withScope(ConfigScope.LAPTOP)\
-        .withAlternateValueForScope(ConfigScope.MUREX, ONEDRIVE_MUREX.slash('Downloads'))
+    # User variables
+    USERNAME = globalEnv.hostname
 
-    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigScope.LAPTOP)\
-        .withAlternateValueForScope(ConfigScope.MUREX, os.path.join(globalEnv.gPavilion15Path, 'MyDocuments'))\
-        .withAlternateValueForScope(ConfigScope.LINUX, os.path.join(globalEnv.userHomeDir, 'Documents'))
-
-    MUREX_CLI = C_DRIVE.slash('murexcli').withScope(ConfigScope.MUREX)
-    MUREX_SETTINGS_JSON = D_DRIVE.slash('.mxdevenvpp').slash('settings').slash('python_scripts_settings.json').withScope(ConfigScope.MUREX)
-
-    murexSettings = dict()
     if globalEnv.currentScope & ConfigScope.MUREX:
-        murexSettings = readJsonFromFile(MUREX_SETTINGS_JSON.value)
 
-    MUREX_SETTINGS_PY = MUREX_CLI.slash('settings.py').withScope(ConfigScope.MUREX)
-    U_MXDEVENV = Path('U:\\tools\\mxdevenv\\mxdevenvpp').withScope(ConfigScope.MUREX)
-    D_MXDEVENV = Path('D:\\.mxdevenvpp').withScope(ConfigScope.MUREX)
-    REPO_MXDEVENV = Path('C:\\mxdevenv').withScope(ConfigScope.MUREX)
+        DESKTOP = (ONEDRIVE_MUREX / 'Desktop').withScope(ConfigScope.MUREX)
+        DOWNLOADS = (ONEDRIVE_MUREX / 'Downloads').withScope(ConfigScope.MUREX)
+        DOCUMENTS = (ONEDRIVE_MUREX / 'Documents').withScope(ConfigScope.MUREX)
 
-    UNMAP_DRIVES_SCRIPT = REPO_MXDEVENV.slash('Mxdevenvpp').slash('_Scripts').slash('mapsremove.bat').withScope(ConfigScope.MUREX)
-    MAP_DRIVES_SCRIPT = REPO_MXDEVENV.slash('Mxdevenvpp').slash('_Scripts').slash('mapsFR.vbs').withScope(ConfigScope.MUREX)
+        USERNAME = 'yoyammine'
 
-    USERNAME = murexSettings.get('username', globalEnv.hostname)
-    PASSWORD = murexSettings.get('password', None)
-
-    CURRENT_VERSION = murexSettings.get('version', None)
-    OLD_VERSION = murexSettings.get('previous_version', None)
-
-    updateGitBashCommand = Exec('git').addArg('update-git-for-windows').withScope(ConfigScope.WINDOWS)
-
-    # Murex scripts
-    GQAF_SCRIPTS = MUREX_CLI.slash('gqaf').withScope(ConfigScope.MUREX)
-    p4helperScript = RunPython(MUREX_CLI.slash('p4helper.py')).withScope(ConfigScope.MUREX)
-    jiraScript = RunPython(MUREX_CLI.slash('JiraRequestHandler.py')).withScope(ConfigScope.MUREX)
-    jenkinsScript = RunPython(MUREX_CLI.slash('JenkinsRequestHandler.py')).withScope(ConfigScope.MUREX)
-    integrationScript = RunPython(MUREX_CLI.slash('IntegrationRequestHandler.py')).withScope(ConfigScope.MUREX)
+    if globalEnv.currentScope & ConfigScope.LINUX:
+        DOCUMENTS = Path(os.path.join(globalEnv.userHomeDir, 'Documents')).withName('DOCUMENTS').withScope(ConfigScope.LINUX)
 
     # clipboard utilities
-    copy = RunPython(UTILS_PATH.slash('clipboard.py')).addArg('--copy').withTag('Clipboard Utility')
-    paste = RunPython(UTILS_PATH.slash('clipboard.py')).addArg('--paste').withTag('Clipboard Utility')
+    copy = RunPython(UTILS_PATH / 'clipboard.py').addArg('--copy').withTag('Clipboard Utility')
+    paste = RunPython(UTILS_PATH / 'clipboard.py').addArg('--paste').withTag('Clipboard Utility')
+
+    updateGitBash = Exec('git').addArg('update-git-for-windows').withScope(ConfigScope.WINDOWS)
 
     # Main script
-    runUnitTests()
-
     bashprofile: ConfigFile = BashProfile()
     bashprofile.options = [
 
-    Alias('aspath').to(RunPython(UTILS_PATH.slash('aspath.py')).addArg('--from_stdin')).withTag(None),
+    Alias('aspath').to(RunPython(UTILS_PATH / 'aspath.py').addArg('--from_stdin')),
 
-    Alias('theplan').to('start').addPath(G_DRIVE.slash('My Drive').slash('THE_PLAN.xlsx')).withScope(ConfigScope.WINDOWS).withTag('Personal'),
-    Alias('money').to(RunPython(SRC_PATH.slash('finance').slash('main.py'))).withTag('Personal'),
+    Alias('theplan').to('start').addPath(G_DRIVE / 'My Drive' / 'THE_PLAN.xlsx').withScope(ConfigScope.WINDOWS).withTag('Personal'),
+    Alias('money').to(RunPython(envSyncSrcPath / 'finance' / 'main.py')).withTag('Personal'),
 
     Alias('grep').to('grep -i --color --binary-files=without-match --exclude-dir=".git"').withTag('Grep Options'),
     Alias('greppaste').to('grep').addArg('"$(paste)"').withTag('Grep Options'),
-    Alias('gp').to('greppaste').withTag('Grep Options'),
-    Alias('grepdefects').to('grep').addArg('-Eo').addQuoted('DEF[0-9]+').withTag('Grep Options').withScope(ConfigScope.MUREX),
 
     InlinePython(runImmediately=True).linesAre([
         'import pyautogui',
@@ -106,7 +258,7 @@ if __name__ == "__main__":
 
     Alias('home').to(cdInto('~').withScope(ConfigScope.LAPTOP)),
     Alias('home').to('murexcli').withScope(ConfigScope.MUREX),
-    Alias('src').to(cdInto(REPO_ROOT)),
+    Alias('src').to(cdInto(envSyncRepoPath)),
     Alias('desk').to(cdInto(DESKTOP)),
     Alias('downloads').to(cdInto(DOWNLOADS)),
     Alias('docs').to(cdInto(DOCUMENTS)),
@@ -122,10 +274,10 @@ if __name__ == "__main__":
     Alias('vids').to(cdInto('D:\\Videos')).withScope(ConfigScope.LAPTOP),
     Alias('movies').to(cdInto('D:\\Videos\\Movies')).withScope(ConfigScope.LAPTOP),
 
-    Alias('exp').to(RunPython(UTILS_PATH.slash('exp.py'))),
-    Alias('start').to(RunPython(UTILS_PATH.slash('start.py'))),
-    Alias('win').to(RunPython(UTILS_PATH.slash('win.py'))).withScope(ConfigScope.WINDOWS),
-    Alias('netpass').to(RunPython(SRC_PATH.slash('NetPass').slash('netpass.py'))).withScope(ConfigScope.WINDOWS),
+    Alias('exp').to(RunPython(UTILS_PATH / 'exp.py')),
+    Alias('start').to(RunPython(UTILS_PATH / 'start.py')),
+    Alias('win').to(RunPython(UTILS_PATH / 'win.py')).withScope(ConfigScope.WINDOWS),
+    Alias('netpass').to(RunPython(envSyncSrcPath / 'NetPass' / 'netpass.py')).withScope(ConfigScope.WINDOWS),
 
     Function('restart').thenExecute([
         Exec('win 2').disown(),
@@ -149,7 +301,7 @@ if __name__ == "__main__":
     Alias('editvimrc').to('code').addPath(globalEnv.getVimrcPath()).withTag('Config'),
     Alias('editbashprofile').to('code').addPath(CURRENT_FILE).withTag('Config'),
     Alias('updatebashprofile').to(RunPython(CURRENT_FILE)).addArg('--in_place').withTag('Config'),
-    Alias('updatevimrc').to(RunPython(SRC_PATH.slash('config').slash('VimRC.py')).addArg('--in_place')).withTag('Config'),
+    Alias('updatevimrc').to(RunPython(envSyncSrcPath / 'config' / 'VimRC.py').addArg('--in_place')).withTag('Config'),
 
     Alias('cls').to('clear').then('jobs').withTag('OS'),
     Alias('cmd').to('start').addPath('C:\\Windows\\System32\\cmd.exe').withTag('OS').withScope(ConfigScope.WINDOWS),
@@ -157,7 +309,7 @@ if __name__ == "__main__":
     Alias('connected').to('curl -s www.google.com').muteOutput().withTag('OS'),
     Alias('checkConnection').to('connected').then('echo $?').withTag('OS'),
 
-    Alias('size').to(RunPython(UTILS_PATH.slash('size.py'))).withTag('OS'),
+    Alias('size').to(RunPython(UTILS_PATH / 'size.py')).withTag('OS'),
 
     Alias('tm').to(InlinePython().linesAre([
         'import pyautogui',
@@ -171,107 +323,30 @@ if __name__ == "__main__":
     Alias('gd').to('git diff -w').withTag('Git'),
     Alias('gln').to('git log -n').withTag('Git'),
 
-    Alias('updategitbash').to(updateGitBashCommand).withTag('Update Git Bash').withScope(ConfigScope.WINDOWS),
+    Alias('updategitbash').to(updateGitBash).withTag('Update Git Bash').withScope(ConfigScope.WINDOWS),
 
     Alias('count').to('wc').addArg('-l').withTag('Quick count lines'),
 
     Alias('clip').to(copy).withTag('Clipboard'),
     Alias('paste').to(paste).pipe('tr -d').addArg(r'"\r"').withTag('Clipboard'),
 
-    Alias('settings').to('code').addPath(MUREX_SETTINGS_JSON).withScope(ConfigScope.MUREX).withTag('MxSettings'),
-
-    Variable(CURRENT_VERSION).withName('VERSION').withScope(ConfigScope.MUREX).withTag('MxVersion'),
-    Variable(OLD_VERSION).withName('OLD_VERSION').withScope(ConfigScope.MUREX).withTag('MxVersion'),
-    Alias('allMxVersions').to(RunPython(GQAF_SCRIPTS.slash('allMxVersions.py'))).withScope(ConfigScope.MUREX).withTag('MxVersion'),
-    Alias('version').to('echo $VERSION').withScope(ConfigScope.MUREX).withTag('MxVersion'),
-    Alias('versionUpgrade').to(RunPython(D_DRIVE.slash('Personal').slash('scripts').slash('upgradeVersion.py'))).withScope(ConfigScope.MUREX).withTag('MxVersion'),
-    Alias('richVersionView').to(RunPython(MUREX_CLI.slash('gqaf').slash('richVersionView.py'))).withScope(ConfigScope.MUREX).withTag('Status'),
-    Alias('displayAlien').to(RunPython(MUREX_CLI.slash('display_alien').slash('excel_refresher.py')).andThen('start').addPath(MUREX_CLI.slash('display_alien').slash('display_alien.xlsx'))).withScope(ConfigScope.MUREX).withTag('Status'),
-    Alias('richVersionViewCsv').to('richVersionView').addArg('--csv').addArg('> tmp.csv').andThen('start tmp.csv').withScope(ConfigScope.MUREX).withTag('Status'),
-    Alias('safetyNetStatus').to(RunPython(MUREX_CLI.slash('gqaf').slash('safetyNetStatus.py'))).withScope(ConfigScope.MUREX).withTag('Status'),
-    Alias('oldversion').to('echo $OLD_VERSION').withScope(ConfigScope.MUREX).withTag('MxVersion'),
-
-    Alias('clipVersion').to('version').tee('clip').andThen('echo Copied.').withScope(ConfigScope.MUREX).withTag('MxVersion'),
-
-    Alias('cdversion').to(cdInto('/d/$(version)')).withScope(ConfigScope.MUREX).withTag('MxVersion'),
-    Alias('startversion').to('start').addArg('/d/$(version)/mx-$(version).sln.lnk').withScope(ConfigScope.MUREX).withTag('MxVersion'),
-    Alias('startbpversion').to('start').addArg('/d/$(bpversion)/mx-$(bpversion).sln.lnk').withScope(ConfigScope.MUREX).withTag('MxVersion'),
-    Alias('cdapps').to(cdInto('/d/apps')).withScope(ConfigScope.MUREX).withTag('MxVersion'),
-    Alias('appsversion').to(cdInto('/d/apps/$(version)*')).withScope(ConfigScope.MUREX).withTag('MxVersion'),
-
-    Exec(f'echo Hello {USERNAME}!').withScope(ConfigScope.MUREX).onlyIfThroughGitBash().withTag('Welcome message'),
-    Exec('echo You are on ALIEN version').addArg('$(version)').withScope(ConfigScope.MUREX).onlyIfThroughGitBash().withTag('Welcome message'),
-    Exec('echo -e \n').withScope(ConfigScope.MUREX).onlyIfThroughGitBash().withTag('Welcome message'),
-    Exec(p4helperScript).addArg('--unmerged').muteOutput(2).withScope(ConfigScope.MUREX).onlyIfThroughGitBash().withTag('Welcome message'),
-    Exec('ls /u').muteOutput(3).ifFailed('echo "[WARNING]: Drives aren\'t mapped!"').withScope(ConfigScope.MUREX).onlyIfThroughGitBash().withTag('Welcome message'),
-
-    Alias('p4helper').to(p4helperScript).withScope(ConfigScope.MUREX).withTag('Perforce P4'),
-    Alias('psubmit').to('p4helper').addArg('--submit').addArg('$(paste)').withScope(ConfigScope.MUREX).withTag('Perforce P4'),
-    Alias('jira').to(jiraScript).withScope(ConfigScope.MUREX).withTag('Jira Request Handler'),
-    Alias('jenkins').to(jenkinsScript).withScope(ConfigScope.MUREX).withTag('Jenkins Request Handler'),
-    Alias('integrate').to(integrationScript).withScope(ConfigScope.MUREX).withTag('Integration Handler'),
-
-    Alias('submit').to('p4helper --submit').withScope(ConfigScope.MUREX).withTag('Create a perfoce changelist from jira ID'),
-    Alias('isItMerged').to('echo "looking for $(paste)..."').andThen('p4helper --me --build').pipe('greppaste').withScope(ConfigScope.MUREX).withTag('Quick check if defect is in mainstream'),
-
-    Alias('mxbot').to('start').addArg(f'https://integrationweb.gqaf.fr.murex.com').withScope(ConfigScope.MUREX).withTag('Open MxBot Integration link'),
-    Alias('ci').to('start').addArg(f'https://cje-core.fr.murex.com/assets/job/Alien/job/Git%20Alien/job/Git%20cpp%20build/').withScope(ConfigScope.MUREX).withTag('Open CI pipeline link'),
-    Alias('pullRequest').to('start').addArg(f'https://stash.murex.com/projects/ASSETS/repos/alien/pull-requests?create').withScope(ConfigScope.MUREX).withTag('Open CI pipeline link'),
-    Alias('freyja').to('start').addArg(f'https://cje-core.fr.murex.com/assets/job/FreyjaAlien/job/{CURRENT_VERSION}/').withScope(ConfigScope.MUREX).withTag('Open CI pipeline link'),
-
-    Alias('mxOpen').to(RunPython(D_DRIVE.slash('Personal').slash('scripts').slash('mxOpen.py'))).withScope(ConfigScope.MUREX).withTag('MxOpen'),
-    Alias('coco').to(RunPython(D_DRIVE.slash('Personal').slash('scripts').slash('mxOpen.py'))).addArg('--coconut').withScope(ConfigScope.MUREX).withTag('Search Coconut'),
-
-    Alias('auth').to(RunPython(D_DRIVE.slash('Personal').slash('scripts').slash('auth.py'))).withScope(ConfigScope.MUREX).withTag('Auto Auth'),
-
-    Alias('mde').to('D:\\.mxdevenvpp\\bin\\mde++.cmd').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
-    Alias('mdeversion').to('mde about').pipe('grep -o').addArg('^0.[0-9]*.0.[0-9]*').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
-
-    Alias('mdelatest').to(U_MXDEVENV.slash('latest').slash('mde++.cmd')).withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
-    Alias('mdelatestversion').to('mdelatest about').pipe('grep -o').addArg('^0.[0-9]*.0.[0-9]*').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
-
-    Alias('umxdevenv').to(cdInto(U_MXDEVENV)).withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
-    Alias('dmxdevenv').to(cdInto(D_MXDEVENV)).withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
-    Alias('repomxdevenv').to(cdInto(REPO_MXDEVENV)).withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
-    Alias('murexcli').to(cdInto(MUREX_CLI)).withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
-
-    Alias('prepareVersion').to('mde prepareVersion').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
-    Alias('prepareVersionFromClipBoard').to('mde prepareVersion -v $(paste) &').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
-    Alias('versionManager').to('mde versionManager').inParallel().withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
-    Alias('logsVisualizer').to('mde logsVisualizer').inParallel().withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
-    Alias('setupsViewer').to('mde setupsViewer').withScope(ConfigScope.MUREX).withTag('Mxdevenv'),
-
-    Alias('debugme').to('/d/apps/$(version)*/debugMe++.cmd').inParallel().withScope(ConfigScope.MUREX).withTag('Debugging'),
-
-    Alias('drivesmapped').to('[ -d "/u" ]').then('echo $?').withScope(ConfigScope.MUREX).withTag('Drive Mapping'),
-    Alias('unmapdrives').to('start').addPath(UNMAP_DRIVES_SCRIPT).withScope(ConfigScope.MUREX).withTag('Drive Mapping'),
-    Alias('mapdrives').to('unmapdrives').delay(1).andThen('start').addPath(MAP_DRIVES_SCRIPT).delay(0.5).andThen('ls /u').withScope(ConfigScope.MUREX).withTag('Drive Mapping'),
-
-    Alias('sessionInfo').to(RunPython(MUREX_CLI.slash('SessionInfo.py'))).withScope(ConfigScope.MUREX).withTag('Murex Session Info'),
-
-    Alias('setups').to(RunPython(GQAF_SCRIPTS.slash('setups.py'))).withScope(ConfigScope.MUREX).withTag('GQAF API'),
-    Alias('setupscsv').to('setups --csv 2>&1').grep('-vE').addQuoted(r'^getting|^fetching|^[0-9]|^\s*$').pipe('sed').addQuoted(r's/\s*,\s*/,/g').addArg('> tmp.csv && start tmp.csv').withScope(ConfigScope.MUREX).withTag('GQAF API'),
-    Alias('pushsetups').to(RunPython(GQAF_SCRIPTS.slash('pushsetups.py'))).withScope(ConfigScope.MUREX).withTag('GQAF API'),
-    Alias('pushsetupsAtHead').to('pushsetups').addArg('--head').addArg('--linux').withScope(ConfigScope.MUREX).withTag('GQAF API'),
-    Alias('pushJobs').to(RunPython(GQAF_SCRIPTS.slash('pushJobs.py'))).withScope(ConfigScope.MUREX).withTag('GQAF API'),
-    Alias('tpks').to(RunPython(GQAF_SCRIPTS.slash('jobs.py'))).withScope(ConfigScope.MUREX).withTag('GQAF API'),
-
-    Alias('dtk').to('start').addPath('D:\\tools\\dtk\\tk.3.rc.1\\toolkit.bat').withScope(ConfigScope.MUREX).withTag('DTK'),
-
     Exec('ps aux').grep('ssh-agent').pipe('awk').addArg("'{print $1}'").pipe('xargs -r kill').withTag('Start Git SSH').withComment('Kill existing ssh-agents, if any'),
     Exec('eval "$(ssh-agent -s)"').muteOutput(3).withTag('Start Git SSH').withComment('Start a new ssh-agent for this session'),
 
-    RunPython(REPO_ROOT.slash('src').slash('GlobalEnv.py')).muteOutput(3).addArg('--decrypt')\
-        .andThen('ssh-add').addPath(REPO_ROOT.slash('encrypted').slash('github_key')).muteOutput(3).withTag('Start Git SSH')\
+    RunPython(envSyncRepoPath / 'src' / 'GlobalEnv.py').muteOutput(3).addArg('--decrypt')\
+        .andThen('ssh-add').addPath(envSyncRepoPath / 'encrypted' / 'github_key').muteOutput(3).withTag('Start Git SSH')\
             .ifFailed('echo -n SSH Failed. config.json might contain a bad passphrase'),
 
-    cdInto(REPO_MXDEVENV).withScope(ConfigScope.MUREX).withComment('Set git remote to use SSH for mxdevenv repo'),
-    Exec('git remote set-url origin https://stash.murex.com/scm/devtools/mxdevenvpp.git').withScope(ConfigScope.MUREX),
-
-    cdInto(REPO_ROOT).withComment('Set git remote to use SSH for EnvSync repo'),
+    cdInto(envSyncRepoPath).withComment('Set git remote to use SSH for EnvSync repo'),
     Exec('git remote set-url origin git@github.com:lebenebou/EnvSync.git'),
 
-    Exec('echo Bashprofile simulation done.').withTag('Completion Message').onlyIfThroughScript()
+    *mxVersionManagementOptions(),
+    *mxdevenvOptions(),
+    *murexCliOptions(),
+    *murexLinkShortcuts(),
+    *murexWelcomeMessage(),
+
+    Exec('echo Bashprofile simulation done.').withTag('Completion Message').onlyIfThroughScript(),
 
     ]
 
