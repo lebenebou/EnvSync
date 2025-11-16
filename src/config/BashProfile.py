@@ -190,12 +190,12 @@ def murexCliOptions() -> list[ConfigOption]:
 
     return options
 
-def disableGitUntrackedCacheForMurexVersion() -> ConfigOption:
+def enableGitUntrackedCacheForMurexVersion() -> ConfigOption:
 
     cdIntoVersion = Exec('cdversion')
-    disableCacheLocally = Exec('git config core.untrackedCache false')
+    enableCacheLocally = Exec('git config core.untrackedCache true')
 
-    return cdIntoVersion.andThen(disableCacheLocally).withScope(ConfigScope.MUREX)
+    return cdIntoVersion.andThen(enableCacheLocally).withScope(ConfigScope.MUREX)
 
 def usualShellAliases() -> list[ConfigOption]:
 
@@ -467,9 +467,11 @@ if __name__ == "__main__":
 
     *murexCliOptions(),
     *murexWelcomeMessage(),
-    disableGitUntrackedCacheForMurexVersion(),
+    enableGitUntrackedCacheForMurexVersion(),
 
     *initSSH(),
+
+    cdInto(GlobalEnv().repoRootPath).withComment('Set EnvSync repo as starting directory').withTag('Starting Directory'),
 
     Echo('Bashprofile simulation done.').withTag('Completion Message').onlyIfThroughScript(),
 
