@@ -102,7 +102,7 @@ if __name__ == "__main__":
         'pyautogui.hotkey("ctrl", "+")',
         'pyautogui.hotkey("ctrl", "+")',
         'pyautogui.hotkey("ctrl", "+")',
-    ]).withScope(ConfigScope.WINDOWS),
+    ]).onlyIfThroughGitBash().withScope(ConfigScope.WINDOWS),
 
     Alias('home').to(cdInto('~').withScope(ConfigScope.LAPTOP)),
     Alias('home').to('murexcli').withScope(ConfigScope.MUREX),
@@ -199,11 +199,11 @@ if __name__ == "__main__":
     Alias('cdapps').to(cdInto('/d/apps')).withScope(ConfigScope.MUREX).withTag('MxVersion'),
     Alias('appsversion').to(cdInto('/d/apps/$(version)*')).withScope(ConfigScope.MUREX).withTag('MxVersion'),
 
-    Exec(f'echo Hello {USERNAME}!').withScope(ConfigScope.MUREX).withTag('Welcome message'),
-    Exec('echo You are on ALIEN version').addArg('$(version)').withScope(ConfigScope.MUREX).withTag('Welcome message'),
-    Exec('echo -e \n').withScope(ConfigScope.MUREX).withTag('Welcome message'),
-    Exec(p4helperScript).addArg('--unmerged').muteOutput(2).withScope(ConfigScope.MUREX).withTag('Welcome message'),
-    Exec('ls /u').muteOutput(3).ifFailed('echo "[WARNING]: Drives aren\'t mapped!"').withScope(ConfigScope.MUREX).withTag('Welcome message'),
+    Exec(f'echo Hello {USERNAME}!').withScope(ConfigScope.MUREX).onlyIfThroughGitBash().withTag('Welcome message'),
+    Exec('echo You are on ALIEN version').addArg('$(version)').withScope(ConfigScope.MUREX).onlyIfThroughGitBash().withTag('Welcome message'),
+    Exec('echo -e \n').withScope(ConfigScope.MUREX).onlyIfThroughGitBash().withTag('Welcome message'),
+    Exec(p4helperScript).addArg('--unmerged').muteOutput(2).withScope(ConfigScope.MUREX).onlyIfThroughGitBash().withTag('Welcome message'),
+    Exec('ls /u').muteOutput(3).ifFailed('echo "[WARNING]: Drives aren\'t mapped!"').withScope(ConfigScope.MUREX).onlyIfThroughGitBash().withTag('Welcome message'),
 
     Alias('p4helper').to(p4helperScript).withScope(ConfigScope.MUREX).withTag('Perforce P4'),
     Alias('psubmit').to('p4helper').addArg('--submit').addArg('$(paste)').withScope(ConfigScope.MUREX).withTag('Perforce P4'),
@@ -270,6 +270,8 @@ if __name__ == "__main__":
 
     cdInto(REPO_ROOT).withComment('Set git remote to use SSH for EnvSync repo'),
     Exec('git remote set-url origin git@github.com:lebenebou/EnvSync.git'),
+
+    Exec('echo Bashprofile simulation done.').withTag('Completion Message').onlyIfThroughScript()
 
     ]
 

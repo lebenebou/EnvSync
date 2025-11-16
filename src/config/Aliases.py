@@ -143,6 +143,20 @@ class Exec(ConfigOption):
         self.args.extend(args)
         return self
 
+    def onlyIfThroughScript(self):
+
+        assert self.aliasName is None, "onlyIfThroughScript cannot be used on an alias"
+
+        prependExec = Exec('[[ -n "$PS1" ]]')
+        return prependExec.ifFailed(self)
+
+    def onlyIfThroughGitBash(self):
+
+        assert self.aliasName is None, "onlyIfThroughGitBash cannot be used on an alias"
+
+        prependExec = Exec('[[ -z "$PS1" ]]')
+        return prependExec.ifFailed(self)
+
     def andThen(self, command: str):
         self.addArg('&&')
         return self.addCommand(command)
