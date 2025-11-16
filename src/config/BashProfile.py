@@ -111,7 +111,7 @@ def murexWelcomeMessage() -> list[ConfigOption]:
     options: list[ConfigOption] = [
 
     Exec(f'echo Hello yoyammine!'),
-    Exec('echo You are on ALIEN version').addArg('$(version)'),
+    Echo('ALIEN version:').addArg('$(version)'),
     Exec('echo -e \n'),
     p4helperScript.addArg('--unmerged').withComment('Check for defects not yet in mainstream'),
 
