@@ -113,7 +113,8 @@ def murexWelcomeMessage() -> list[ConfigOption]:
     Exec(f'echo Hello yoyammine!'),
     Exec('echo You are on ALIEN version').addArg('$(version)'),
     Exec('echo -e \n'),
-    Exec(p4helperScript).addArg('--unmerged'),
+    p4helperScript.addArg('--unmerged').withComment('Check for defects not yet in mainstream'),
+
     Exec('ls /u').muteOutput(3).ifFailed('echo "[WARNING]: Drives aren\'t mapped!"'),
 
     ]
@@ -139,10 +140,10 @@ def murexCliOptions() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
 
+    Alias('home').to(cdInto(MUREX_CLI)).withScope(ConfigScope.MUREX),
+
     # Session info
     Alias('sessionInfo').to(RunPython(MUREX_CLI / 'SessionInfo.py')).withTag('Session Info'),
-
-    Alias('murexcli').to(cdInto(MUREX_CLI)),
 
     Alias('displayAlien').to(RunPython(MUREX_CLI / 'display_alien' / 'excel_refresher.py')\
                              .andThen('start').addPath(MUREX_CLI / 'display_alien' / 'display_alien.xlsx')),
@@ -160,8 +161,6 @@ def murexCliOptions() -> list[ConfigOption]:
     # Jenkins
     Alias('jenkins').to(jenkinsScript).withTag('Jenkins Helpers'),
     Alias('integrate').to(integrationScript).withTag('Jenkins Helpers'),
-
-    Alias('grepdefects').to('grep').addArg('-Eo').addQuoted('DEF[0-9]+'),
 
     # Personal scripts
     Alias('mxOpen').to(RunPython(D_DRIVE / 'Personal' / 'scripts' / 'mxOpen.py')).withTag('Personal Scripts'),
@@ -188,6 +187,216 @@ def murexCliOptions() -> list[ConfigOption]:
 
     return options
 
+def usualShellAliases() -> list[ConfigOption]:
+
+    options: list[ConfigOption] = [
+
+    Alias('cls').to('clear').then('jobs').withComment('List running jobs when terminal is cleared'),
+
+    # Git
+    Alias('gs').to('git status').withTag('Git'),
+    Alias('gd').to('git diff -w').withTag('Git'),
+    Alias('gln').to('git log -n').withTag('Git'),
+
+    Alias('commit').to('git commit').withTag('Git'),
+    Alias('amend').to('git commit --amend').withTag('Git'),
+    Alias('push').to('git push').withTag('Git'),
+
+    # grep
+    Alias('grep').to('grep -i --color --binary-files=without-match --exclude-dir=".git"').withTag('grep'),
+    Alias('greppaste').to('grep').addArg('"$(paste)"').withTag('grep'),
+    Alias('grepdefects').to('grep -Eo').addQuoted('DEF[0-9]+').withTag('grep').withScope(ConfigScope.MUREX),
+
+    Function('color').thenExecute([
+        Exec('grep').addArg('--color').addArg('-E').addArg('"$1|^"'),
+        ]).withTag('grep'),
+
+    # awk
+    Function('col').thenExecute([
+        Exec('awk').addArg('-v column="$1"').addArg("'{print $column}'"),
+        ]).withTag('awk'),
+
+    # cat
+    # Alias('cat').to('bat').withTag('bash').withScope(ConfigScope.WINDOWS),
+
+    # vim
+    Alias('vimpaste').to('paste').pipe('vim -').withTag('vim'),
+    Alias('pastevim').to('paste').pipe('vim -').withTag('vim'),
+
+    # wc
+    Alias('count').to('wc').addArg('-l').withTag('wc'),
+
+    # network
+    Alias('connected').to('curl -s www.google.com').muteOutput().withTag('network'),
+    Alias('checkConnection').to('connected').then('echo $?').withTag('network'),
+
+    ]
+
+    return options
+
+def initSSH() -> list[ConfigOption]:
+
+    killAllSshAgents = Exec('ps aux').grep('ssh-agent').pipe('awk').addArg("'{print $1}'").pipe('xargs -r kill')
+    startNewSshAgent = Exec('eval "$(ssh-agent -s)"').muteOutput(3)
+
+    attemptPrivateKeyDecryption = RunPython(envSyncRepoPath / 'src' / 'GlobalEnv.py').muteOutput(3).addArg('--decrypt')
+    printFailureMessage = Exec('echo -n SSH Failed. config.json might contain a bad passphrase')
+
+    options: list[ConfigOption] = [
+
+    killAllSshAgents,
+    startNewSshAgent,
+
+    attemptPrivateKeyDecryption\
+        .andThen('ssh-add').addPath(envSyncRepoPath / 'encrypted' / 'github_key').muteOutput(3).withTag('Start Git SSH')\
+            .ifFailed(printFailureMessage),
+
+    cdInto(envSyncRepoPath).withComment('Set git remote to use SSH for EnvSync repo'),
+    Exec('git remote set-url origin git@github.com:lebenebou/EnvSync.git'),
+
+    ]
+
+    for option in options:
+
+        if isinstance(option, Exec):
+            option.onlyIfThroughGitBash()
+
+        option.withScope(ConfigScope.WINDOWS)
+        option.withTag('Start Git SSH')
+
+    return options
+
+
+def maximizeAndZoomScreen() -> ConfigOption:
+
+    pythonLinesToRun: list[str] = [
+        'import pyautogui',
+        'pyautogui.hotkey("win", "up")',
+    ]
+
+    zoomIterations = 3
+    if GlobalEnv().currentScope & ConfigScope.LAPTOP:
+        zoomIterations = 2
+
+    for _ in range(zoomIterations):
+        pythonLinesToRun.append('pyautogui.hotkey("ctrl", "+")')
+
+    command: ConfigOption = InlinePython(runImmediately=True).linesAre(pythonLinesToRun).onlyIfThroughGitBash().withScope(ConfigScope.WINDOWS)
+    return command
+
+def navigationAliases() -> list[ConfigOption]:
+
+    options: list[ConfigOption] = [
+
+    # Usual directories
+    Alias('home').to(cdInto('~')).withScope(ConfigScope.LAPTOP).withTag('Directory Jumps'),
+    Alias('src').to(cdInto(envSyncRepoPath)).withTag('Directory Jumps'),
+    Alias('desk').to(cdInto(DESKTOP)).withTag('Directory Jumps'),
+    Alias('downloads').to(cdInto(DOWNLOADS)).withTag('Directory Jumps'),
+    Alias('docs').to(cdInto(DOCUMENTS)).withTag('Directory Jumps'),
+
+    # Quick navigation
+    Alias('cdpaste').to(cdInto('"$(paste | aspath -linux)"')).withTag('Relative Navigation'),
+
+    Function('cdl').thenExecute([
+        cdInto('"$1"').andThen('ls'),
+        ]).withTag('Relative Navigation'),
+
+    Alias('back').to('cd').addArg('..').andThen('ls').withTag('Relative Navigation'),
+
+    # Media directories
+    Alias('music').to(cdInto('D:\\Music')).withScope(ConfigScope.LAPTOP).withTag('Media Directories'),
+    Alias('pics').to(cdInto('D:\\Camera Roll')).withScope(ConfigScope.LAPTOP).withTag('Media Directories'),
+    Alias('vids').to(cdInto('D:\\Videos')).withScope(ConfigScope.LAPTOP).withTag('Media Directories'),
+    Alias('movies').to(cdInto('D:\\Videos\\Movies')).withScope(ConfigScope.LAPTOP).withTag('Media Directories'),
+
+    ]
+
+    return options
+
+def gitBashManipulationCommands() -> list[ConfigOption]:
+
+    options: list[ConfigOption] = [
+
+    Alias('updategitbash').to('git update-git-for-windows').withScope(ConfigScope.WINDOWS).withTag('Git-Bash Update'),
+
+    Function('restart').thenExecute([
+        Exec('win 2').disown(),
+        Exec('exit'),
+        ]).withTag('bash').withScope(ConfigScope.WINDOWS),
+
+    Alias(':r').to('restart').withTag('bash').withScope(ConfigScope.WINDOWS),
+    Alias(':q').to('win 2').andThen('exit').withTag('bash').withScope(ConfigScope.WINDOWS),
+
+    ]
+
+    return options
+
+def configAliases() -> list[ConfigOption]:
+
+    envSyncSrcPath = Path(globalEnv.repoSrcPath)
+
+    options: list[ConfigOption] = [
+
+    # BashProfile config
+    Alias('bashprofile').to('code').addPath(globalEnv.getBashProfilePath()).withScope(ConfigScope.WINDOWS).withTag('BashProfile Config'),
+    Alias('editbashprofile').to('code').addPath(CURRENT_FILE).withTag('BashProfile Config'),
+    Alias('updatebashprofile').to(RunPython(CURRENT_FILE)).addArg('--in_place').withTag('BashProfile Config'),
+
+    Alias('reload').to('updatebashprofile').andThen('restart').withTag('bash').withScope(ConfigScope.WINDOWS),
+
+    # VimRC config
+    Alias('editvimrc').to('code').addPath(globalEnv.getVimrcPath()).withTag('VimRC Config'),
+    Alias('updatevimrc').to(RunPython(envSyncSrcPath / 'config' / 'VimRC.py').addArg('--in_place')).withTag('VimRC Config'),
+
+    ]
+
+    return options
+
+def envSyncAliases() -> list[ConfigOption]:
+
+    envSyncSrcPath = Path(globalEnv.repoSrcPath).withName('SRC PATH')
+    utilsPath = (envSyncSrcPath / 'utils').withName('UTILS PATH')
+
+    options: list[ConfigOption] = [
+
+    # EnvSync utils
+    Alias('aspath').to(RunPython(utilsPath / 'aspath.py').addArg('--from_stdin')).withTag('EnvSync utils'),
+    Alias('exp').to(RunPython(utilsPath / 'exp.py')).withTag('EnvSync utils'),
+    Alias('start').to(RunPython(utilsPath / 'start.py')).withTag('EnvSync utils'),
+    Alias('win').to(RunPython(utilsPath / 'win.py')).withScope(ConfigScope.WINDOWS).withTag('EnvSync utils'),
+    Alias('size').to(RunPython(utilsPath / 'size.py')).withTag('EnvSync utils'),
+    Alias('netpass').to(RunPython(envSyncSrcPath / 'NetPass' / 'netpass.py')).withScope(ConfigScope.WINDOWS).withTag('EnvSync utils'),
+
+    # EnvSync clipboard
+    Alias('clip').to(RunPython(utilsPath / 'clipboard.py').addArg('--copy')).withTag('EnvSync clipboard'),
+    Alias('paste').to(RunPython(utilsPath / 'clipboard.py').addArg('--paste')).pipe('tr -d').addArg(r'"\r"').withTag('EnvSync clipboard'),
+
+    # EnvSync personal
+    Alias('money').to(RunPython(envSyncSrcPath / 'finance' / 'main.py')).withTag('EnvSync personal'),
+
+    ]
+
+    return options
+
+def windowsAliases() -> list[ConfigOption]:
+
+    options: list[ConfigOption] = [
+
+    Alias('tm').to(InlinePython().linesAre([
+        'import pyautogui',
+        'pyautogui.hotkey("ctrl", "shift", "esc")'
+    ])).withTag('Windows Task Manager'),
+
+    Alias('cmd').to('start').addPath('C:\\Windows\\System32\\cmd.exe').withTag('Windows CMD'),
+
+    ]
+
+    for option in options:
+        option.withScope(ConfigScope.WINDOWS)
+
+    return options
+
 if __name__ == "__main__":
 
     globalEnv = GlobalEnv()
@@ -208,8 +417,6 @@ if __name__ == "__main__":
 
     # Repo paths
     envSyncRepoPath = Path(globalEnv.repoRootPath).withName('REPO ROOT PATH')
-    envSyncSrcPath = Path(globalEnv.repoSrcPath).withName('SRC PATH')
-    UTILS_PATH = (envSyncSrcPath / 'utils').withName('UTILS PATH')
 
     # User folders
     DESKTOP = Path(os.path.join(globalEnv.userHomeDir, 'Desktop')).withName('DESKTOP').withScope(ConfigScope.LAPTOP | ConfigScope.LINUX)
@@ -230,123 +437,33 @@ if __name__ == "__main__":
     if globalEnv.currentScope & ConfigScope.LINUX:
         DOCUMENTS = Path(os.path.join(globalEnv.userHomeDir, 'Documents')).withName('DOCUMENTS').withScope(ConfigScope.LINUX)
 
-    # clipboard utilities
-    copy = RunPython(UTILS_PATH / 'clipboard.py').addArg('--copy').withTag('Clipboard Utility')
-    paste = RunPython(UTILS_PATH / 'clipboard.py').addArg('--paste').withTag('Clipboard Utility')
-
-    updateGitBash = Exec('git').addArg('update-git-for-windows').withScope(ConfigScope.WINDOWS)
-
     # Main script
     bashprofile: ConfigFile = BashProfile()
     bashprofile.options = [
 
-    Alias('aspath').to(RunPython(UTILS_PATH / 'aspath.py').addArg('--from_stdin')),
+    maximizeAndZoomScreen(),
 
-    Alias('theplan').to('start').addPath(G_DRIVE / 'My Drive' / 'THE_PLAN.xlsx').withScope(ConfigScope.WINDOWS).withTag('Personal'),
-    Alias('money').to(RunPython(envSyncSrcPath / 'finance' / 'main.py')).withTag('Personal'),
+    *usualShellAliases(),
+    *navigationAliases(),
 
-    Alias('grep').to('grep -i --color --binary-files=without-match --exclude-dir=".git"').withTag('Grep Options'),
-    Alias('greppaste').to('grep').addArg('"$(paste)"').withTag('Grep Options'),
+    *envSyncAliases(),
+    *configAliases(),
 
-    InlinePython(runImmediately=True).linesAre([
-        'import pyautogui',
-        'pyautogui.hotkey("win", "up")',
-        'pyautogui.hotkey("ctrl", "+")',
-        'pyautogui.hotkey("ctrl", "+")',
-        'pyautogui.hotkey("ctrl", "+")',
-    ]).onlyIfThroughGitBash().withScope(ConfigScope.WINDOWS),
+    *windowsAliases(),
 
-    Alias('home').to(cdInto('~').withScope(ConfigScope.LAPTOP)),
-    Alias('home').to('murexcli').withScope(ConfigScope.MUREX),
-    Alias('src').to(cdInto(envSyncRepoPath)),
-    Alias('desk').to(cdInto(DESKTOP)),
-    Alias('downloads').to(cdInto(DOWNLOADS)),
-    Alias('docs').to(cdInto(DOCUMENTS)),
-
-    Alias('cdpaste').to(cdInto('"$(paste | aspath -linux)"')).withTag('Quick Navigation'),
-    Alias('back').to('cd').addArg('..').andThen('ls').withTag('Quick Navigation'),
-    Function('cdl').thenExecute([
-        cdInto('"$1"').andThen('ls'),
-        ]).withTag('Quick Navigation'),
-
-    Alias('music').to(cdInto('D:\\Music')).withScope(ConfigScope.LAPTOP),
-    Alias('pics').to(cdInto('D:\\Camera Roll')).withScope(ConfigScope.LAPTOP),
-    Alias('vids').to(cdInto('D:\\Videos')).withScope(ConfigScope.LAPTOP),
-    Alias('movies').to(cdInto('D:\\Videos\\Movies')).withScope(ConfigScope.LAPTOP),
-
-    Alias('exp').to(RunPython(UTILS_PATH / 'exp.py')),
-    Alias('start').to(RunPython(UTILS_PATH / 'start.py')),
-    Alias('win').to(RunPython(UTILS_PATH / 'win.py')).withScope(ConfigScope.WINDOWS),
-    Alias('netpass').to(RunPython(envSyncSrcPath / 'NetPass' / 'netpass.py')).withScope(ConfigScope.WINDOWS),
-
-    Function('restart').thenExecute([
-        Exec('win 2').disown(),
-        Exec('exit'),
-        ]).withTag('bash').withScope(ConfigScope.WINDOWS),
-
-    Alias('reload').to('updatebashprofile').andThen('restart').withTag('bash').withScope(ConfigScope.WINDOWS),
-    Alias('cat').to('bat').withTag('bash'),
-    Alias(':r').to('restart').withTag('bash').withScope(ConfigScope.WINDOWS),
-    Alias(':q').to('win 2').andThen('exit').withTag('bash').withScope(ConfigScope.WINDOWS),
-    Alias('bashprofile').to('code').addPath(globalEnv.getBashProfilePath()).withTag('bash').withScope(ConfigScope.WINDOWS),
-
-    Function('color').thenExecute([
-        Exec('grep').addArg('--color').addArg('-E').addArg('"$1|^"'),
-        ]).withTag('Grep color'),
-
-    Function('col').thenExecute([
-        Exec('awk').addArg('-v column="$1"').addArg("'{print $column}'"),
-        ]).withTag('awk shortcut'),
-
-    Alias('editvimrc').to('code').addPath(globalEnv.getVimrcPath()).withTag('Config'),
-    Alias('editbashprofile').to('code').addPath(CURRENT_FILE).withTag('Config'),
-    Alias('updatebashprofile').to(RunPython(CURRENT_FILE)).addArg('--in_place').withTag('Config'),
-    Alias('updatevimrc').to(RunPython(envSyncSrcPath / 'config' / 'VimRC.py').addArg('--in_place')).withTag('Config'),
-
-    Alias('cls').to('clear').then('jobs').withTag('OS'),
-    Alias('cmd').to('start').addPath('C:\\Windows\\System32\\cmd.exe').withTag('OS').withScope(ConfigScope.WINDOWS),
-
-    Alias('connected').to('curl -s www.google.com').muteOutput().withTag('OS'),
-    Alias('checkConnection').to('connected').then('echo $?').withTag('OS'),
-
-    Alias('size').to(RunPython(UTILS_PATH / 'size.py')).withTag('OS'),
-
-    Alias('tm').to(InlinePython().linesAre([
-        'import pyautogui',
-        'pyautogui.hotkey("ctrl", "shift", "esc")'
-    ])).withTag('Task Manager').withScope(ConfigScope.WINDOWS),
-
-    Alias('vimpaste').to('paste').pipe('vim -').withTag('Vim'),
-    Alias('pastevim').to('paste').pipe('vim -').withTag('Vim'),
-
-    Alias('gs').to('git status').withTag('Git'),
-    Alias('gd').to('git diff -w').withTag('Git'),
-    Alias('gln').to('git log -n').withTag('Git'),
-
-    Alias('updategitbash').to(updateGitBash).withTag('Update Git Bash').withScope(ConfigScope.WINDOWS),
-
-    Alias('count').to('wc').addArg('-l').withTag('Quick count lines'),
-
-    Alias('clip').to(copy).withTag('Clipboard'),
-    Alias('paste').to(paste).pipe('tr -d').addArg(r'"\r"').withTag('Clipboard'),
-
-    Exec('ps aux').grep('ssh-agent').pipe('awk').addArg("'{print $1}'").pipe('xargs -r kill').withTag('Start Git SSH').withComment('Kill existing ssh-agents, if any'),
-    Exec('eval "$(ssh-agent -s)"').muteOutput(3).withTag('Start Git SSH').withComment('Start a new ssh-agent for this session'),
-
-    RunPython(envSyncRepoPath / 'src' / 'GlobalEnv.py').muteOutput(3).addArg('--decrypt')\
-        .andThen('ssh-add').addPath(envSyncRepoPath / 'encrypted' / 'github_key').muteOutput(3).withTag('Start Git SSH')\
-            .ifFailed('echo -n SSH Failed. config.json might contain a bad passphrase'),
-
-    cdInto(envSyncRepoPath).withComment('Set git remote to use SSH for EnvSync repo'),
-    Exec('git remote set-url origin git@github.com:lebenebou/EnvSync.git'),
+    Alias('theplan').to('start').addPath(G_DRIVE / 'My Drive' / 'THE_PLAN.xlsx').withScope(ConfigScope.WINDOWS).withTag('Personal Files'),
 
     *mxVersionManagementOptions(),
     *mxdevenvOptions(),
-    *murexCliOptions(),
+
     *murexLinkShortcuts(),
+
+    *murexCliOptions(),
     *murexWelcomeMessage(),
 
-    Exec('echo Bashprofile simulation done.').withTag('Completion Message').onlyIfThroughScript(),
+    *initSSH(),
+
+    Echo('Bashprofile simulation done.').withTag('Completion Message').onlyIfThroughScript(),
 
     ]
 
