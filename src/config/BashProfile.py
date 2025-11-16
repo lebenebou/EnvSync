@@ -202,6 +202,9 @@ def usualShellAliases() -> list[ConfigOption]:
     Alias('amend').to('git commit --amend').withTag('Git'),
     Alias('push').to('git push').withTag('Git'),
 
+    Alias('master').to('git switch master').withTag('Git'),
+    Alias('main').to('git switch main').withTag('Git'),
+
     # grep
     Alias('grep').to('grep -i --color --binary-files=without-match --exclude-dir=".git"').withTag('grep'),
     Alias('greppaste').to('grep').addArg('"$(paste)"').withTag('grep'),
@@ -314,7 +317,7 @@ def navigationAliases() -> list[ConfigOption]:
 
     return options
 
-def gitBashManipulationCommands() -> list[ConfigOption]:
+def gitBashManipulationAliases() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
 
@@ -445,6 +448,7 @@ if __name__ == "__main__":
 
     *usualShellAliases(),
     *navigationAliases(),
+    *gitBashManipulationAliases(),
 
     *envSyncAliases(),
     *configAliases(),
@@ -466,6 +470,8 @@ if __name__ == "__main__":
     Echo('Bashprofile simulation done.').withTag('Completion Message').onlyIfThroughScript(),
 
     ]
+
+    assert all(isinstance(option, ConfigOption) for option in bashprofile.options), "All items in bashprofile.options must be of type ConfigOption"
 
     if args.in_place:
         bashprofileContent: str = bashprofile.toString(scopeFilter=globalEnv.currentScope)
