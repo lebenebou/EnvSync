@@ -15,6 +15,7 @@ def printColored(text: str, color: Color, file = sys.stdout):
 
     RESET_CODE = '\033[0m'
     print(f'{color}{text}{RESET_CODE}', file=file)
+    file.flush()
 
 class EnvSyncTest:
 
@@ -32,6 +33,7 @@ class EnvSyncTest:
     def execute(self) -> bool:
 
         print(f'[ RUN] {self.name}', file=sys.stderr)
+        sys.stderr.flush()
         success: bool = self.callback()
 
         if success:
@@ -40,6 +42,7 @@ class EnvSyncTest:
         else:
             printColored(f'[FAIL] {self.name}', Color.RED, file=sys.stderr)
 
+        sys.stderr.flush()
         return success
 
     @staticmethod
