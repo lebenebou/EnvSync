@@ -13,7 +13,7 @@ jobs:
       matrix:
         os: [ubuntu-latest, windows-latest]
         python-version: ['3.10', '3.11']
-        test-file: [main.py, general_config.py, python_files.py]
+        test-file: [main.py, general_config.py, python_files.py, bash_profile.py]
     
     steps:
     - name: Checkout repository
