@@ -60,7 +60,7 @@ def mxVersionManagementOptions() -> list[ConfigOption]:
     murexSettingsJsonPath = os.path.join('D:\\', '.mxdevenvpp', 'settings', 'python_scripts_settings.json')
 
     murexSettings = dict()
-    if globalEnv.currentScope & ConfigScope.MUREX:
+    if GlobalEnv().currentScope & ConfigScope.MUREX:
         murexSettings = readJsonFromFile(murexSettingsJsonPath)
 
     CURRENT_VERSION = murexSettings.get('version', None)
@@ -128,6 +128,9 @@ def murexWelcomeMessage() -> list[ConfigOption]:
     return options
 
 def murexCliOptions() -> list[ConfigOption]:
+
+    C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigScope.WINDOWS)
+    D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigScope.WINDOWS)
 
     MUREX_CLI = (C_DRIVE / 'murexcli').withScope(ConfigScope.MUREX)
 
@@ -252,7 +255,7 @@ def initSSH() -> list[ConfigOption]:
     killAllSshAgents = Exec('ps aux').grep('ssh-agent').pipe('awk').addArg("'{print $1}'").pipe('xargs -r kill')
     startNewSshAgent = Exec('eval "$(ssh-agent -s)"').muteOutput(3)
 
-    attemptPrivateKeyDecryption = RunPython(envSyncRepoPath / 'src' / 'GlobalEnv.py').muteOutput(3).addArg('--decrypt')
+    attemptPrivateKeyDecryption = RunPython(Path(GlobalEnv().repoRootPath) / 'src' / 'GlobalEnv.py').muteOutput(3).addArg('--decrypt')
     printFailureMessage = Exec('echo -n SSH Failed. config.json might contain a bad passphrase')
 
     options: list[ConfigOption] = [
@@ -261,10 +264,10 @@ def initSSH() -> list[ConfigOption]:
     startNewSshAgent,
 
     attemptPrivateKeyDecryption\
-        .andThen('ssh-add').addPath(envSyncRepoPath / 'encrypted' / 'github_key').muteOutput(3).withTag('Start Git SSH')\
+        .andThen('ssh-add').addPath(Path(GlobalEnv().repoRootPath) / 'encrypted' / 'github_key').muteOutput(3).withTag('Start Git SSH')\
             .ifFailed(printFailureMessage),
 
-    cdInto(envSyncRepoPath).withComment('Set git remote to use SSH for EnvSync repo'),
+    cdInto(GlobalEnv().repoRootPath).withComment('Set git remote to use SSH for EnvSync repo'),
     Exec('git remote set-url origin git@github.com:lebenebou/EnvSync.git'),
 
     ]
@@ -299,11 +302,30 @@ def maximizeAndZoomScreen() -> ConfigOption:
 
 def navigationAliases() -> list[ConfigOption]:
 
+    globalEnv = GlobalEnv()
+
+    # Windows drives
+    D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigScope.WINDOWS)
+    ONEDRIVE_MUREX = (D_DRIVE / "OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX | ConfigScope.WINDOWS)
+
+    # User folders
+    DESKTOP = Path(os.path.join(globalEnv.userHomeDir, 'Desktop')).withName('DESKTOP').withScope(ConfigScope.LAPTOP | ConfigScope.LINUX)
+    DOWNLOADS = Path(os.path.join(globalEnv.userHomeDir, 'Downloads')).withName('DOWNLOADS').withScope(ConfigScope.LAPTOP)
+    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigScope.LAPTOP)
+
+    if globalEnv.currentScope & ConfigScope.MUREX:
+
+        DESKTOP = (ONEDRIVE_MUREX / 'Desktop').withScope(ConfigScope.MUREX)
+        DOWNLOADS = (ONEDRIVE_MUREX / 'Downloads').withScope(ConfigScope.MUREX)
+        DOCUMENTS = (ONEDRIVE_MUREX / 'Documents').withScope(ConfigScope.MUREX)
+
+    if globalEnv.currentScope & ConfigScope.LINUX:
+        DOCUMENTS = Path(os.path.join(globalEnv.userHomeDir, 'Documents')).withName('DOCUMENTS').withScope(ConfigScope.LINUX)
     options: list[ConfigOption] = [
 
     # Usual directories
     Alias('home').to(cdInto('~')).withScope(ConfigScope.LAPTOP).withTag('Directory Jumps'),
-    Alias('src').to(cdInto(envSyncRepoPath)).withTag('Directory Jumps'),
+    Alias('src').to(cdInto(GlobalEnv().repoRootPath)).withTag('Directory Jumps'),
     Alias('desk').to(cdInto(DESKTOP)).withTag('Directory Jumps'),
     Alias('downloads').to(cdInto(DOWNLOADS)).withTag('Directory Jumps'),
     Alias('docs').to(cdInto(DOCUMENTS)).withTag('Directory Jumps'),
@@ -347,6 +369,7 @@ def gitBashManipulationAliases() -> list[ConfigOption]:
 
 def configAliases() -> list[ConfigOption]:
 
+    globalEnv = GlobalEnv()
     envSyncSrcPath = Path(globalEnv.repoSrcPath)
 
     options: list[ConfigOption] = [
@@ -368,6 +391,7 @@ def configAliases() -> list[ConfigOption]:
 
 def envSyncAliases() -> list[ConfigOption]:
 
+    globalEnv = GlobalEnv()
     envSyncSrcPath = Path(globalEnv.repoSrcPath).withName('SRC PATH')
     utilsPath = (envSyncSrcPath / 'utils').withName('UTILS PATH')
 
@@ -412,8 +436,6 @@ def windowsAliases() -> list[ConfigOption]:
 
 if __name__ == "__main__":
 
-    globalEnv = GlobalEnv()
-
     # parse args
     parser = argparse.ArgumentParser(description='Update your bashprofile through Python')
 
@@ -422,35 +444,6 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    # Windows drives
-    D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigScope.WINDOWS)
-    C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigScope.WINDOWS)
-    G_DRIVE = Path("G:\\").withName('G Drive').withScope(ConfigScope.WINDOWS)
-    ONEDRIVE_MUREX = (D_DRIVE / "OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX | ConfigScope.WINDOWS)
-
-    # Repo paths
-    envSyncRepoPath = Path(globalEnv.repoRootPath).withName('REPO ROOT PATH')
-
-    # User folders
-    DESKTOP = Path(os.path.join(globalEnv.userHomeDir, 'Desktop')).withName('DESKTOP').withScope(ConfigScope.LAPTOP | ConfigScope.LINUX)
-    DOWNLOADS = Path(os.path.join(globalEnv.userHomeDir, 'Downloads')).withName('DOWNLOADS').withScope(ConfigScope.LAPTOP)
-    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigScope.LAPTOP)
-
-    # User variables
-    USERNAME = globalEnv.hostname
-
-    if globalEnv.currentScope & ConfigScope.MUREX:
-
-        DESKTOP = (ONEDRIVE_MUREX / 'Desktop').withScope(ConfigScope.MUREX)
-        DOWNLOADS = (ONEDRIVE_MUREX / 'Downloads').withScope(ConfigScope.MUREX)
-        DOCUMENTS = (ONEDRIVE_MUREX / 'Documents').withScope(ConfigScope.MUREX)
-
-        USERNAME = 'yoyammine'
-
-    if globalEnv.currentScope & ConfigScope.LINUX:
-        DOCUMENTS = Path(os.path.join(globalEnv.userHomeDir, 'Documents')).withName('DOCUMENTS').withScope(ConfigScope.LINUX)
-
-    # Main script
     bashprofile: ConfigFile = BashProfile()
     bashprofile.options = [
 
@@ -465,7 +458,7 @@ if __name__ == "__main__":
 
     *windowsAliases(),
 
-    Alias('theplan').to('start').addPath(G_DRIVE / 'My Drive' / 'THE_PLAN.xlsx').withScope(ConfigScope.WINDOWS).withTag('Personal Files'),
+    Alias('theplan').to('start').addPath(os.path.join('G:\\', 'My Drive', 'THE_PLAN.xlsx')).withScope(ConfigScope.WINDOWS).withTag('Personal Files'),
 
     *mxVersionManagementOptions(),
     *mxdevenvOptions(),
@@ -483,6 +476,8 @@ if __name__ == "__main__":
     ]
 
     assert all(isinstance(option, ConfigOption) for option in bashprofile.options), "All items in bashprofile.options must be of type ConfigOption"
+
+    globalEnv = GlobalEnv()
 
     if args.in_place:
         bashprofileContent: str = bashprofile.toString(scopeFilter=globalEnv.currentScope)
