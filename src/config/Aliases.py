@@ -325,11 +325,6 @@ class Echo(Exec):
         self.addArg(message)
         self.tag = 'Open link'
 
-    def returnToLine(self):
-
-        self.args.insert(1, '-e "\\r"')
-        return self
-
     def toOutput(self, outputType: int = 1):
 
         assert outputType in [1, 2, 3], "Output type must be 1 (stdout), 2 (stderr) or 3 (both)"
