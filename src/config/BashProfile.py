@@ -187,6 +187,13 @@ def murexCliOptions() -> list[ConfigOption]:
 
     return options
 
+def disableGitUntrackedCacheForMurexVersion() -> ConfigOption:
+
+    cdIntoVersion = Exec('cdversion')
+    disableCacheLocally = Exec('git config core.untrackedCache false')
+
+    return cdIntoVersion.andThen(disableCacheLocally).withScope(ConfigScope.MUREX)
+
 def usualShellAliases() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
@@ -204,6 +211,9 @@ def usualShellAliases() -> list[ConfigOption]:
 
     Alias('master').to('git switch master').withTag('Git'),
     Alias('main').to('git switch main').withTag('Git'),
+
+    # Git Options
+    Exec('git config --global core.untrackedCache false').withTag('Git Options'),
 
     # grep
     Alias('grep').to('grep -i --color --binary-files=without-match --exclude-dir=".git"').withTag('grep'),
@@ -464,6 +474,7 @@ if __name__ == "__main__":
 
     *murexCliOptions(),
     *murexWelcomeMessage(),
+    disableGitUntrackedCacheForMurexVersion(),
 
     *initSSH(),
 
