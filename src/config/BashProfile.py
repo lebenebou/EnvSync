@@ -132,14 +132,13 @@ def murexCliOptions() -> list[ConfigOption]:
     C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigScope.WINDOWS)
     D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigScope.WINDOWS)
 
-    MUREX_CLI = (C_DRIVE / 'murexcli').withScope(ConfigScope.MUREX)
+    MUREX_CLI = (C_DRIVE / 'murexcli')
 
     # Murex scripts
-    GQAF_SCRIPTS = (MUREX_CLI / 'gqaf').withScope(ConfigScope.MUREX)
-    p4helperScript = RunPython(MUREX_CLI / 'p4helper.py').withScope(ConfigScope.MUREX)
-    jiraScript = RunPython(MUREX_CLI / 'JiraRequestHandler.py').withScope(ConfigScope.MUREX)
-    jenkinsScript = RunPython(MUREX_CLI / 'JenkinsRequestHandler.py').withScope(ConfigScope.MUREX)
-    integrationScript = RunPython(MUREX_CLI / 'IntegrationRequestHandler.py').withScope(ConfigScope.MUREX)
+    GQAF_SCRIPTS = (MUREX_CLI / 'gqaf')
+    p4helperScript = RunPython(MUREX_CLI / 'p4helper.py')
+    jenkinsScript = RunPython(MUREX_CLI / 'JenkinsRequestHandler.py')
+    integrationScript = RunPython(MUREX_CLI / 'IntegrationRequestHandler.py')
 
     options: list[ConfigOption] = [
 
@@ -159,7 +158,7 @@ def murexCliOptions() -> list[ConfigOption]:
     Alias('dtk').to('start').addPath('D:\\tools\\dtk\\tk.3.rc.1\\toolkit.bat').withTag('P4 Helpers'),
 
     # Jira
-    Alias('jira').to(jiraScript).withTag('Jira Helpers'),
+    Alias('jira').to(RunPython(MUREX_CLI / 'JiraRequestHandler.py')).withTag('Jira Helpers'),
 
     # Jenkins
     Alias('jenkins').to(jenkinsScript).withTag('Jenkins Helpers'),
@@ -209,6 +208,14 @@ def usualShellAliases() -> list[ConfigOption]:
     Alias('gln').to('git log -n').withTag('Git'),
 
     Alias('commit').to('git commit').withTag('Git'),
+    Alias('commitFromClipBoard').to('git commit -m "$(paste)"').withTag('Git'),
+
+    Function('commitFromJiraId').thenExecute([
+        # save the commit message from jira id passed as argument 1
+        Exec('description=$(jira --id $1)').ifFailed(Echo('Jira ID $1 not found!').andThen('exit 1')),
+        Exec('git commit -m "$description"'),
+        ]).withTag('Git').withScope(ConfigScope.MUREX),
+
     Alias('amend').to('git commit --amend').withTag('Git'),
     Alias('push').to('git push').withTag('Git'),
 
