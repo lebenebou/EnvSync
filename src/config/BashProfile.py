@@ -193,8 +193,9 @@ def enableGitUntrackedCacheForMurexVersion() -> ConfigOption:
 
     cdIntoVersion = Exec('cdversion')
     enableCacheLocally = Exec('git config core.untrackedCache true')
+    enableFsMonitor = Exec('git config core.fsmonitor true')
 
-    return cdIntoVersion.andThen(enableCacheLocally).withScope(ConfigScope.MUREX)
+    return cdIntoVersion.andThen(enableCacheLocally).andThen(enableFsMonitor).withScope(ConfigScope.MUREX)
 
 def usualShellAliases() -> list[ConfigOption]:
 
