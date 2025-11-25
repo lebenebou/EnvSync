@@ -213,7 +213,7 @@ def usualShellAliases() -> list[ConfigOption]:
 
     Function('commitFromJiraId').thenExecute([
         # save the commit message from jira id passed as argument 1
-        Exec('description=$(jira --id $1)').ifFailed(Echo('Jira ID $1 not found!').andThen('exit 1')),
+        Exec('description=$(jira --id $1)').ifFailed(Echo('Jira ID $1 not found!').andThen('return 1')),
         Exec('git commit -m "$description"'),
         ]).withTag('Git').withScope(ConfigScope.MUREX),
 
