@@ -197,6 +197,28 @@ def enableGitUntrackedCacheForMurexVersion() -> ConfigOption:
 
     return cdIntoVersion.andThen(enableCacheLocally).andThen(enableFsMonitor).withScope(ConfigScope.MUREX)
 
+def jqUtilityAliases() -> list[ConfigOption]:
+
+    jqLatestExeUrl = 'https://github.com/jqlang/jq/releases/latest/download/jq-win64.exe'
+    jqExePath = Path(GlobalEnv().repoRootPath) / 'bin' / 'jq.exe'
+
+    installLatestjq = Exec(f'curl -L {jqLatestExeUrl}').addArg('-o').addPath(jqExePath).addArg('-s')
+    checkJqInstalled = Exec(f'[ -f "{jqExePath.toLinuxPath()}" ]')
+
+    options: list[ConfigOption] = [
+
+        Alias('updatejq').to(installLatestjq),
+        Alias('jq').to(jqExePath),
+
+        checkJqInstalled.ifFailed(Echo('jq not found, installing...').andThen(installLatestjq)),
+    ]
+
+    for option in options:
+        option.withScope(ConfigScope.COMMON)
+        option.withTag('jq Utility')
+
+    return options
+
 def usualShellAliases() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
@@ -465,6 +487,7 @@ if __name__ == "__main__":
     *configAliases(),
 
     *windowsAliases(),
+    *jqUtilityAliases(),
 
     Alias('theplan').to('start').addPath(os.path.join('G:\\', 'My Drive', 'THE_PLAN.xlsx')).withScope(ConfigScope.WINDOWS).withTag('Personal Files'),
 
