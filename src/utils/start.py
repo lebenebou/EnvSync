@@ -3,6 +3,8 @@ import os
 import sys
 import argparse
 
+import pyperclip
+
 CURRENT_DIR = os.getcwd()
 
 def openFolderInExplorer(folderPath: str):
@@ -23,7 +25,7 @@ def openCmdInFolder(folderPath: str):
 def startItemOrProcess(itemPath: str = None):
 
     if itemPath is None:
-        openCmdInFolder(CURRENT_DIR)
+        return startItemOrProcess(pyperclip.paste().strip())
         exit(0)
 
     if itemPath == ".":
