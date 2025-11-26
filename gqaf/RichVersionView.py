@@ -316,15 +316,9 @@ def createAlienTeamExampleVersionView(session: SessionInfo) -> RichVersionView:
 
     alienVersionView.addSafetyNetStatus(session.fetchJobsPool())
 
-    cppLink = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{session.version}/job/CppValidation/'
-    alienVersionView.addPipeline('cpp', cppLink)
-
-    asanLink = f'https://cje-core.fr.murex.com/assets/job/CppValidation/job/{session.version}/job/AsanValidation/'
-    alienVersionView.addPipeline('asan', asanLink)
-
     # FREYJA
-    freyjaLink = f'https://cje-core.fr.murex.com/assets/job/FreyjaAlien/job/{session.version}/'
-    alienVersionView.addPipeline('freyja', freyjaLink)
+    # freyjaLink = f'https://cje-core.fr.murex.com/assets/job/FreyjaAlien/job/{session.version}/'
+    # alienVersionView.addPipeline('freyja', freyjaLink)
 
     alienVersionView.addColumn('defect', lambda cl: f'[{cl.defect}]')
 
