@@ -237,7 +237,7 @@ class Alias(ConfigOption):
         assert self.name, f'Name not specified for alias'
 
         if isinstance(exec, Path):
-            exec = Exec(exec.value)
+            exec = Exec(exec.toLinuxPath())
 
         if isinstance(exec, str) or isinstance(exec, Exec):
             exec = Exec(exec) # deep copy the exec
