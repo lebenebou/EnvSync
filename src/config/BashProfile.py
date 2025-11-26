@@ -206,7 +206,7 @@ def usualShellAliases() -> list[ConfigOption]:
     # Git
     Alias('gs').to('git status').withTag('Git'),
     Alias('gd').to('git diff -w').withTag('Git'),
-    Alias('gln').to('git log --oneline --pretty=format:"%h by %an - %s" -n').withTag('Git'),
+    Alias('gln').to('git log --oneline --pretty=format:"%h by %al - %s" -n').withTag('Git'),
 
     Alias('commit').to('git commit').withTag('Git'),
     Alias('commitFromClipBoard').to('git commit -m "$(paste)"').withTag('Git'),
