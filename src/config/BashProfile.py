@@ -478,6 +478,7 @@ if __name__ == "__main__":
     bashprofile.options = [
 
     maximizeAndZoomScreen(),
+    Exec('mkdir -p').addPath(Path(GlobalEnv().repoRootPath) / 'bin').withComment('Ensure bin directory exists'),
 
     *usualShellAliases(),
     *navigationAliases(),
