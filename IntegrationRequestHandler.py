@@ -203,11 +203,6 @@ if __name__ == '__main__':
 
     session = SessionInfo()
 
-    if session.version is None:
-        print(f'Cannot integrate without source -v version', file=sys.stderr)
-        session.close()
-        exit(1)
-
     linesToParse: List[str] = []
     linesToParse = readStdinLines()
 
@@ -217,13 +212,6 @@ if __name__ == '__main__':
     inputs.integrateWithForce = args.force
     inputs.integrateWithDelete = args.delete
     inputs.fullQualityGateBuild = True
-
-    if inputs.sourceVersion != session.version:
-        print(f'Parsed changelists\' version different from specified version.', file=sys.stderr)
-        print(f'Version parsed from changelists: {inputs.sourceVersion}', file=sys.stderr)
-        print(f'Version specified using -v: {session.version}', file=sys.stderr)
-        session.close()
-        exit(1)
 
     versionOwners: List[str] = GqafRequestHandler.fetchVersionOwners(inputs.sourceVersion)
 
