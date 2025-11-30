@@ -280,12 +280,12 @@ if __name__ == '__main__':
     if args.encrypt:
 
         GlobalEnv().updateEncryptedFiles(args.encrypt, cmdFallback=False)
-        exit(0)
+        sys.exit(0)
 
     if args.decrypt:
 
         returnCode: int = GlobalEnv().accessEncryptedFiles(cmdFallback=False)
-        exit(returnCode)
+        sys.exit(returnCode)
 
     parser.print_help()
-    exit(1)
+    sys.exit(-1)
