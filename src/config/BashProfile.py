@@ -457,6 +457,8 @@ def windowsAliases() -> list[ConfigOption]:
 
     Alias('cmd').to('start').addPath('C:\\Windows\\System32\\cmd.exe').withTag('Windows CMD'),
 
+    Alias('path').to(Echo('$PATH')).pipe('tr').addArg('":"').addArg(r'"\n"').withTag('Windows PATH'),
+
     ]
 
     for option in options:
