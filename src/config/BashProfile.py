@@ -57,6 +57,7 @@ def mxdevenvOptions() -> list[ConfigOption]:
 def mxVersionManagementOptions() -> list[ConfigOption]:
 
     D_DRIVE = Path("D:\\")
+    ONEDRIVE_MUREX = (D_DRIVE / "OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX | ConfigScope.WINDOWS)
     murexSettingsJsonPath = os.path.join('D:\\', '.mxdevenvpp', 'settings', 'python_scripts_settings.json')
 
     murexSettings = dict()
@@ -77,7 +78,7 @@ def mxVersionManagementOptions() -> list[ConfigOption]:
     Alias('cdversion').to(cdInto('/d/$(version)')).withTag('MxVersion Manipulation'),
     Alias('startversion').to('start').addArg('/d/$(version)/mx-$(version).sln.lnk').withTag('MxVersion Manipulation'),
     Alias('cdapps').to(cdInto('/d/apps/$(version)*')).withTag('MxVersion Manipulation'),
-    Alias('versionUpgrade').to(RunPython(D_DRIVE / 'Personal' / 'scripts' / 'upgradeVersion.py')).withTag('MxVersion Manipulation'),
+    Alias('versionUpgrade').to(RunPython(ONEDRIVE_MUREX / 'Downloads' / 'scripts' / 'upgradeVersion.py')).withTag('MxVersion Manipulation'),
 
     Alias('settings').to('vim').addPath(murexSettingsJsonPath),
 
@@ -131,6 +132,7 @@ def murexCliOptions() -> list[ConfigOption]:
 
     C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigScope.WINDOWS)
     D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigScope.WINDOWS)
+    ONEDRIVE_MUREX = (D_DRIVE / "OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX | ConfigScope.WINDOWS)
 
     MUREX_CLI = (C_DRIVE / 'murexcli')
 
@@ -165,9 +167,9 @@ def murexCliOptions() -> list[ConfigOption]:
     Alias('integrate').to(integrationScript).withTag('Jenkins Helpers'),
 
     # Personal scripts
-    Alias('mxOpen').to(RunPython(D_DRIVE / 'Personal' / 'scripts' / 'mxOpen.py')).withTag('Personal Scripts'),
-    Alias('coco').to(RunPython(D_DRIVE / 'Personal' / 'scripts' / 'mxOpen.py')).addArg('--coconut').withTag('Personal Scripts'),
-    Alias('auth').to(RunPython(D_DRIVE / 'Personal' / 'scripts' / 'auth.py')).withTag('Personal Scripts'),
+    Alias('mxOpen').to(RunPython(ONEDRIVE_MUREX / 'Downloads' / 'scripts' / 'mxOpen.py')).withTag('Personal Scripts'),
+    Alias('coco').to(RunPython(ONEDRIVE_MUREX / 'Downloads' / 'scripts' / 'mxOpen.py')).addArg('--coconut').withTag('Personal Scripts'),
+    Alias('auth').to(RunPython(ONEDRIVE_MUREX / 'Downloads' / 'scripts' / 'auth.py')).withTag('Personal Scripts'),
 
     # GQAF scripts
     Alias('setups').to(RunPython(GQAF_SCRIPTS / 'setups.py')).withTag('GQAF Setups'),
