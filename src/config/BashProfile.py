@@ -200,6 +200,37 @@ def enableGitUntrackedCacheForMurexVersion() -> ConfigOption:
 
     return cdIntoVersion.andThen(enableCacheLocally).andThen(enableFsMonitor).withScope(ConfigScope.MUREX)
 
+def batUtilityAliases() -> list[ConfigOption]:
+
+    batFolder = Path(GlobalEnv().repoBinPath) / 'bat'
+    zipFilePath = Path(GlobalEnv().repoBinPath) / 'bat.zip'
+
+    checkBatInstalled = Exec(f'[ -f "{(batFolder / "bat.exe").toLinuxPath()}" ]')
+    clearBatFolder = Exec('rm -rf').addPath(batFolder).addPath(batFolder)
+
+    zipUrl: str = 'https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-pc-windows-msvc.zip'
+
+    downloadBatZip = Exec('curl -L').addArg(zipUrl).addArg('-o').addPath(zipFilePath).addArg('-s')
+    unzipBat = Exec('unzip').addPath(zipFilePath).addArg('-d').addPath(GlobalEnv().repoBinPath).muteOutput(3)
+    renameExtractedZip = Exec('mv').addPath(Path(GlobalEnv().repoBinPath) / 'bat-v0.26.1-x86_64-pc-windows-msvc').addPath(batFolder)
+
+    updateBat = clearBatFolder.andThen(downloadBatZip).andThen(unzipBat).andThen(renameExtractedZip).andThen(Exec('rm').addPath(zipFilePath))
+
+    options: list[ConfigOption] = [
+
+        Alias('bat').to(batFolder / 'bat.exe'),
+        Alias('cat').to('bat'),
+
+        checkBatInstalled.ifFailed(Echo('bat not found, installing...').andThen(updateBat)),
+        Alias('updatebat').to(updateBat),
+    ]
+
+    for option in options:
+        option.withScope(ConfigScope.COMMON)
+        option.withTag('bat Utility')
+
+    return options
+
 def jqUtilityAliases() -> list[ConfigOption]:
 
     jqLatestExeUrl = 'https://github.com/jqlang/jq/releases/latest/download/jq-win64.exe'
@@ -494,6 +525,7 @@ if __name__ == "__main__":
 
     *windowsAliases(),
     *jqUtilityAliases(),
+    *batUtilityAliases(),
 
     Alias('theplan').to('start').addPath(os.path.join('G:\\', 'My Drive', 'THE_PLAN.xlsx')).withScope(ConfigScope.WINDOWS).withTag('Personal Files'),
 
