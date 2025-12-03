@@ -144,7 +144,8 @@ def murexCliOptions() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
 
-    Alias('home').to(cdInto(MUREX_CLI)).withScope(ConfigScope.MUREX),
+    Alias('home').to(cdInto(MUREX_CLI)),
+    Alias('scripts').to(cdInto(ONEDRIVE_MUREX / 'Downloads' / 'scripts')),
 
     # Session info
     Alias('sessionInfo').to(RunPython(MUREX_CLI / 'SessionInfo.py')).withTag('Session Info'),
