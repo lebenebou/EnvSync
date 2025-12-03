@@ -96,6 +96,7 @@ class GlobalEnv:
 
         self.repoRootPath = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         self.repoSrcPath = os.path.join(self.repoRootPath, 'src')
+        self.repoBinPath = os.path.join(self.repoRootPath, 'bin')
         self.configJsonFile = os.path.join(self.repoRootPath, 'config.json')
         self.encryptedPath = os.path.join(self.repoRootPath, 'encrypted')
 
