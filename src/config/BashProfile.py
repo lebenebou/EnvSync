@@ -71,7 +71,7 @@ def mxVersionManagementOptions() -> list[ConfigOption]:
 
     # MxVersion
     Alias('version').to(f'echo {CURRENT_VERSION}').withTag('MxVersion'),
-    Alias('clipVersion').to('version').tee('clip').andThen('echo Copied.').withTag('MxVersion'),
+    Alias('clipVersion').to('version').tee('clip').withTag('MxVersion'),
     Alias('oldversion').to(f'echo {OLD_VERSION}').withTag('MxVersion'),
 
     # MxVersion manipulation
@@ -184,6 +184,8 @@ def murexCliOptions() -> list[ConfigOption]:
 
     Alias('tpks').to(RunPython(GQAF_SCRIPTS / 'jobs.py')).withTag('GQAF Scripts'),
     Alias('allMxVersions').to(RunPython(GQAF_SCRIPTS / 'allMxVersions.py')).withTag('GQAF Scripts'),
+
+    Alias('latestThorVersion').to('allMxVersions').grep('-E').addQuoted('mar.tho.[0-9]+\S+[0-9]$').pipe('sort -Vr').pipe('head -n 1').withTag('Thor Team'),
 
     ]
 
