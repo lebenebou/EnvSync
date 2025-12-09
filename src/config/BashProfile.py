@@ -538,7 +538,7 @@ if __name__ == "__main__":
 
     *murexCliOptions(),
     *murexWelcomeMessage(),
-    enableGitUntrackedCacheForMurexVersion(),
+    # enableGitUntrackedCacheForMurexVersion(),
 
     *initSSH(),
 
