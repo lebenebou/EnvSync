@@ -23,6 +23,7 @@ def copyFileContent(filePath: str):
         fileContent: str = f.read()
 
     pyperclip.copy(fileContent)
+    print(f'Copied {len(fileContent.splitlines())} lines.', file=sys.stderr)
 
 if __name__ == '__main__':
 
@@ -41,6 +42,7 @@ if __name__ == '__main__':
     if args.copy == 'stdin':
         stdinContent: str = sys.stdin.read()
         pyperclip.copy(stdinContent)
+        print(f'Copied {len(stdinContent.splitlines())} lines.', file=sys.stderr)
         exit(0)
 
     filePath: str = args.copy
