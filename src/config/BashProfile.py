@@ -76,8 +76,11 @@ def mxVersionManagementOptions() -> list[ConfigOption]:
 
     # MxVersion manipulation
     Alias('cdversion').to(cdInto('/d/$(version)')).withTag('MxVersion Manipulation'),
-    Alias('startversion').to('start').addArg('/d/$(version)/mx-$(version).sln.lnk').withTag('MxVersion Manipulation'),
+    Alias('thorversion').to(cdInto('/d/$(latestThorVersion)')).withTag('MxVersion Manipulation'),
     Alias('cdapps').to(cdInto('/d/apps/$(version)*')).withTag('MxVersion Manipulation'),
+
+    Alias('startversion').to('start').addArg('/d/$(version)/mx-$(version).sln.lnk').withTag('MxVersion Manipulation'),
+
     Alias('versionUpgrade').to(RunPython(ONEDRIVE_MUREX / 'Downloads' / 'scripts' / 'upgradeVersion.py')).withTag('MxVersion Manipulation'),
 
     Alias('settings').to('vim').addPath(murexSettingsJsonPath),
@@ -112,7 +115,7 @@ def murexWelcomeMessage() -> list[ConfigOption]:
     options: list[ConfigOption] = [
 
     Exec(f'echo Hello yoyammine!'),
-    Echo('ALIEN version:').addArg('$(version)'),
+    Echo('Active version:').addArg('$(version)'),
     Exec('echo -e \n'),
     p4helperScript.addArg('--unmerged').withComment('Check for defects not yet in mainstream'),
 
