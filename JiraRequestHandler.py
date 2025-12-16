@@ -26,7 +26,8 @@ class IssueInfo:
     def toPerforceDescription(self, withId: bool = False, revert: bool = False) -> str:
 
         description: str = ''
-        description += f'[{self.defect}]'
+        if self.defect:
+            description += f'[{self.defect}]'
 
         if revert:
             description += '[REVERT]'
@@ -189,7 +190,7 @@ class JiraRequestHandler:
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Helper for Jira points')
-    parser.add_argument('--id', default=None, type=str, help='Jira ID or Defect ID', required=False)
+    parser.add_argument('id', nargs='?', default=None, type=str, help='Jira ID or Defect ID')
     parser.add_argument('-m', '--max-results', default=20, type=int, help='limit the output to a certain number of jira issues')
     parser.add_argument('-s', '--search', default=None, type=str, help='filter on points with this substring in the summary')
 
