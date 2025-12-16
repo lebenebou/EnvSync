@@ -433,6 +433,21 @@ def gitBashManipulationAliases() -> list[ConfigOption]:
 
     return options
 
+def vsCodeAliases() -> list[ConfigOption]:
+
+    killVsCode = Exec('tasklist').grep('-i ^code.exe').pipe('col 2').pipe('xargs -n1 -r taskkill //PID').muteOutput(2)
+
+    options: list[ConfigOption] = [
+
+    Alias('vscode').to(killVsCode).then('code'),
+
+    ]
+
+    for option in options:
+        option.withTag('VS Code')
+
+    return options
+
 def configAliases() -> list[ConfigOption]:
 
     globalEnv = GlobalEnv()
@@ -522,6 +537,7 @@ if __name__ == "__main__":
 
     *envSyncAliases(),
     *configAliases(),
+    *vsCodeAliases(),
 
     *windowsAliases(),
     *jqUtilityAliases(),
