@@ -7,9 +7,8 @@ import sys
 
 def openTaskbarApp(number: int):
 
-    pyautogui.keyDown("win")
-    pyautogui.press(str(number))
-    pyautogui.keyUp("win")
+    pyautogui.hotkey("win", 'b')  # Focus taskbar
+    pyautogui.hotkey("win", str(number))
 
 # User Settings
 TERMINAL_TASKBAR_NUMBER = 2

@@ -188,7 +188,7 @@ def murexCliOptions() -> list[ConfigOption]:
     Alias('tpks').to(RunPython(GQAF_SCRIPTS / 'jobs.py')).withTag('GQAF Scripts'),
     Alias('allMxVersions').to(RunPython(GQAF_SCRIPTS / 'allMxVersions.py')).withTag('GQAF Scripts'),
 
-    Alias('latestThorVersion').to('allMxVersions').grep('-E').addQuoted('mar.tho.[0-9]+\S+[0-9]$').pipe('sort -Vr').pipe('head -n 1').withTag('Thor Team'),
+    Alias('latestThorVersion').to('allMxVersions').grep('-E').addQuoted(r'mar.tho.[0-9]+\S+[0-9]$').pipe('sort -Vr').pipe('head -n 1').withTag('Thor Team'),
 
     ]
 
@@ -424,13 +424,10 @@ def gitBashManipulationAliases() -> list[ConfigOption]:
 
     Alias('updategitbash').to('git update-git-for-windows').withScope(ConfigScope.WINDOWS).withTag('Git-Bash Update'),
 
-    Function('restart').thenExecute([
-        Exec('win 2').disown(),
-        Exec('exit'),
-        ]).withTag('bash').withScope(ConfigScope.WINDOWS),
+    Alias('restart').to('win 2').disown().then('exit').withTag('bash').withScope(ConfigScope.WINDOWS),
 
     Alias(':r').to('restart').withTag('bash').withScope(ConfigScope.WINDOWS),
-    Alias(':q').to('win 2').andThen('exit').withTag('bash').withScope(ConfigScope.WINDOWS),
+    Alias(':q').to('exit').withTag('bash').withScope(ConfigScope.WINDOWS),
 
     ]
 
@@ -446,9 +443,7 @@ def configAliases() -> list[ConfigOption]:
     # BashProfile config
     Alias('bashprofile').to('code').addPath(globalEnv.getBashProfilePath()).withScope(ConfigScope.WINDOWS).withTag('BashProfile Config'),
     Alias('editbashprofile').to('code').addPath(CURRENT_FILE).withTag('BashProfile Config'),
-    Alias('updatebashprofile').to(RunPython(CURRENT_FILE)).addArg('--in_place').withTag('BashProfile Config'),
-
-    Alias('reload').to('updatebashprofile').andThen('restart').withTag('bash').withScope(ConfigScope.WINDOWS),
+    Alias('refresh').to(RunPython(CURRENT_FILE)).addArg('--in_place').withTag('BashProfile Config'),
 
     # VimRC config
     Alias('editvimrc').to('code').addPath(globalEnv.getVimrcPath()).withTag('VimRC Config'),
