@@ -482,7 +482,6 @@ def envSyncAliases() -> list[ConfigOption]:
     Alias('start').to(RunPython(utilsPath / 'start.py')).withTag('EnvSync utils'),
     Alias('win').to(RunPython(utilsPath / 'win.py')).withScope(ConfigScope.WINDOWS).withTag('EnvSync utils'),
     Alias('size').to(RunPython(utilsPath / 'size.py')).withTag('EnvSync utils'),
-    Alias('netpass').to(RunPython(envSyncSrcPath / 'NetPass' / 'netpass.py')).withScope(ConfigScope.WINDOWS).withTag('EnvSync utils'),
 
     # EnvSync clipboard
     Alias('clip').to(RunPython(utilsPath / 'clipboard.py').addArg('--copy')).withTag('EnvSync clipboard'),
