@@ -106,6 +106,8 @@ class Transaction:
             [
              "pathe",
              "grand rex",
+             "grand mix",
+             "tonic walter",
              "shotgun",
              "phantom",
              "billard",
