@@ -3,10 +3,13 @@ import os
 import sys
 import argparse
 
+CURRENT_FILE = os.path.abspath(__file__)
+CONFIG_DIR = os.path.dirname(CURRENT_FILE)
+SRC_DIR = os.path.dirname(CONFIG_DIR)
+sys.path.append(SRC_DIR)
+
 from GlobalEnv import GlobalEnv, ConfigScope
 from config.Aliases import *
-
-CURRENT_FILE = os.path.abspath(__file__)
 
 import json
 def readJsonFromFile(filePath: str) -> dict:

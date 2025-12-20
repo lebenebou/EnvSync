@@ -1,9 +1,15 @@
 
+import os
+import sys
+import argparse
+
+CURRENT_FILE = os.path.abspath(__file__)
+CONFIG_DIR = os.path.dirname(CURRENT_FILE)
+SRC_DIR = os.path.dirname(CONFIG_DIR)
+sys.path.append(SRC_DIR)
+
 from config.Remaps import *
 from GlobalEnv import GlobalEnv, ConfigScope
-
-import argparse
-import sys
 
 if __name__ == "__main__":
 
