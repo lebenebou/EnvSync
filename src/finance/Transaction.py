@@ -187,6 +187,7 @@ class Transaction:
         TransactionType.travel:
             [
              "mea ",
+             "middle east airlines",
              "air france",
              "airfrance",
             ],
