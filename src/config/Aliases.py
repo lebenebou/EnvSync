@@ -58,11 +58,11 @@ class Path(Variable):
         return self.slash(otherPath)
 
     def toLinuxPath(self) -> str:
-        # this function does not wrap the path with " quotes
+
         if not self.value:
             return ''
 
-        return aspath.aslinuxPath(self.value, False)
+        return aspath.aslinuxPath(self.value, True)
 
     # override
     def toString(self) -> str:

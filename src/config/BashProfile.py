@@ -354,6 +354,23 @@ def initSSH() -> list[ConfigOption]:
 
     return options
 
+def gDriveShortcuts() -> list[ConfigOption]:
+
+    options: list[ConfigOption] = [
+
+    Alias('gdrive').to(cdInto('G:\\')),
+    Alias('gdocs').to(cdInto(os.path.join('G:\\', 'My Drive', 'Documents'))),
+    Alias('tickets').to(cdInto(os.path.join('G:\\', 'My Drive', 'Tickets'))),
+
+    Alias('theplan').to('start').addPath(os.path.join('G:\\', 'My Drive', 'THE_PLAN.xlsx')),
+
+    ]
+
+    for option in options:
+        option.withScope(ConfigScope.WINDOWS)
+        option.withTag('G Drive')
+
+    return options
 
 def maximizeAndZoomScreen() -> ConfigOption:
 
@@ -530,37 +547,37 @@ if __name__ == "__main__":
     bashprofile: ConfigFile = BashProfile()
     bashprofile.options = [
 
-    maximizeAndZoomScreen(),
-    Exec('mkdir -p').addPath(Path(GlobalEnv().repoRootPath) / 'bin').withComment('Ensure bin directory exists'),
+    # maximizeAndZoomScreen(),
+    # Exec('mkdir -p').addPath(Path(GlobalEnv().repoRootPath) / 'bin').withComment('Ensure bin directory exists'),
 
-    *usualShellAliases(),
-    *navigationAliases(),
-    *gitBashManipulationAliases(),
+    # *usualShellAliases(),
+    # *navigationAliases(),
+    # *gitBashManipulationAliases(),
 
-    *envSyncAliases(),
-    *configAliases(),
-    *vsCodeAliases(),
+    # *envSyncAliases(),
+    # *configAliases(),
+    # *vsCodeAliases(),
 
-    *windowsAliases(),
-    *jqUtilityAliases(),
-    *batUtilityAliases(),
+    # *windowsAliases(),
+    # *jqUtilityAliases(),
+    # *batUtilityAliases(),
 
-    Alias('theplan').to('start').addPath(os.path.join('G:\\', 'My Drive', 'THE_PLAN.xlsx')).withScope(ConfigScope.WINDOWS).withTag('Personal Files'),
+    *gDriveShortcuts(),
 
-    *mxVersionManagementOptions(),
-    *mxdevenvOptions(),
+    # *mxVersionManagementOptions(),
+    # *mxdevenvOptions(),
 
-    *murexLinkShortcuts(),
+    # *murexLinkShortcuts(),
 
-    *murexCliOptions(),
-    *murexWelcomeMessage(),
-    # enableGitUntrackedCacheForMurexVersion(),
+    # *murexCliOptions(),
+    # *murexWelcomeMessage(),
+    # # enableGitUntrackedCacheForMurexVersion(),
 
-    *initSSH(),
+    # *initSSH(),
 
-    cdInto(GlobalEnv().repoRootPath).withComment('Set EnvSync repo as starting directory').withTag('Starting Directory'),
+    # cdInto(GlobalEnv().repoRootPath).withComment('Set EnvSync repo as starting directory').withTag('Starting Directory'),
 
-    Echo('Bashprofile simulation done.').withTag('Completion Message').onlyIfThroughScript(),
+    # Echo('Bashprofile simulation done.').withTag('Completion Message').onlyIfThroughScript(),
 
     ]
 
