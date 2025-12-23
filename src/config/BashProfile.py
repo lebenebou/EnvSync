@@ -332,6 +332,7 @@ def initSSH() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
 
+    Exec('echo Init SSH...'),
     killAllSshAgents,
     startNewSshAgent,
 
