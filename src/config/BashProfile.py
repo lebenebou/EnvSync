@@ -229,7 +229,7 @@ def batUtilityAliases() -> list[ConfigOption]:
         Alias('bat').to(batFolder / 'bat.exe'),
         Alias('cat').to('bat'),
 
-        checkBatInstalled.ifFailed(Echo('bat not found, installing...').andThen(updateBat)),
+        checkBatInstalled.ifFailed(Exec('( echo bat not found, installing...').andThen(updateBat)).addArg(')'),
         Alias('updatebat').to(updateBat),
     ]
 
@@ -252,7 +252,7 @@ def jqUtilityAliases() -> list[ConfigOption]:
         Alias('updatejq').to(installLatestjq),
         Alias('jq').to(jqExePath),
 
-        checkJqInstalled.ifFailed(Echo('jq not found, installing...').andThen(installLatestjq)),
+        checkJqInstalled.ifFailed(Exec('( echo jq not found, installing...').andThen(installLatestjq)).addArg(')'),
     ]
 
     for option in options:
