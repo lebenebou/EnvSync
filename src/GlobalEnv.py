@@ -285,6 +285,8 @@ if __name__ == '__main__':
 
     if args.decrypt:
 
+        print('[INFO] Removing existing encrypted folder if any...', file=sys.stderr)
+        cli.runCommand(f'rm -rf {GlobalEnv().encryptedPath}')
         returnCode: int = GlobalEnv().accessEncryptedFiles(cmdFallback=False)
         sys.exit(returnCode)
 
