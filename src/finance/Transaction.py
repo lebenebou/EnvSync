@@ -175,6 +175,7 @@ class Transaction:
 
         TransactionType.transport:
             [
+             "transport",
              "ratp",
              "sncf",
              "uber",
