@@ -142,6 +142,7 @@ class Transaction:
              "orange",
              "genvoice",
              "alfa",
+             "connect",
             ],
 
         TransactionType.pharmacy:
