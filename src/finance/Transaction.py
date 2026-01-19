@@ -118,6 +118,7 @@ class Transaction:
              "billet",
              "ticket",
              "viagogo",
+             "fnac",
             ],
 
         TransactionType.software:
