@@ -226,7 +226,11 @@ def fdCommandUtilities() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
 
-        Alias('fd').to(fdFolder / 'fd.exe'),
+        Alias('fd').to(fdFolder / 'fd.exe').addArg('-i').addArg('-E .git').addArg('--glob').addArg('--no-ignore-vcs').withComment('case insensitive by default, exclude .git folders'),
+
+        Alias('find').to('fd'),
+        Alias('findfiles').to('fd').addArg('-t f'),
+        Alias('finddirs').to('fd').addArg('-t d'),
 
         checkFdInstalled.ifFailed(Exec('( echo fd not found, installing...').andThen(updateFd)).addArg(')'),
         Alias('updatefd').to(updateFd),
