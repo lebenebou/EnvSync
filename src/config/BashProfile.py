@@ -208,6 +208,36 @@ def enableGitUntrackedCacheForMurexVersion() -> ConfigOption:
 
     return cdIntoVersion.andThen(enableCacheLocally).andThen(enableFsMonitor).withScope(ConfigScope.MUREX)
 
+def fdCommandUtilities() -> list[ConfigOption]:
+
+    fdFolder = Path(GlobalEnv().repoBinPath) / 'fd'
+    zipFilePath = Path(GlobalEnv().repoBinPath) / 'fd.zip'
+
+    checkFdInstalled = Exec(f'[ -f "{(fdFolder / "fd.exe").toLinuxPath()}" ]')
+    clearFdFolder = Exec('rm -rf').addPath(fdFolder).addPath(fdFolder)
+
+    zipUrl: str = 'https://github.com/sharkdp/fd/releases/download/v10.3.0/fd-v10.3.0-i686-pc-windows-msvc.zip'
+
+    downloadFdZip = Exec('curl -Ls').addArg(zipUrl).addArg('-o').addPath(zipFilePath)
+    unzipFd = Exec('unzip').addPath(zipFilePath).addArg('-d').addPath(GlobalEnv().repoBinPath).muteOutput(3)
+    renameExtractedZip = Exec('mv').addPath(Path(GlobalEnv().repoBinPath) / 'fd-v10.3.0-i686-pc-windows-msvc').addPath(fdFolder)
+
+    updateFd = clearFdFolder.andThen(downloadFdZip).andThen(unzipFd).andThen(renameExtractedZip).andThen(Exec('rm').addPath(zipFilePath))
+
+    options: list[ConfigOption] = [
+
+        Alias('fd').to(fdFolder / 'fd.exe'),
+
+        checkFdInstalled.ifFailed(Exec('( echo fd not found, installing...').andThen(updateFd)).addArg(')'),
+        Alias('updatefd').to(updateFd),
+    ]
+
+    for option in options:
+        option.withScope(ConfigScope.COMMON)
+        option.withTag('fd Utility')
+
+    return options
+
 def batUtilityAliases() -> list[ConfigOption]:
 
     batFolder = Path(GlobalEnv().repoBinPath) / 'bat'
@@ -544,6 +574,7 @@ if __name__ == "__main__":
 
     *windowsAliases(),
     *jqUtilityAliases(),
+    *fdCommandUtilities(),
     *batUtilityAliases(),
 
     Alias('theplan').to('start').addPath(os.path.join('G:\\', 'My Drive', 'THE_PLAN.xlsx')).withScope(ConfigScope.WINDOWS).withTag('Personal Files'),
