@@ -13,7 +13,7 @@ class ConfigOption:
 
         self.tag = None
         self.comment = None
-        self.scope: ConfigScope = ConfigScope.COMMON
+        self.scope = ConfigScope.COMMON
 
     def withTag(self, tag: str):
 

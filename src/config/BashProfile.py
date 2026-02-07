@@ -218,7 +218,7 @@ def fdCommandUtilities() -> list[ConfigOption]:
     zipUrl: str = 'https://github.com/sharkdp/fd/releases/download/v10.3.0/fd-v10.3.0-i686-pc-windows-msvc.zip'
 
     downloadFdZip = Exec('curl -Ls').addArg(zipUrl).addArg('-o').addPath(zipFilePath)
-    unzipFd = Exec('unzip').addPath(zipFilePath).addArg('-d').addPath(GlobalEnv().repoBinPath).muteOutput(3)
+    unzipFd = Exec('unzip.exe').addPath(zipFilePath).addArg('-d').addPath(GlobalEnv().repoBinPath).muteOutput(3)
     renameExtractedZip = Exec('mv').addPath(Path(GlobalEnv().repoBinPath) / 'fd-v10.3.0-i686-pc-windows-msvc').addPath(fdFolder)
 
     updateFd = clearFdFolder.andThen(downloadFdZip).andThen(unzipFd).andThen(renameExtractedZip).andThen(Exec('rm').addPath(zipFilePath))
@@ -252,7 +252,7 @@ def batUtilityAliases() -> list[ConfigOption]:
     zipUrl: str = 'https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-pc-windows-msvc.zip'
 
     downloadBatZip = Exec('curl -L').addArg(zipUrl).addArg('-o').addPath(zipFilePath).addArg('-s')
-    unzipBat = Exec('unzip').addPath(zipFilePath).addArg('-d').addPath(GlobalEnv().repoBinPath).muteOutput(3)
+    unzipBat = Exec('unzip.exe').addPath(zipFilePath).addArg('-d').addPath(GlobalEnv().repoBinPath).muteOutput(3)
     renameExtractedZip = Exec('mv').addPath(Path(GlobalEnv().repoBinPath) / 'bat-v0.26.1-x86_64-pc-windows-msvc').addPath(batFolder)
 
     updateBat = clearBatFolder.andThen(downloadBatZip).andThen(unzipBat).andThen(renameExtractedZip).andThen(Exec('rm').addPath(zipFilePath))
@@ -350,6 +350,8 @@ def usualShellAliases() -> list[ConfigOption]:
     # network
     Alias('connected').to('curl -s www.google.com').muteOutput().withTag('network'),
     Alias('checkConnection').to('connected').then('echo $?').withTag('network'),
+
+    FunctionFromFile('unzip_to_dir.sh'),
 
     ]
 
