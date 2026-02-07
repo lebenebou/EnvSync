@@ -1,13 +1,15 @@
 
 from __future__ import annotations
+import sys, os
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(CURRENT_DIR)
+sys.path.append(PARENT_DIR)
+
 from config.ConfigFile import ConfigOption, ConfigFile
-from GlobalEnv import GlobalEnv, ConfigScope
+from utils import aspath
 
 import re
-import os
-import sys
-
-from utils import aspath
 
 class Variable(ConfigOption):
 

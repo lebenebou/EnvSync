@@ -1,6 +1,5 @@
 
-import os
-import sys
+import sys, os
 import argparse
 
 import pyperclip

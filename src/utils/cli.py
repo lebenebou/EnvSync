@@ -1,7 +1,6 @@
 
 import subprocess
-import sys
-import os
+import sys, os
 
 def runDetached(command: str):
 

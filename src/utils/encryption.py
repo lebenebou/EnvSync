@@ -1,6 +1,5 @@
 
-import os
-import sys
+import sys, os
 
 from utils import cli
 

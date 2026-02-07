@@ -1,11 +1,14 @@
 
-import os
-import sys
+import sys, os
 import re
 
 from tabulate import tabulate
 import time
 import argparse
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(CURRENT_DIR)
+sys.path.append(PARENT_DIR)
 
 from GlobalEnv import GlobalEnv
 

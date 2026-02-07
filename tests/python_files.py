@@ -1,5 +1,12 @@
 
-import os
+import sys, os
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+PARENT_DIR = os.path.dirname(CURRENT_DIR)
+sys.path.append(PARENT_DIR)
+
+SRC_DIR = os.path.join(PARENT_DIR, 'src')
+sys.path.append(SRC_DIR)
 
 from GlobalEnv import GlobalEnv
 from EnvSyncTest import EnvSyncTest
