@@ -45,7 +45,7 @@ def cacheSeries(series: Series):
     today: str = datetime.datetime.now().strftime('%Y_%m_%d')
     GlobalEnv().updateEncryptedFiles(f'update finance transactions as of {today}', cmdFallback=True)
 
-def transactionsFromBankAudiPDF(pdfPath: str) -> list[Transaction]:
+def transactionsFromBankAudiPDF(pdfPath: str, deleteAfterParsing: bool = True) -> list[Transaction]:
 
     print(f'Parsing Bank Audi {os.path.basename(pdfPath)}', end=' ', flush=True, file=sys.stderr)
 
@@ -113,6 +113,13 @@ def transactionsFromBankAudiPDF(pdfPath: str) -> list[Transaction]:
         transactions.append(t)
 
     print(f'Parsed {len(transactions)} transactions.', flush=True, file=sys.stderr)
+
+    if deleteAfterParsing:
+
+        os.remove(pdfPath)
+        with open(pdfPath, 'wb') as f:
+            pass # create empty pdf
+
     return transactions
 
 def transactionsFromRevolutCSV(csvFilePath: str) -> list[Transaction]:
@@ -262,7 +269,13 @@ if __name__ == '__main__':
     series: Series = None
 
     if args.refresh:
-        series = Series('USD', transactionsFromBankAudiPDF(os.path.join(REPORTS_DIR, 'audi.pdf')))
+
+        audiPdf = os.path.join(REPORTS_DIR, 'audi.pdf')
+        if not os.path.exists(audiPdf) or os.path.getsize(audiPdf) == 0:
+            print(f'Looks like there is nothing to refresh from.\nMake sure {audiPdf} exists and is not empty.', file=sys.stderr)
+            exit(1)
+
+        series = Series('USD', transactionsFromBankAudiPDF(audiPdf))
         series.extend(transactionsFromRevolutCSV(os.path.join(REPORTS_DIR, 'revolut.csv')) )
         cacheSeries(series)
     else:
