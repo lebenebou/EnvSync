@@ -550,3 +550,7 @@ class Series:
             t.__delattr__('uniqueId')
             t.__delattr__('feePercentage')
             # t.feePercentage = round(t.feePercentage, 4)
+
+            # Make date readable as in (3 Jan 2024)
+            if isinstance(t.date, datetime.date):
+                t.date = t.date.strftime('%d %b %Y')
