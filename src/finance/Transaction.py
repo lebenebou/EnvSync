@@ -10,6 +10,8 @@ from utils.stringcompare import compareStrings
 
 import unicodedata
 
+import re
+
 class Currency:
 
     _Rate = {
@@ -315,7 +317,11 @@ class Transaction:
 
     def cleanDescription(self):
 
-        self.description = self.description.replace('pos', '').replace('prch', '').replace('cash', '').replace('onsite', '')
+        wordsToRemove = ['pos', 'prch', 'cash', 'onsite', 'offsite', 'mpfx', r'm\S*8831\S*', r'[^\w]{2,}', '^-']
+        for w in wordsToRemove:
+            self.description = re.sub(w, ' ', self.description, flags=re.IGNORECASE)
+
+        self.description = re.sub(r'\s+', ' ', self.description).strip()
 
         def removeAccents(inputStr: str) -> str:
             return ''.join(
@@ -514,3 +520,7 @@ class Series:
 
             # Make date readable as in (3 Jan 2024)
             t.date = t.date.strftime('%d %b %Y')
+
+            # Strip description to 40 characters
+            # if len(t.description) > 40:
+            #     t.description = t.description[:37] + '...'

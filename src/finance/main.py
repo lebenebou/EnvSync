@@ -311,12 +311,19 @@ if __name__ == '__main__':
         series.prepareForPrettyPrint()
         series.addTotal()
 
-    pipedOutput: bool = not sys.stdout.isatty()
-    fullOutput: bool = args.all or pipedOutput or args.desc or args.type or args.after or args.before
+    pipedOutput = bool(not sys.stdout.isatty())
+    filterApplied = bool(args.account or args.desc or args.type or args.after or args.before)
+
+    fullOutput: bool = False
+    fullOutput |= filterApplied
+    fullOutput |= pipedOutput
+    fullOutput |= args.all
+    fullOutput |= args.csv
+
     if fullOutput:
         printObjectList(series.transactions, args.csv)
         exit(0)
 
-    printObjectList(series.transactions[:20], args.csv)
+    printObjectList(series.transactions[:20], csv=False)
     print(f'\n...<only showing 20>', file=sys.stderr)
     exit(0)
