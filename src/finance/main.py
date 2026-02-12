@@ -24,7 +24,7 @@ import pandas
 from openpyxl import load_workbook
 import pdfplumber
 
-from finance.Transaction import Transaction, Series, Currency, TransactionLocation
+from finance.Transaction import Transaction, TransactionType, Series, Currency, TransactionLocation
 from finance.helpers import parseDate, parseFloat, tryParseFloat
 
 def cacheSeries(series: Series):
@@ -246,14 +246,18 @@ if __name__ == '__main__':
     fileType.add_argument('--refresh', action='store_true', help='Parse and cache "./Reports/audi.pdf"')
     fileType.add_argument('--open', action='store_true', help='Update and open the main transactions excel file')
 
+    # String filters
     filterArg = parser.add_argument_group()
-    filterArg.add_argument('--filter', type=str, help='--filter=X: only transactions with X in the description')
-    filterArg.add_argument('--type', type=str, help='--type=C: only transactions of type C')
-    filterArg.add_argument('--location', type=str, help='--location=L: only transactions in L')
+    filterArg.add_argument('-a', '--account', type=str, help='--account=X: only transactions for account X')
+    filterArg.add_argument('-d', '--desc', type=str, help='--desc=X: only transactions with "X" in the description')
+    filterArg.add_argument('-t', '--type', type=str, help='--type=C: only transactions of type C')
+    filterArg.add_argument('-l', '--location', type=str, help='--location=L: only transactions in L')
 
+    # Date filters
     filterArg.add_argument('--after', type=str, help='--after=dd-mm-yyyy: only transactions after this date', default=None)
     filterArg.add_argument('--before', type=str, help='--before=dd-mm-yyyy: only transactions before this date', default=None)
 
+    # Currency
     parser.add_argument('-c', '--currency', type=str, help='Example: --currency=EUR, convert all transactions to this currency', default='USD')
 
     args = parser.parse_args()
@@ -278,13 +282,20 @@ if __name__ == '__main__':
         os.startfile(MASTER_EXCEL_FILE)
         exit(0)
 
-    if args.filter:
-        series.filterBySubstring(args.filter)
+    if args.account:
+        series.filterByAccount(args.account)
+
+    if args.desc:
+        series.filterBySubstring(args.desc)
 
     if args.location:
         series.filterByLocation(args.location)
 
     if args.type:
+
+        if not args.type in (t.name for t in TransactionType.__iter__()):
+            print(f'Not a supported transaction type: {args.type}', file=sys.stderr)
+
         series.filterByCategory(args.type)
 
     dateLowerBound = '01-01-1970'
@@ -304,11 +315,11 @@ if __name__ == '__main__':
     series.convertToCurrency(args.currency)
 
     if not args.csv:
-        series.addTotal()
         series.prepareForPrettyPrint()
+        series.addTotal()
 
     pipedOutput: bool = not sys.stdout.isatty()
-    fullOutput: bool = args.all or pipedOutput or args.filter or args.location or args.type or args.after or args.before
+    fullOutput: bool = args.all or pipedOutput or args.desc or args.location or args.type or args.after or args.before
     if fullOutput:
         printObjectList(series.transactions, args.csv)
         exit(0)

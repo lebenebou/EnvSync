@@ -521,6 +521,9 @@ class Series:
 
         self.transactions = [t for t in self.transactions if t.location == location]
 
+    def filterByAccount(self, filter: str):
+        self.transactions = [t for t in self.transactions if filter.lower() in t.accountName.lower()]
+
     def filterBySubstring(self, filter: str):
         self.transactions = [t for t in self.transactions if filter.lower() in t.description.lower()]
 
@@ -552,5 +555,4 @@ class Series:
             # t.feePercentage = round(t.feePercentage, 4)
 
             # Make date readable as in (3 Jan 2024)
-            if isinstance(t.date, datetime.date):
-                t.date = t.date.strftime('%d %b %Y')
+            t.date = t.date.strftime('%d %b %Y')
