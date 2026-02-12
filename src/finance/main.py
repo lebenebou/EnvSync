@@ -16,7 +16,6 @@ if GlobalEnv().accessEncryptedFiles(cmdFallback=True) != 0:
     exit(1)
 
 REPORTS_DIR = os.path.join(GlobalEnv().encryptedPath, "finance")
-CACHED_DIR = os.path.join(REPORTS_DIR, "Cached")
 MASTER_EXCEL_FILE = os.path.join(REPORTS_DIR, "master.xlsx")
 
 import datetime
@@ -24,7 +23,7 @@ import pandas
 from openpyxl import load_workbook
 import pdfplumber
 
-from finance.Transaction import Transaction, TransactionType, Series, Currency, TransactionLocation
+from finance.Transaction import Transaction, TransactionType, Series, Currency
 from finance.helpers import parseDate, parseFloat, tryParseFloat
 
 def cacheSeries(series: Series):
@@ -32,15 +31,18 @@ def cacheSeries(series: Series):
     print(f'Caching series with {len(series.transactions)} transactions...', end=' ', flush=True, file=sys.stderr)
 
     if len(series.transactions) == 0:
+        print('0 transactions to cache.', flush=True, file=sys.stderr)
         return
 
-    today: str = datetime.datetime.now().strftime('%Y_%m_%d')
-    csvFileName = f'{today}.csv'
-    csvFilePath = os.path.join(CACHED_DIR, csvFileName)
+    csvFilePath = os.path.join(REPORTS_DIR, 'cached.csv')
+    if os.path.exists(csvFilePath):
+        os.remove(csvFilePath)
 
-    dataFrame = series.toDataFrame()
     print(f'(to {csvFilePath})', flush=True, file=sys.stderr)
+    dataFrame = series.toDataFrame()
     dataFrame.to_csv(csvFilePath, index=False)
+
+    today: str = datetime.datetime.now().strftime('%Y_%m_%d')
     GlobalEnv().updateEncryptedFiles(f'update finance transactions as of {today}', cmdFallback=True)
 
 def transactionsFromBankAudiPDF(pdfPath: str) -> list[Transaction]:
@@ -106,7 +108,7 @@ def transactionsFromBankAudiPDF(pdfPath: str) -> list[Transaction]:
 
         t.balance = parseFloat(row['Running Balance'])
 
-        t.fillTypeAndLocation()
+        t.guessAndFillType()
         t.accountName = 'Bank Audi'
         transactions.append(t)
 
@@ -147,8 +149,7 @@ def transactionsFromRevolutCSV(csvFilePath: str) -> list[Transaction]:
         t.balance = parseFloat(row['Balance'])
 
         t.accountName = 'Revolut'
-        t.fillTypeAndLocation()
-        t.location = TransactionLocation.france
+        t.guessAndFillType()
         t.correctAttributeTypes()
 
         transactions.append(t)
@@ -169,12 +170,8 @@ def transactionsFromCachedCsv(csvFilePath: str) -> list[Transaction]:
 
     return transactions
 
-def getLatestCachedCsvFile(folder: str = REPORTS_DIR) -> str:
-
-    csvFiles = [f for f in os.listdir(CACHED_DIR) if f.endswith('.csv')]
-    latestFile = max(csvFiles, key=lambda f: datetime.datetime.strptime(f.strip('.csv'), '%Y_%m_%d'))
-
-    return os.path.join(CACHED_DIR, latestFile)
+def getLatestCachedCsvFile() -> str:
+    return os.path.join(REPORTS_DIR, 'cached.csv')
 
 def printObjectList(objects: list[object], csv: bool = False):
 
@@ -251,7 +248,6 @@ if __name__ == '__main__':
     filterArg.add_argument('-a', '--account', type=str, help='--account=X: only transactions for account X')
     filterArg.add_argument('-d', '--desc', type=str, help='--desc=X: only transactions with "X" in the description')
     filterArg.add_argument('-t', '--type', type=str, help='--type=C: only transactions of type C')
-    filterArg.add_argument('-l', '--location', type=str, help='--location=L: only transactions in L')
 
     # Date filters
     filterArg.add_argument('--after', type=str, help='--after=dd-mm-yyyy: only transactions after this date', default=None)
@@ -288,9 +284,6 @@ if __name__ == '__main__':
     if args.desc:
         series.filterBySubstring(args.desc)
 
-    if args.location:
-        series.filterByLocation(args.location)
-
     if args.type:
 
         if not args.type in (t.name for t in TransactionType.__iter__()):
@@ -319,7 +312,7 @@ if __name__ == '__main__':
         series.addTotal()
 
     pipedOutput: bool = not sys.stdout.isatty()
-    fullOutput: bool = args.all or pipedOutput or args.desc or args.location or args.type or args.after or args.before
+    fullOutput: bool = args.all or pipedOutput or args.desc or args.type or args.after or args.before
     if fullOutput:
         printObjectList(series.transactions, args.csv)
         exit(0)

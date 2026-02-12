@@ -41,14 +41,6 @@ class Currency:
         
         assert False, f'Currency conversion rate from {fromCurrency} to {toCurrency} not found'
 
-class TransactionLocation(Enum):
-    lebanon = auto()
-    france = auto()
-    mexico = auto()
-
-    def __str__(self) -> str:
-        return self.name
-
 class TransactionType(Enum):
     other = auto()
     food = auto()
@@ -259,8 +251,6 @@ class Transaction:
         self.balance: float = 0.
         self.currency: str = currency
 
-        self.location: TransactionLocation = None
-
     def correctAttributeTypes(self):
 
         for attrName, attrValue in self.__dict__.items():
@@ -274,8 +264,6 @@ class Transaction:
 
         self.uniqueId = int(self.uniqueId)
         self.type = TransactionType[self.type]
-
-        self.location = TransactionLocation[self.location]
 
         if isinstance(self.date, str):
             self.date = parseDate(self.date, dateFormat='%Y-%m-%d')
@@ -308,7 +296,7 @@ class Transaction:
             t.date = parseDate(t.date, dateFormat='%m/%d/%Y')
 
         t.correctAttributeTypes()
-        t.fillTypeAndLocation()
+        t.guessAndFillType()
 
         return t
 
@@ -325,28 +313,6 @@ class Transaction:
 
         self.currency = targetCurrency
 
-    @staticmethod
-    def descriptionToLocation(description: str):
-
-        description: str = description.lower().replace('pos', '').replace('prch', '').replace('cash', '').replace('onsite', '')
-
-        if description.endswith('fr') or description.endswith('fra'):
-            return TransactionLocation.france
-
-        if 'ratp' in description:
-            return TransactionLocation.france
-
-        if 'pue' in description.split(' '):
-            return TransactionLocation.mexico
-
-        if 'mex' in description.split(' '):
-            return TransactionLocation.mexico
-
-        if 'mx' in description.split(' '):
-            return TransactionLocation.mexico
-
-        return TransactionLocation.lebanon
-
     def cleanDescription(self):
 
         self.description = self.description.replace('pos', '').replace('prch', '').replace('cash', '').replace('onsite', '')
@@ -358,7 +324,7 @@ class Transaction:
 
         self.description = removeAccents(self.description)
 
-    def fillTypeAndLocation(self) -> TransactionType:
+    def guessAndFillType(self) -> TransactionType:
 
         bestScore = 0
         bestGuess = TransactionType.food
@@ -375,7 +341,6 @@ class Transaction:
             bestGuess = category
 
         self.type = bestGuess
-        self.location = Transaction.descriptionToLocation(self.description)
         return bestGuess
 
 class Series:
@@ -513,13 +478,6 @@ class Series:
             category = next((catEnum for catEnum in Transaction.CategoryMap.keys() if catEnum.name == category), TransactionType.other)
 
         self.transactions = [t for t in self.transactions if t.type == category]
-
-    def filterByLocation(self, location: TransactionLocation):
-        
-        if isinstance(location, str): # turn the category into an enum
-            location = next((loc for loc in TransactionLocation.__iter__() if loc.name == location), TransactionType.other)
-
-        self.transactions = [t for t in self.transactions if t.location == location]
 
     def filterByAccount(self, filter: str):
         self.transactions = [t for t in self.transactions if filter.lower() in t.accountName.lower()]
