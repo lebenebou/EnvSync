@@ -8,6 +8,7 @@ SRC_DIR = os.path.dirname(CONFIG_DIR)
 sys.path.append(SRC_DIR)
 
 from GlobalEnv import GlobalEnv, ConfigScope
+from config.ConfigFile import SectionFromFile
 from config.Aliases import *
 
 import json
@@ -369,7 +370,7 @@ def usualShellAliases() -> list[ConfigOption]:
     Alias('connected').to('curl -s www.google.com').muteOutput().withTag('network'),
     Alias('checkConnection').to('connected').then('echo $?').withTag('network'),
 
-    FunctionFromFile('unzip_to_dir.sh'),
+    SectionFromFile('unzip_to_dir.sh'),
 
     ]
 

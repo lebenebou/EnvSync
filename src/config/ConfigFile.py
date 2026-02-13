@@ -40,6 +40,35 @@ class ConfigOption:
     def toString(self) -> str:
         raise NotImplementedError("This method is virtual, please override")
 
+class SectionFromFile(ConfigOption):
+
+    def __init__(self, filePath: str):
+        super().__init__()
+        self.filePath = filePath
+
+    # override
+    def toString(self) -> str:
+
+        bashFunctionsDir = os.path.join(GlobalEnv().repoSrcPath, 'config', 'sections')
+
+        if not os.path.exists(self.filePath):
+            self.filePath = os.path.join(bashFunctionsDir, self.filePath)
+
+        assert os.path.exists(self.filePath), f"File does not exist: {self.filePath}"
+
+        lines: str = None
+        with open(self.filePath, 'r') as f:
+            lines = f.read().split('\n')
+
+        while len(lines) and not lines[0].strip():
+            lines.pop(0)
+
+        while len(lines) and not lines[-1].strip():
+            lines.pop(-1)
+
+        assert len(lines) > 0, f"File is empty: {self.filePath}"
+        return '\n'.join(lines)
+
 class ConfigFile:
 
     def __init__(self):

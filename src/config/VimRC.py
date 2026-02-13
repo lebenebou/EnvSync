@@ -8,6 +8,7 @@ SRC_DIR = os.path.dirname(CONFIG_DIR)
 sys.path.append(SRC_DIR)
 
 from config.Remaps import *
+from config.ConfigFile import SectionFromFile
 from GlobalEnv import GlobalEnv, ConfigScope
 
 if __name__ == "__main__":
