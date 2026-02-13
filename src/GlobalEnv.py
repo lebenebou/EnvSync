@@ -297,4 +297,4 @@ if __name__ == '__main__':
         sys.exit(returnCode)
 
     parser.print_help()
-    sys.exit(-1)
+    sys.exit(0)

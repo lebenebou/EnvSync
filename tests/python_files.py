@@ -32,8 +32,11 @@ if __name__ == '__main__':
 
     tests: list[EnvSyncTest] = []
 
-    pythonFilesInConfig = getPythonFilesInFolder(os.path.join(globalEnv.repoRootPath, 'src', 'config'))
-    for file in pythonFilesInConfig:
+    pythonFiles = []
+    pythonFiles.extend(getPythonFilesInFolder(os.path.join(globalEnv.repoRootPath, 'src', 'config')))
+    pythonFiles.extend(getPythonFilesInFolder(os.path.join(globalEnv.repoRootPath, 'src')))
+
+    for file in pythonFiles:
         tests.append(EnvSyncTest(f'python {file}').asserts(lambda f=file: cli.runCommand(f'python {f}').returncode == 0))
 
     allSuccessful: bool = EnvSyncTest.runTests(tests)
