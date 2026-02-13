@@ -9,6 +9,7 @@ SRC_DIR = os.path.join(PARENT_DIR, 'src')
 sys.path.append(SRC_DIR)
 
 from config.ConfigFile import ConfigFile, ConfigOption
+from GlobalEnv import GlobalEnv
 
 CURRENT_FILE = os.path.abspath(__file__)
 
@@ -22,6 +23,36 @@ class VimOption(ConfigOption):
     # override
     def toString(self) -> str:
         return f"set {self.name}"
+
+class SectionFromFile(ConfigOption):
+
+    def __init__(self, shFilePath: str):
+        super().__init__()
+        self.shFilePath = shFilePath
+
+    # override
+    def toString(self) -> str:
+
+        bashFunctionsDir = os.path.join(GlobalEnv().repoSrcPath, 'config', 'bash_functions')
+
+        if not os.path.exists(self.shFilePath):
+            self.shFilePath = os.path.join(bashFunctionsDir, self.shFilePath)
+
+        assert os.path.exists(self.shFilePath), f"Bash function file does not exist: {self.shFilePath}"
+
+        lines: str = None
+        with open(self.shFilePath, 'r') as f:
+            lines = f.read().split('\n')
+
+        while len(lines) and not lines[0].strip():
+            lines.pop(0)
+
+        while len(lines) and not lines[-1].strip():
+            lines.pop(-1)
+
+        assert len(lines) > 0, f"Bash function file is empty: {self.shFilePath}"
+
+        return '\n'.join(lines)
 
 class VimMacro(ConfigOption):
 

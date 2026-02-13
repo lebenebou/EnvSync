@@ -207,6 +207,24 @@ def enableGitUntrackedCacheForMurexVersion() -> ConfigOption:
 
     return cdIntoVersion.andThen(enableCacheLocally).andThen(enableFsMonitor).withScope(ConfigScope.MUREX)
 
+def vimPlugins() -> list[ConfigOption]:
+
+    vimPlugFile = Path(GlobalEnv().userHomeDir) / '.vim' / 'autoload' / 'plug.vim'
+
+    checkVimPlugInstalled = Exec(f'[ -f "{(vimPlugFile).toLinuxPath()}" ]')
+    downloadVimPlug = Exec('curl').addArg('-fLo').addPath(vimPlugFile).addArg('--create-dirs').addArg('https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim')
+
+    options: list[ConfigOption] = [
+
+        checkVimPlugInstalled.ifFailed(Exec('( echo vimplug not found, installing...').andThen(downloadVimPlug)).addArg(')'),
+    ]
+
+    for option in options:
+        option.withScope(ConfigScope.COMMON)
+        option.withTag('vim plugins')
+
+    return options
+
 def fdCommandUtilities() -> list[ConfigOption]:
 
     fdFolder = Path(GlobalEnv().repoBinPath) / 'fd'
@@ -497,7 +515,7 @@ def configAliases() -> list[ConfigOption]:
     # BashProfile config
     Alias('bashprofile').to('code').addPath(globalEnv.getBashProfilePath()).withScope(ConfigScope.WINDOWS).withTag('BashProfile Config'),
     Alias('editbashprofile').to('code').addPath(CURRENT_FILE).withTag('BashProfile Config'),
-    Alias('refresh').to(RunPython(CURRENT_FILE)).addArg('--in_place').withTag('BashProfile Config'),
+    Alias('refresh').to(RunPython(CURRENT_FILE)).addArg('--in_place').andThen('updatevimrc').withTag('BashProfile Config'),
 
     # VimRC config
     Alias('editvimrc').to('code').addPath(globalEnv.getVimrcPath()).withTag('VimRC Config'),
@@ -577,6 +595,7 @@ if __name__ == "__main__":
     *configAliases(),
     *vsCodeAliases(),
 
+    *vimPlugins(),
     *windowsAliases(),
     *jqUtilityAliases(),
     *fdCommandUtilities(),

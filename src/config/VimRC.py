@@ -17,7 +17,10 @@ if __name__ == "__main__":
 
     vimConfig: ConfigFile = VimRC()
     vimConfig.setLeaderKey(r'\<Space>')
+
     vimConfig.options = [
+
+    SectionFromFile('vimplug.vimrc').withTag('vim plugins'),
 
     VimOption('relativenumber'),
     VimOption('ignorecase'),
@@ -37,6 +40,8 @@ if __name__ == "__main__":
     VimRemap().remap('L', '$').forMode(VimRemap.BOTH).withTag('Horizontal Movement'),
     VimRemap().remap(',', ';').forMode(VimRemap.BOTH).withTag('Horizontal Movement'),
     VimRemap().remap(';', ',').forMode(VimRemap.BOTH).withTag('Horizontal Movement').withComment('Swap f next/previous'),
+
+    VimRemap().remap('<C-,>', ':Files<CR>').forMode(VimRemap.BOTH).withTag('Fuzzy Finder'),
 
     VimRemap().remap('zz', 'zz').forMode(VimRemap.BOTH).thenCenterWithOffset().withTag('Centering').withComment('Center at top of page'),
     VimRemap().remap('n', 'n').forMode(VimRemap.NORMAL).thenCenterMiddle().withTag('Centering'),
