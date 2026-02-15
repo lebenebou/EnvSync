@@ -511,18 +511,22 @@ def configAliases() -> list[ConfigOption]:
     globalEnv = GlobalEnv()
     envSyncSrcPath = Path(globalEnv.repoSrcPath)
 
+    updateBashProfile = RunPython(CURRENT_FILE).addArg('--in_place')
+    updateVimrc = RunPython(envSyncSrcPath / 'config' / 'VimRC.py').addArg('--in_place')
+    syncVimPlugins = Exec('vim +PlugInstall +qall').andThen('vim +PlugClean +qall')
+
     options: list[ConfigOption] = [
 
     # BashProfile config
-    Alias('bashprofile').to('code').addPath(globalEnv.getBashProfilePath()).withScope(ConfigScope.WINDOWS).withTag('BashProfile Config'),
-    Alias('editbashprofile').to('code').addPath(CURRENT_FILE).withTag('BashProfile Config'),
-    Alias('refresh').to(RunPython(CURRENT_FILE)).addArg('--in_place').andThen('updatevimrc').withTag('BashProfile Config'),
+    Alias('bashprofile').to('vim').addPath(globalEnv.getBashProfilePath()).withScope(ConfigScope.WINDOWS),
+    Alias('editbashprofile').to('vim').addPath(CURRENT_FILE),
 
-    # VimRC config
-    Alias('editvimrc').to('code').addPath(globalEnv.getVimrcPath()).withTag('VimRC Config'),
-    Alias('updatevimrc').to(RunPython(envSyncSrcPath / 'config' / 'VimRC.py').addArg('--in_place')).withTag('VimRC Config'),
+    Alias('sync').to(updateBashProfile).andThen(updateVimrc).andThen(syncVimPlugins),
 
     ]
+
+    for op in options:
+        op.withTag('BashProfile config')
 
     return options
 
