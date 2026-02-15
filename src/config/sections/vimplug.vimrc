@@ -13,11 +13,6 @@ Plug 'morhetz/gruvbox'
 
 call plug#end()
 
-" Auto install plugins if missing
-if empty(glob('~/.vim/plugged'))
-  autocmd VimEnter * PlugInstall --sync | source $MYVIMRC
-endif
-
 " Auto set colorscheme
 set background=dark
 colorscheme gruvbox
