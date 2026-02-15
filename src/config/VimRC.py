@@ -22,6 +22,7 @@ if __name__ == "__main__":
     vimConfig.options = [
 
     SectionFromFile('vimplug.vimrc').withTag('vim plugins'),
+    # SectionFromFile('coc.vimrc').withTag('vim plugins'),
 
     VimOption('relativenumber'),
     VimOption('number'),
