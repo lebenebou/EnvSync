@@ -24,6 +24,8 @@ if __name__ == "__main__":
     SectionFromFile('vimplug.vimrc').withTag('vim plugins'),
 
     VimOption('relativenumber'),
+    VimOption('number'),
+
     VimOption('ignorecase'),
     VimOption('nowrap'),
 
