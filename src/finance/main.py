@@ -321,8 +321,8 @@ if __name__ == '__main__':
     series.convertToCurrency(args.currency)
 
     if not args.csv:
-        series.prepareForPrettyPrint()
         series.addTotal()
+        series.prepareForPrettyPrint()
 
     pipedOutput = bool(not sys.stdout.isatty())
     filterApplied = bool(args.account or args.desc or args.type or args.after or args.before)

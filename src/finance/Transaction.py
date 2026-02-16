@@ -519,7 +519,8 @@ class Series:
             # t.feePercentage = round(t.feePercentage, 4)
 
             # Make date readable as in (3 Jan 2024)
-            t.date = t.date.strftime('%d %b %Y')
+            if t.date:
+                t.date = t.date.strftime('%d %b %Y')
 
             # Strip description to 40 characters
             # if len(t.description) > 40:
