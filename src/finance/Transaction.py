@@ -317,8 +317,8 @@ class Transaction:
 
     def cleanDescription(self):
 
-        wordsToRemove = ['pos', 'prch', 'cash', 'onsite', 'offsite', 'mpfx', r'm\S*8831\S*', r'[^\w]{2,}', '^-']
-        for w in wordsToRemove:
+        regexToRemove = ['branch', 'pos', 'prch', 'cash', 'onsite', 'offsite', 'mpfx', r'm\S*8831\S*', r'[^\w]{2,}', '^-', r'\b\d+\b']
+        for w in regexToRemove:
             self.description = re.sub(w, ' ', self.description, flags=re.IGNORECASE)
 
         self.description = re.sub(r'\s+', ' ', self.description).strip()
@@ -329,6 +329,9 @@ class Transaction:
             )
 
         self.description = removeAccents(self.description)
+
+        # capitalize first letter of each word, lowercase the rest
+        self.description = ' '.join(word.capitalize() for word in self.description.split())
 
     def guessAndFillType(self) -> TransactionType:
 
