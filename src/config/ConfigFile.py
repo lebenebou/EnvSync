@@ -49,10 +49,10 @@ class SectionFromFile(ConfigOption):
     # override
     def toString(self) -> str:
 
-        bashFunctionsDir = os.path.join(GlobalEnv().repoSrcPath, 'config', 'sections')
+        fileSectionsDir = os.path.join(GlobalEnv().repoSrcPath, 'config', 'sections')
 
         if not os.path.exists(self.filePath):
-            self.filePath = os.path.join(bashFunctionsDir, self.filePath)
+            self.filePath = os.path.join(fileSectionsDir, self.filePath)
 
         assert os.path.exists(self.filePath), f"File does not exist: {self.filePath}"
 
