@@ -354,9 +354,6 @@ def usualShellAliases() -> list[ConfigOption]:
         Exec('awk').addArg('-v column="$1"').addArg("'{print $column}'"),
         ]).withTag('awk'),
 
-    # cat
-    # Alias('cat').to('bat').withTag('bash').withScope(ConfigScope.WINDOWS),
-
     # vim
     Alias('vimpaste').to('paste').pipe('vim -').withTag('vim'),
     Alias('pastevim').to('paste').pipe('vim -').withTag('vim'),
