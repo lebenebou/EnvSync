@@ -161,7 +161,7 @@ def murexCliOptions() -> list[ConfigOption]:
 
     # P4 Helpers
     Alias('p4helper').to(p4helperScript).withTag('P4 Helpers'),
-    Alias('psubmit').to('p4helper').addArg('--submit').addArg('$(paste)').withTag('P4 Helpers'),
+    Alias('psubmit').to('p4helper').addArg('--submit').addArg('"$(paste)"').withTag('P4 Helpers'),
     Alias('submit').to('p4helper --submit').withTag('P4 Helpers'),
     Alias('isItMerged').to('echo "looking for $(paste)..."').andThen('p4helper --me --build').pipe('greppaste').withTag('P4 Helpers'),
     Alias('dtk').to('start').addPath('D:\\tools\\dtk\\tk.3.rc.1\\toolkit.bat').withTag('P4 Helpers'),
