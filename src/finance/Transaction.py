@@ -107,6 +107,7 @@ class Transaction:
              "billard",
              "disney",
              "cinema",
+             "max linder",
              "weezevent",
              "play",
              "billet",
@@ -132,6 +133,7 @@ class Transaction:
         TransactionType.mobile:
             [
              "mobile",
+             "esim",
              "simly",
              "sfr",
              "orange",
