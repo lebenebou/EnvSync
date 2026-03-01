@@ -50,6 +50,7 @@ class TransactionType(Enum):
     software = auto()
     gym = auto()
     mobile = auto()
+    music = auto()
     pharmacy = auto()
     groceries = auto()
     shopping = auto()
@@ -142,6 +143,11 @@ class Transaction:
              "connect",
             ],
 
+        TransactionType.music:
+            [
+             "c.o.m",
+            ],
+
         TransactionType.pharmacy:
             [
              "pharm",
@@ -177,6 +183,7 @@ class Transaction:
              "ratp",
              "sncf",
              "uber",
+             "taxi",
              "bolt",
              "lime",
              "ilevia",
