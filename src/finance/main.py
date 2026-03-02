@@ -228,7 +228,7 @@ if __name__ == '__main__':
     filterArg.add_argument('--before', type=str, help='--before=dd-mm-yyyy: only transactions before this date', default=None)
 
     # Currency
-    parser.add_argument('-c', '--currency', type=str, help='Example: --currency=EUR, convert all transactions to this currency', default='USD')
+    parser.add_argument('-c', '--currency', type=str, help='Example: --currency=EUR, convert all transactions to this currency', default='EUR')
 
     args = parser.parse_args()
 
