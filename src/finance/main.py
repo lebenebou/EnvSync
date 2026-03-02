@@ -1,5 +1,6 @@
 
 import sys, os
+import shutil
 import argparse
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -43,7 +44,7 @@ def cacheSeries(series: Series):
     today: str = datetime.datetime.now().strftime('%Y_%m_%d')
     GlobalEnv().updateEncryptedFiles(f'update finance transactions as of {today}', cmdFallback=True)
 
-def transactionsFromBankAudiPDF(pdfPath: str, deleteAfterParsing: bool = True) -> list[Transaction]:
+def transactionsFromBankAudiPDF(pdfPath: str, cacheAfterParsing: bool = True) -> list[Transaction]:
 
     print(f'Parsing Bank Audi {os.path.basename(pdfPath)}', end=' ', flush=True, file=sys.stderr)
 
@@ -112,7 +113,10 @@ def transactionsFromBankAudiPDF(pdfPath: str, deleteAfterParsing: bool = True) -
 
     print(f'Parsed {len(transactions)} transactions.', flush=True, file=sys.stderr)
 
-    if deleteAfterParsing:
+    if cacheAfterParsing:
+
+        cachedPdfPath = os.path.join(REPORTS_DIR, 'audi_copy.pdf')
+        shutil.copy(pdfPath, cachedPdfPath)
 
         os.remove(pdfPath)
         with open(pdfPath, 'wb') as f:
