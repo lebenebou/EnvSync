@@ -5,3 +5,4 @@ encrypted/
 bin/
 
 config.json
+.vscode/
