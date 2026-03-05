@@ -98,7 +98,6 @@ class Transaction:
              "grand mix",
              "tonic walter",
              "shotgun",
-             "phantom",
              "weezevent",
              "billet",
              "ticket",
@@ -489,7 +488,7 @@ class Series:
     def filterByCategory(self, category: TransactionType):
         
         if isinstance(category, str): # turn the category into an enum
-            category = next((catEnum for catEnum in Transaction.CategoryMap.keys() if catEnum.name == category), TransactionType.other)
+            category = next((catEnum for catEnum in TransactionType.__iter__() if catEnum.name == category), TransactionType.other)
 
         self.transactions = [t for t in self.transactions if t.type == category]
 
