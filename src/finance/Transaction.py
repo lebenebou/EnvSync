@@ -46,7 +46,9 @@ class Currency:
 class TransactionType(Enum):
     other = auto()
     food = auto()
+    concert = auto()
     entertainment = auto()
+    cinema = auto()
     software = auto()
     gym = auto()
     mobile = auto()
@@ -72,56 +74,44 @@ class Transaction:
     Categories = [cat for cat in TransactionType.__iter__()]
     CategoryMap = {
 
-        TransactionType.food:
-            [
-             "toters",
-             "pepere",
-             "basta",
-             "pasta",
-             "sandwich",
-             "grill",
-             "chicken",
-             "poulet",
-             "taco",
-             "janna",
-             "poke",
-             "bistro",
-             "restaurant",
-             "eats",
-             "cafe",
-             "coffee",
-            ],
-
         TransactionType.service:
             [
                 "poste"
             ],
 
-        TransactionType.entertainment:
+        TransactionType.cinema:
             [
              "pathe",
              "grand rex",
+             "cinema",
+             "max linder",
+            ],
+
+        TransactionType.entertainment:
+            [
+             "billard",
+             "disney",
+            ],
+
+        TransactionType.concert:
+            [
              "grand mix",
              "tonic walter",
              "shotgun",
              "phantom",
-             "billard",
-             "disney",
-             "cinema",
-             "max linder",
              "weezevent",
-             "play",
              "billet",
              "ticket",
              "viagogo",
-             "fnac",
             ],
 
         TransactionType.software:
             [
              "spotify",
              "apple",
+             "itunes",
              "fouadraheb",
+             "playstation",
             ],
 
         TransactionType.gym:
@@ -175,6 +165,7 @@ class Transaction:
              "amazon",
              "zara",
              "decathlon",
+             "fnac",
             ],
 
         TransactionType.transport:
@@ -262,26 +253,31 @@ class Transaction:
         self.balance: float = 0.
         self.currency: str = currency
 
-    def correctAttributeTypes(self):
+    def convertStringAttributes(self): # convert string attributes to their correct types, if possible
 
         for attrName, attrValue in self.__dict__.items():
+            self.__setattr__(attrName, str(attrValue)) # convert all to str first
 
-            self.__setattr__(attrName, str(attrValue))
+        for attrName, attrValue in self.__dict__.items():
             try:
-                if attrValue is None: print(attrName)
-                self.__setattr__(attrName, parseFloat(attrValue))
+                self.__setattr__(attrName, parseFloat(attrValue)) # try to convert to float, if possible
             except ValueError:
                 pass
 
         self.uniqueId = int(self.uniqueId)
-        self.type = TransactionType[self.type]
+
+        if self.type not in TransactionType.__members__:
+            print(f'Warning: Transaction type {self.type} not found in TransactionType enum. Defaulting to "other".', file=sys.stderr)
+            self.type = 'other'
+
+        self.type = TransactionType[self.type] # string to enum
 
         if isinstance(self.date, str):
             self.date = parseDate(self.date, dateFormat='%Y-%m-%d')
 
     def toDataFrameRow(self) -> dict:
 
-        self.correctAttributeTypes()
+        self.convertStringAttributes()
         data: dict = {}
         for attrName, attr in self.__dict__.items():
             data[attrName] = str(attr)
@@ -306,7 +302,7 @@ class Transaction:
         except ValueError:
             t.date = parseDate(t.date, dateFormat='%m/%d/%Y')
 
-        t.correctAttributeTypes()
+        t.convertStringAttributes()
         t.guessAndFillType()
 
         return t

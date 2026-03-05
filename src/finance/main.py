@@ -159,7 +159,7 @@ def transactionsFromRevolutCSV(csvFilePath: str) -> list[Transaction]:
 
         t.accountName = 'Revolut'
         t.guessAndFillType()
-        t.correctAttributeTypes()
+        t.convertStringAttributes()
 
         transactions.append(t)
 
