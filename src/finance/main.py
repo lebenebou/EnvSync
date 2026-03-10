@@ -222,6 +222,7 @@ if __name__ == '__main__':
     filterArg.add_argument('-a', '--account', type=str, help='--account=X: only transactions for account X')
     filterArg.add_argument('-d', '--desc', type=str, help='--desc=X: only transactions with "X" in the description')
     filterArg.add_argument('-t', '--type', type=str, help='--type=C: only transactions of type C')
+    filterArg.add_argument('-x', '--exclude', type=str, help='--exclude=X: exclude transactions with "X" in the description or category')
 
     # Date filters
     filterArg.add_argument('--after', type=str, help='--after=dd-mm-yyyy: only transactions after this date', default=None)
@@ -271,6 +272,9 @@ if __name__ == '__main__':
 
         series.filterByCategory(args.type)
 
+    if args.exclude:
+        series.exclude(args.exclude)
+
     dateLowerBound = '01-01-1970'
     dateLowerBound = datetime.datetime.strptime(dateLowerBound, "%d-%m-%Y").date()
     if args.after:
@@ -292,7 +296,7 @@ if __name__ == '__main__':
         series.prepareForPrettyPrint()
 
     pipedOutput = bool(not sys.stdout.isatty())
-    filterApplied = bool(args.account or args.desc or args.type or args.after or args.before)
+    filterApplied = bool(args.account or args.desc or args.type or args.after or args.before or args.exclude)
 
     fullOutput: bool = False
     fullOutput |= filterApplied

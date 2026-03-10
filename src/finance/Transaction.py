@@ -485,6 +485,9 @@ class Series:
         for index in sorted(toRemove, reverse=True):
             self.transactions.pop(index)
 
+    def exclude(self, filter: str):
+        self.transactions = [t for t in self.transactions if filter.lower() not in t.description.lower() and filter.lower() not in t.type.name.lower()]
+
     def filterByCategory(self, category: TransactionType):
         
         if isinstance(category, str): # turn the category into an enum
