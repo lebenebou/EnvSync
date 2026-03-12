@@ -135,6 +135,7 @@ class Transaction:
         TransactionType.music:
             [
              "c.o.m",
+             "woodbrass",
             ],
 
         TransactionType.pharmacy:
