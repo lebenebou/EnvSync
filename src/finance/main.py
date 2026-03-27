@@ -244,7 +244,8 @@ if __name__ == '__main__':
             exit(1)
 
         series = Series('USD', transactionsFromBankAudiPDF(audiPdf))
-        series.extend(transactionsFromRevolutCSV(os.path.join(REPORTS_DIR, 'revolut.csv')) )
+        series.extend(transactionsFromRevolutCSV(os.path.join(REPORTS_DIR, 'revolut_eur.csv')) )
+        series.extend(transactionsFromRevolutCSV(os.path.join(REPORTS_DIR, 'revolut_usd.csv')) )
         cacheSeries(series)
     else:
         transactions = transactionsFromCachedCsv(getLatestCachedCsvFile())

@@ -155,6 +155,7 @@ class Transaction:
              "alimentat",
              "bcf",
              "7-eleven",
+             "walmart",
              "oxxo",
             ],
 
@@ -162,6 +163,7 @@ class Transaction:
             [
              "uniqlo",
              "outlet",
+             "nordstrom",
              "amazon",
              "zara",
              "decathlon",
@@ -216,6 +218,7 @@ class Transaction:
         TransactionType.transfer:
             [
              "transfer",
+             "exchange",
              "trsf",
              "cardpay",
              "internal",
