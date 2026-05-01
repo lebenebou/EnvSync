@@ -8,7 +8,7 @@ from GlobalEnv import GlobalEnv
 from helpers import percentageDifference
 from utils.stringcompare import compareStrings
 
-from Transaction import Transaction, TransactionType
+from Transaction import Transaction
 
 class Account:
 
