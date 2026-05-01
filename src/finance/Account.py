@@ -125,14 +125,13 @@ class Account:
         for index in sorted(toRemove, reverse=True):
             self.transactions.pop(index)
 
-    # move to portfolio class
     def addTotal(self):
         
         if len(self.transactions) == 0:
             return
 
         total = Transaction(self.transactions[0].currency)
-        total.balance = self.transactions[0].balance
+        total.balance = str()
         total.description = 'TOTAL'
         total.type = str('TOTAL')
 
