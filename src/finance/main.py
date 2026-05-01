@@ -59,7 +59,7 @@ if __name__ == '__main__':
     filterArg.add_argument('-a', '--account', type=str, help='--account=X: only transactions for account X')
     filterArg.add_argument('-d', '--desc', type=str, help='--desc=X: only transactions with "X" in the description')
     filterArg.add_argument('-t', '--type', type=str, help='--type=X: only transactions of type X')
-    filterArg.add_argument('-x', '--exclude', type=str, help='--exclude=X: exclude transactions with "X" in the description or category')
+    filterArg.add_argument('-x', '--exclude', type=str, help='--exclude=X: exclude transactions with "X" in the description OR category OR account name')
 
     # Date filters
     filterArg.add_argument('--after', type=str, help='--after=dd-mm-yyyy: only transactions after this date', default=None)
@@ -113,10 +113,10 @@ if __name__ == '__main__':
     if args.before:
         filter.dateUpperBound = datetime.strptime(args.before, "%d-%m-%Y").date()
 
-    portfolio.withFilter(filter)
-
     if args.exclude:
-        print(f'Exclude filter not implemented yet, ignoring --exclude={args.exclude}', flush=True, file=sys.stderr)
+        filter.excludeTerm = args.exclude.lower()
+
+    portfolio.withFilter(filter)
 
     portfolioAccount: Account = portfolio.build()
 

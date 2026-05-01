@@ -421,6 +421,16 @@ class Transaction:
         if filter.dateUpperBound and self.date > filter.dateUpperBound:
             return False
 
+        # Exclude term
+        fullString: str = ' - '.join([
+                                    self.account,
+                                    self.description,
+                                    self.type.name
+                                      ]).lower()
+
+        if filter.excludeTerm is not None and filter.excludeTerm in fullString:
+            return False
+
         return True
 
 class TransactionFilter(Transaction):
@@ -439,6 +449,7 @@ class TransactionFilter(Transaction):
 
         self.dateLowerBound = None
         self.dateUpperBound = None
+        self.excludeTerm = None
 
     def isEmpty(self) -> bool:
         return all(value is None for value in self.__dict__.values())
