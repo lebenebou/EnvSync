@@ -5,8 +5,7 @@ import datetime
 import pandas
 from enum import Enum, auto
 
-from finance.helpers import parseDate, percentageDifference, parseFloat
-from utils.stringcompare import compareStrings
+from finance.helpers import parseDate, parseFloat
 
 import unicodedata
 
@@ -228,6 +227,11 @@ class Transaction:
              "payment",
             ],
 
+        TransactionType.food:
+            [
+             "coffee",
+            ],
+
         TransactionType.fee:
             [
              "fee",
@@ -239,10 +243,10 @@ class Transaction:
 
     }
 
-    def __init__(self, currency = 'USD', accountName: str = None):
+    def __init__(self, currency = 'USD'):
 
+        self.account: str = None
         self.uniqueId: int = -1
-        self.accountName: str = accountName
 
         self.description: str = None
         self.date: datetime.date = None
@@ -255,6 +259,27 @@ class Transaction:
 
         self.balance: float = 0.
         self.currency: str = currency
+
+    # Comparator
+    def __lt__(self, other: 'Transaction') -> bool:
+
+        if self.date != other.date:
+            return self.date < other.date
+
+        return self.uniqueId < other.uniqueId
+
+    def prepareForPrettyPrint(self):
+
+        self.__delattr__('uniqueId')
+        self.__delattr__('feePercentage')
+
+        # Make date readable as in (3 Jan 2024)
+        if self.date:
+            self.date = self.date.strftime('%d %b %Y')
+
+         # Strip description to 40 characters
+        if len(self.description) > 40:
+            self.description = self.description[:37] + '...'
 
     def convertStringAttributes(self): # convert string attributes to their correct types, if possible
 
@@ -360,182 +385,60 @@ class Transaction:
         self.type = bestGuess
         return bestGuess
 
-class Series:
+    def matchesFilter(self, filter: 'TransactionFilter') -> bool:
 
-    Confidance = 60
-    MaxPercentageFee = 15
+        assert isinstance(filter, TransactionFilter), f'filter must be of type TransactionFilter, got {type(filter)}'
 
-    def __init__(self, currency: str, transactions: list[Transaction]):
+        if filter is None or filter.isEmpty():
+            return True
 
-        print(f'Creating series...', flush=True, file=sys.stderr)
+        attributesToCompare = ['account', 'description', 'type', 'date']
+        match: bool = True
 
-        assert len(transactions) >= 2, f'Cannot create series with {len(transactions)} transaction(s)'
+        for attr in attributesToCompare:
 
-        self.currency = currency
-        self.transactions = list(transactions)
-        self.convertToCurrency(self.currency)
-
-        self.sortByDate()
-        self.normalizeTransactionsWithFees()
-
-    def sortByDate(self, newestFirst: bool = True):
-        self.transactions = list(sorted(self.transactions, key=lambda t: (t.date, t.uniqueId), reverse=newestFirst))
-
-    def convertToCurrency(self, targetCurrency: str):
-        [t.convertToCurrency(targetCurrency) for t in self.transactions]
-
-    def extend(self, Additionaltransactions: list[Transaction]):
-
-        [t.convertToCurrency(self.currency) for t in Additionaltransactions]
-
-        self.transactions.extend(Additionaltransactions)
-        self.sortByDate()
-
-        n: int = len(self.transactions)
-        assert n >= 2
-
-        t0: Transaction = self.transactions[n-1]
-
-        accounts: set[str] = set()
-        accounts.add(t0.accountName)
-
-        runningBalance: float = t0.balance
-
-        for i in range(n-2, -1, -1):
-
-            current: Transaction = self.transactions[i]
-
-            if current.accountName not in accounts:
-                runningBalance += current.balance
-                accounts.add(current.accountName)
-            else:
-                runningBalance += current.credit
-
-            current.balance = runningBalance
-            self.transactions[i] = current
-
-    def toDataFrame(self) -> pandas.DataFrame:
-
-        print(f'Converting series to dataframe...', flush=True, file=sys.stderr)
-
-        data: list[pandas.DataFrame] = []
-        for t in self.transactions:
-            data.append(t.toDataFrameRow())
-
-        return pandas.DataFrame(data)
-
-    def _findInitialTransaction(self, start: int) -> int:
-
-        refTransaction = self.transactions[start]
-
-        for i in range(start, len(self.transactions)):
-            candidate = self.transactions[i]
-
-            if candidate.credit + refTransaction.credit != 0:
+            filterValue = filter.__dict__[attr]
+            if filterValue == None:
                 continue
 
-            descriptionSimilarity: int = compareStrings(candidate.description, refTransaction.description)
-            if  descriptionSimilarity < Series.Confidance:
-                continue
+            transactionValue = self.__dict__[attr]
+            if transactionValue == None:
+                return False
 
-            return i
+            if not isinstance(transactionValue, str):
+                match &= (transactionValue == filterValue)
 
-        return -1
+            if isinstance(transactionValue, str):
+                match &= (filterValue.lower() in transactionValue.lower())
 
-    def _findTransactionWithFee(self, start: int) -> int:
+            if not match:
+                return False
 
-        refTransaction = self.transactions[start]
+        # Dates
+        if filter.dateLowerBound and self.date < filter.dateLowerBound:
+            return False
 
-        for i in range(start-1, -1, -1):
-            candidate = self.transactions[i]
+        if filter.dateUpperBound and self.date > filter.dateUpperBound:
+            return False
 
-            if abs(candidate.credit) <= abs(refTransaction.credit):
-                continue
+        return True
 
-            if percentageDifference(abs(refTransaction.credit), abs(candidate.credit)) > Series.MaxPercentageFee:
-                continue
+class TransactionFilter(Transaction):
 
-            if compareStrings(candidate.description, refTransaction.description) < Series.Confidance:
-                continue
+    MinDate = datetime.datetime.strptime('01-01-1900', "%d-%m-%Y").date()
+    MaxDate = datetime.datetime.strptime('01-01-2099', "%d-%m-%Y").date()
 
-            return i
+    def __init__(self):
+        super().__init__()
+        self.reset()
 
-        return -1
+    def reset(self):
 
-    def normalizeTransactionsWithFees(self):
+        for attr in self.__dict__.keys():
+            self.__dict__[attr] = None
 
-        toRemove: set[int] = set()
+        self.dateLowerBound = None
+        self.dateUpperBound = None
 
-        for i, t in enumerate(self.transactions):
-
-            if t.credit <= 0:
-                continue
-
-            initialTransactionIndex = self._findInitialTransaction(start=i)
-            if initialTransactionIndex == -1:
-                continue
-
-            transactionWithFeeIndex = self._findTransactionWithFee(start=i)
-            if transactionWithFeeIndex == -1:
-                continue
-
-            transactionWithFee: Transaction = self.transactions[transactionWithFeeIndex]
-            transactionWithFee.feePercentage = percentageDifference(abs(t.credit), abs(transactionWithFee.credit))
-            transactionWithFee.feeAmount = abs(t.credit) - abs(transactionWithFee.credit)
-
-            toRemove.add(initialTransactionIndex)
-            toRemove.add(i)
-
-        for index in sorted(toRemove, reverse=True):
-            self.transactions.pop(index)
-
-    def exclude(self, filter: str):
-        self.transactions = [t for t in self.transactions if filter.lower() not in t.description.lower() and filter.lower() not in t.type.name.lower()]
-
-    def filterByCategory(self, category: TransactionType):
-        
-        if isinstance(category, str): # turn the category into an enum
-            category = next((catEnum for catEnum in TransactionType.__iter__() if catEnum.name == category), TransactionType.other)
-
-        self.transactions = [t for t in self.transactions if t.type == category]
-
-    def filterByAccount(self, filter: str):
-        self.transactions = [t for t in self.transactions if filter.lower() in t.accountName.lower()]
-
-    def filterBySubstring(self, filter: str):
-        self.transactions = [t for t in self.transactions if filter.lower() in t.description.lower()]
-
-    def dateFilter(self, lowerBound: datetime.date, upperBound: datetime.date):
-        self.transactions = [t for t in self.transactions if t.date >= lowerBound and t.date <= upperBound]
-
-    def addTotal(self):
-        
-        if len(self.transactions) == 0:
-            return
-
-        total = Transaction(self.transactions[0].currency)
-        total.balance = self.transactions[0].balance
-        total.description = 'TOTAL'
-        total.type = str('TOTAL')
-
-        for t in self.transactions:
-            total.credit += t.credit
-            total.feeAmount += t.feeAmount
-
-        self.transactions.append(total)
-
-    def prepareForPrettyPrint(self):
-
-        for t in self.transactions:
-
-            t.__delattr__('uniqueId')
-            t.__delattr__('feePercentage')
-            # t.feePercentage = round(t.feePercentage, 4)
-
-            # Make date readable as in (3 Jan 2024)
-            if t.date:
-                t.date = t.date.strftime('%d %b %Y')
-
-            # Strip description to 40 characters
-            # if len(t.description) > 40:
-            #     t.description = t.description[:37] + '...'
+    def isEmpty(self) -> bool:
+        return all(value is None for value in self.__dict__.values())

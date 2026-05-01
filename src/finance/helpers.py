@@ -47,14 +47,3 @@ def parseFloat(value: str | float) -> float:
 
     value = value.replace(',', '')
     return float(value)
-
-def tryParseFloat(s: str) -> str | float:
-
-    s = str(s)
-
-    try:
-        s = float(s)
-    except ValueError:
-        pass
-    finally:
-        return s

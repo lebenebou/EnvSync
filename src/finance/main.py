@@ -1,6 +1,5 @@
 
 import sys, os
-import shutil
 import argparse
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -14,157 +13,18 @@ from utils.output import printObjectList
 if GlobalEnv().accessEncryptedFiles(cmdFallback=True) != 0:
     exit(1)
 
-REPORTS_DIR = os.path.join(GlobalEnv().encryptedPath, "finance")
-MASTER_EXCEL_FILE = os.path.join(REPORTS_DIR, "master.xlsx")
+ENC_FINANCE_DIR = os.path.join(GlobalEnv().encryptedPath, "finance")
 
-import datetime
+REPORTS_DIR = os.path.join(ENC_FINANCE_DIR, "reports")
+CACHE_DIR = os.path.join(ENC_FINANCE_DIR, "cached")
+
+from datetime import datetime
 import pandas
-from openpyxl import load_workbook
-import pdfplumber
 
-from finance.Transaction import Transaction, TransactionType, Series, Currency
-from finance.helpers import parseDate, parseFloat, tryParseFloat
-
-def cacheSeries(series: Series):
-
-    print(f'Caching series with {len(series.transactions)} transactions...', end=' ', flush=True, file=sys.stderr)
-
-    if len(series.transactions) == 0:
-        print('0 transactions to cache.', flush=True, file=sys.stderr)
-        return
-
-    csvFilePath = os.path.join(REPORTS_DIR, 'cached.csv')
-    if os.path.exists(csvFilePath):
-        os.remove(csvFilePath)
-
-    print(f'(to {csvFilePath})', flush=True, file=sys.stderr)
-    dataFrame = series.toDataFrame()
-    dataFrame.to_csv(csvFilePath, index=False)
-
-    today: str = datetime.datetime.now().strftime('%Y_%m_%d')
-    GlobalEnv().updateEncryptedFiles(f'update finance transactions as of {today}', cmdFallback=True)
-
-def transactionsFromBankAudiPDF(pdfPath: str, cacheAfterParsing: bool = True) -> list[Transaction]:
-
-    print(f'Parsing Bank Audi {os.path.basename(pdfPath)}', end=' ', flush=True, file=sys.stderr)
-
-    data: list[list[str]] = []
-    with pdfplumber.open(pdfPath) as pdf:
-
-        for page in pdf.pages:
-            tables = page.extract_tables()
-
-            for table in tables:
-                data.extend(table)
-
-    # remove newlines from cells
-    for i, row in enumerate(data):
-        data[i] = list(map(lambda cell: cell.replace('\n', ' ') if cell else None, row))
-
-    # only keep transaction rows
-    firstTransactionIndex = 0
-    for i, row in enumerate(data):
-        if any(map(lambda cell : cell.lower().count('transaction') if cell else False, row)):
-            firstTransactionIndex = i
-            break
-
-    data = data[firstTransactionIndex:]
-
-    dataFrame: pandas.DataFrame = pandas.DataFrame(data[1:], columns=data[0])
-    
-    dataFrame.drop(columns=['Long Description'], inplace=True)
-
-    # Some rows will have half of their values on the next page on the pdf
-    for i, row in dataFrame.iterrows():
-        if all(row): # skip full row
-            continue
-
-        for j in range(len(row)):
-            if row.iloc[j] == None:
-                continue
-
-            dataFrame.iloc[i-1, j] = dataFrame.iloc[i-1, j] + row.iloc[j] # join with the row above, in the row above
-            row.iloc[j] = None # to make the whole row None
-
-    # drop empty
-    dataFrame.dropna(how='all', inplace=True)
-
-    transactions: list[Transaction] = []
-    for _, row in dataFrame.iterrows():
-
-        t = Transaction()
-
-        t.uniqueId = row['Serial Number'].replace(' ', '')
-        t.uniqueId = int(t.uniqueId)
-
-        t.date = parseDate(row['Transaction Date'])
-        t.description = str(row['Description'])
-
-        t.credit = parseFloat(row['Credit'])
-
-        if t.credit == 0:
-            t.credit = -1 * parseFloat(row['Debit'])
-
-        t.balance = parseFloat(row['Running Balance'])
-
-        t.guessAndFillType()
-        t.accountName = 'Bank Audi'
-        transactions.append(t)
-
-    print(f'Parsed {len(transactions)} transactions.', flush=True, file=sys.stderr)
-
-    if cacheAfterParsing:
-
-        cachedPdfPath = os.path.join(REPORTS_DIR, 'audi_copy.pdf')
-        shutil.copy(pdfPath, cachedPdfPath)
-
-        os.remove(pdfPath)
-        with open(pdfPath, 'wb') as f:
-            pass # create empty pdf
-
-    return transactions
-
-def transactionsFromRevolutCSV(csvFilePath: str) -> list[Transaction]:
-
-    print(f'Parsing Revolut {os.path.basename(csvFilePath)}', end=' ', flush=True, file=sys.stderr)
-
-    dataFrame: pandas.DataFrame = pandas.read_csv(csvFilePath)
-    transactions: list[Transaction] = []
-
-    for _, row in dataFrame.iterrows():
-
-        knownStates = ['COMPLETED', 'PENDING', 'REVERTED']
-        if row['State'] not in knownStates:
-            print(f'[WARN] unknown revolut transaction state: {row["State"]}', flush=True, file=sys.stderr)
-            continue
-
-        t = Transaction(currency=row['Currency'])
-
-        t.description = row['Description']
-
-        revolutDateFormat: str = '%Y-%m-%d %H:%M:%S'
-        initialDate: str = row['Started Date'] # example: 8/13/2025 11:12
-
-        t.date = parseDate(initialDate, revolutDateFormat)
-        time = datetime.datetime.strptime(initialDate, revolutDateFormat)
-        t.uniqueId = int(time.timestamp())
-
-        t.credit = parseFloat(row['Amount'])
-
-        if row['State'] == 'REVERTED':
-            t.credit = abs(t.credit)
-
-        t.feeAmount = parseFloat(row['Fee'])
-        t.balance = parseFloat(row['Balance'])
-
-        t.accountName = 'Revolut'
-        t.guessAndFillType()
-        t.convertStringAttributes()
-
-        transactions.append(t)
-
-    print(f'Parsed {len(transactions)} transactions.', flush=True, file=sys.stderr)
-    return transactions
+from finance.Transaction import Transaction, TransactionFilter, TransactionType, Currency
+from finance.Account import Account, cacheAccount
+from finance.Portfolio import Portfolio
+from finance.adapters import transactionsFromBankAudiPDF, transactionsFromRevolutCSV
 
 def transactionsFromCachedCsv(csvFilePath: str) -> list[Transaction]:
 
@@ -182,29 +42,6 @@ def transactionsFromCachedCsv(csvFilePath: str) -> list[Transaction]:
 def getLatestCachedCsvFile() -> str:
     return os.path.join(REPORTS_DIR, 'cached.csv')
 
-def updateMasterExcelWithNewTransactions(fullData: pandas.DataFrame) -> int:
-
-    print(f'Updating master excel with {len(fullData)} row(s)...', flush=True, file=sys.stderr)
-
-    book = load_workbook(MASTER_EXCEL_FILE)
-    sheet = book.active
-
-    # delete all except headers
-    sheet.delete_rows(2, sheet.max_row-1)
-
-    for i, row in fullData.iterrows():
-        for j, value in enumerate(row, start=1):
-            sheet.cell(row=i+2, column=j, value=tryParseFloat(value))
-
-    try:
-        book.save(MASTER_EXCEL_FILE)
-    except PermissionError:
-        print(f'Could not save to file: {MASTER_EXCEL_FILE}', file=sys.stderr)
-        print(f'It might be open in excel, please close it', file=sys.stderr)
-        return 1
-
-    return 0
-
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Parse an account activity report from Bank Audi')
@@ -215,13 +52,12 @@ if __name__ == '__main__':
 
     fileType = parser.add_mutually_exclusive_group()
     fileType.add_argument('--refresh', action='store_true', help='Parse and cache "./Reports/audi.pdf"')
-    fileType.add_argument('--open', action='store_true', help='Update and open the main transactions excel file')
 
     # String filters
     filterArg = parser.add_argument_group()
     filterArg.add_argument('-a', '--account', type=str, help='--account=X: only transactions for account X')
     filterArg.add_argument('-d', '--desc', type=str, help='--desc=X: only transactions with "X" in the description')
-    filterArg.add_argument('-t', '--type', type=str, help='--type=C: only transactions of type C')
+    filterArg.add_argument('-t', '--type', type=str, help='--type=X: only transactions of type X')
     filterArg.add_argument('-x', '--exclude', type=str, help='--exclude=X: exclude transactions with "X" in the description or category')
 
     # Date filters
@@ -229,12 +65,12 @@ if __name__ == '__main__':
     filterArg.add_argument('--before', type=str, help='--before=dd-mm-yyyy: only transactions before this date', default=None)
 
     # Currency
-    parser.add_argument('-c', '--currency', type=str, help='Example: --currency=EUR, convert all transactions to this currency', default='EUR')
+    parser.add_argument('-c', '--currency', type=str, help='Example: --currency=EUR, convert all transactions to this currency', default='USD')
 
     args = parser.parse_args()
 
     transactions: list[Transaction] = []
-    series: Series = None
+    portfolio: Portfolio = None
 
     if args.refresh:
 
@@ -243,61 +79,54 @@ if __name__ == '__main__':
             print(f'Looks like there is nothing to refresh from.\nMake sure {audiPdf} exists and is not empty.', file=sys.stderr)
             exit(1)
 
-        series = Series('USD', transactionsFromBankAudiPDF(audiPdf))
-        series.extend(transactionsFromRevolutCSV(os.path.join(REPORTS_DIR, 'revolut_eur.csv')) )
-        series.extend(transactionsFromRevolutCSV(os.path.join(REPORTS_DIR, 'revolut_usd.csv')) )
-        cacheSeries(series)
-    else:
-        transactions = transactionsFromCachedCsv(getLatestCachedCsvFile())
-        series = Series('USD', transactions)
+        bankAudi = Account('Bank Audi', 'USD', transactionsFromBankAudiPDF(audiPdf, cacheAfterParsingPath=os.path.join(REPORTS_DIR, 'audi_copy.pdf')))
+        revolutUsd = Account('Revolut USD', 'USD', transactionsFromRevolutCSV(os.path.join(REPORTS_DIR, 'revolut_usd.csv')))
+        revolutEur = Account('Revolut EUR', 'EUR', transactionsFromRevolutCSV(os.path.join(REPORTS_DIR, 'revolut_eur.csv')))
 
-    if args.open:
-        returnCode: int = updateMasterExcelWithNewTransactions(series.toDataFrame())
+        cacheAccount(bankAudi)
+        cacheAccount(revolutUsd)
+        cacheAccount(revolutEur)
 
-        if returnCode != 0:
-            exit(returnCode)
+        today: str = datetime.now().strftime('%Y-%m-%d')
+        GlobalEnv().updateEncryptedFiles(f'update finance transactions as of {today}', cmdFallback=True)
 
-        os.startfile(MASTER_EXCEL_FILE)
-        exit(0)
+    else: # if not refreshing, read from cached csv
+        
+        bankAudi = Account('Bank Audi', 'USD', transactionsFromCachedCsv(os.path.join(CACHE_DIR, 'bank_audi.csv')))
+        revolutUsd = Account('Revolut USD', 'USD', transactionsFromCachedCsv(os.path.join(CACHE_DIR, 'revolut_usd.csv')))
+        revolutEur = Account('Revolut EUR', 'EUR', transactionsFromCachedCsv(os.path.join(CACHE_DIR, 'revolut_eur.csv')))
 
-    if args.account:
-        series.filterByAccount(args.account)
+    portfolio = Portfolio('USD')
+    portfolio.withAccount(bankAudi)
+    portfolio.withAccount(revolutUsd)
+    portfolio.withAccount(revolutEur)
 
-    if args.desc:
-        series.filterBySubstring(args.desc)
+    filter: TransactionFilter = TransactionFilter()
+    filter.account = args.account
+    filter.description = args.desc
+    filter.type = TransactionType[str(args.type)] if args.type else None
 
-    if args.type:
+    if args.after:
+        filter.dateLowerBound = datetime.strptime(args.after, "%d-%m-%Y").date()
+    if args.before:
+        filter.dateUpperBound = datetime.strptime(args.before, "%d-%m-%Y").date()
 
-        if not args.type in (t.name for t in TransactionType.__iter__()):
-            print(f'Not a supported transaction type: {args.type}', file=sys.stderr)
-
-        series.filterByCategory(args.type)
+    portfolio.withFilter(filter)
 
     if args.exclude:
-        series.exclude(args.exclude)
+        print(f'Exclude filter not implemented yet, ignoring --exclude={args.exclude}', flush=True, file=sys.stderr)
 
-    dateLowerBound = '01-01-1970'
-    dateLowerBound = datetime.datetime.strptime(dateLowerBound, "%d-%m-%Y").date()
-    if args.after:
-        dateLowerBound = datetime.datetime.strptime(args.after, "%d-%m-%Y").date()
-
-    dateUpperBound = '01-01-2099'
-    dateUpperBound = datetime.datetime.strptime(dateUpperBound, "%d-%m-%Y").date()
-    if args.before:
-        dateUpperBound = datetime.datetime.strptime(args.before, "%d-%m-%Y").date()
-
-    if args.after or args.before:
-        series.dateFilter(dateLowerBound, dateUpperBound)
+    portfolioAccount: Account = portfolio.build()
 
     assert Currency.currencySupported(args.currency), f'Currency not supported: {args.currency}'
-    series.convertToCurrency(args.currency)
+    portfolioAccount.convertToCurrency(args.currency)
 
     if not args.csv:
-        series.addTotal()
-        series.prepareForPrettyPrint()
+        portfolioAccount.addTotal()
+        [t.prepareForPrettyPrint() for t in portfolioAccount.transactions]
 
     pipedOutput = bool(not sys.stdout.isatty())
-    filterApplied = bool(args.account or args.desc or args.type or args.after or args.before or args.exclude)
+    filterApplied = bool(args.desc or args.type or args.after or args.before)
 
     fullOutput: bool = False
     fullOutput |= filterApplied
@@ -306,9 +135,9 @@ if __name__ == '__main__':
     fullOutput |= args.csv
 
     if fullOutput:
-        printObjectList(series.transactions, args.csv)
+        printObjectList(portfolioAccount.transactions, args.csv)
         exit(0)
 
-    printObjectList(series.transactions[:20], csv=False)
+    printObjectList(portfolioAccount.transactions[:20], csv=False)
     print(f'\n...<only showing 20>', file=sys.stderr)
     exit(0)
