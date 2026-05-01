@@ -31,12 +31,13 @@ def transactionsFromCachedCsv(csvFilePath: str) -> list[Transaction]:
     dataFrame: pandas.DataFrame = pandas.read_csv(csvFilePath)
     transactions: list[Transaction] = []
     
-    print(f'Parsing transactions from dataframe {csvFilePath}', flush=True, file=sys.stderr)
+    print(f'Parsing from dataframe {csvFilePath}...', end=' ', flush=True, file=sys.stderr)
 
     for _, row in dataFrame.iterrows():
         t = Transaction.fromDataFrameRow(row)
         transactions.append(t)
 
+    print(f'{len(transactions)} transactions)', flush=True, file=sys.stderr)
     return transactions
 
 def getLatestCachedCsvFile() -> str:

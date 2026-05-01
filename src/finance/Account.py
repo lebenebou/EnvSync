@@ -4,6 +4,7 @@ import os, sys
 import pandas
 import datetime
 
+from GlobalEnv import GlobalEnv
 from helpers import percentageDifference
 from utils.stringcompare import compareStrings
 
@@ -13,7 +14,9 @@ class Account:
 
     def __init__(self, name: str, currency: str, transactions: list[Transaction], maxPercentageFee: int = 15, similarityConfidance: int = 60):
 
-        print(f'Creating account... ({name} in {currency} - ', end='', flush=True, file=sys.stderr)
+        if GlobalEnv().loggingEnabled:
+            print(f'Creating account... ({name} in {currency} - ', end='', flush=True, file=sys.stderr)
+
         self.name: str = name
 
         self.maxPercentageFee: int = maxPercentageFee
@@ -28,7 +31,8 @@ class Account:
 
         self.sortByDate()
 
-        print(f'{len(self.transactions)} transactions)', flush=True, file=sys.stderr)
+        if GlobalEnv().loggingEnabled:
+            print(f'{len(self.transactions)} transactions)', flush=True, file=sys.stderr)
 
     # hash operator for the set
     def __hash__(self):
