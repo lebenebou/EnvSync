@@ -80,6 +80,7 @@ if __name__ == '__main__':
             exit(1)
 
         bankAudi = Account('Bank Audi', 'USD', transactionsFromBankAudiPDF(audiPdf, cacheAfterParsingPath=os.path.join(REPORTS_DIR, 'audi_copy.pdf')))
+        bankAudi.normalizeTransactionsWithFees()
         revolutUsd = Account('Revolut USD', 'USD', transactionsFromRevolutCSV(os.path.join(REPORTS_DIR, 'revolut_usd.csv')))
         revolutEur = Account('Revolut EUR', 'EUR', transactionsFromRevolutCSV(os.path.join(REPORTS_DIR, 'revolut_eur.csv')))
 

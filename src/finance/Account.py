@@ -30,10 +30,6 @@ class Account:
 
         print(f'{len(self.transactions)} transactions)', flush=True, file=sys.stderr)
 
-        if self.name.lower().count('audi'):
-            print(f'Normalizing fees for {self.name}...', flush=True, file=sys.stderr)
-            self.normalizeTransactionsWithFees()
-
     # hash operator for the set
     def __hash__(self):
         return hash((self.name.lower(), self.currency.lower()))
