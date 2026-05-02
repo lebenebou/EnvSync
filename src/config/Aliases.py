@@ -326,7 +326,6 @@ class Echo(Exec):
 
         super().__init__('echo')
         self.addArg(message)
-        self.tag = 'Open link'
 
     def toOutput(self, outputType: int = 1):
 
