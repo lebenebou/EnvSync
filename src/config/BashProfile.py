@@ -46,7 +46,7 @@ def mxdevenvOptions() -> list[ConfigOption]:
     Alias('debugme').to('mde envDebug -v $(version) -clientPath /d/apps/$(version)*').inParallel().withTag('DebugMe++'),
 
     # drive mapping
-    Alias('drivesmapped').to('[ -d "/u" ]').then('echo $?').withTag('Drive Mapping'),
+    Alias('drivesmapped').to('[ -d "/u" ]').then(Echo('$?')).withTag('Drive Mapping'),
     Alias('unmapdrives').to('start').addPath(os.path.join(mxdevenvUtilityScriptsPath, 'mapsremove.bat')).withTag('Drive Mapping'),
     Alias('mapdrives').to('unmapdrives').delay(1).andThen('start').addPath(os.path.join(mxdevenvUtilityScriptsPath, 'mapsFR.vbs')).delay(0.5).andThen('ls /u').withTag('Drive Mapping'),
 
@@ -73,9 +73,9 @@ def mxVersionManagementOptions() -> list[ConfigOption]:
     options: list[ConfigOption] = [
 
     # MxVersion
-    Alias('version').to(f'echo {CURRENT_VERSION}').withTag('MxVersion'),
+    Alias('version').to(Echo(CURRENT_VERSION)).withTag('MxVersion'),
     Alias('clipVersion').to('version').tee('clip').withTag('MxVersion'),
-    Alias('oldversion').to(f'echo {OLD_VERSION}').withTag('MxVersion'),
+    Alias('oldversion').to(Echo(OLD_VERSION)).withTag('MxVersion'),
 
     # MxVersion manipulation
     Alias('cdversion').to(cdInto('/d/$(version)')).withTag('MxVersion Manipulation'),
@@ -117,12 +117,12 @@ def murexWelcomeMessage() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
 
-    Exec(f'echo Hello yoyammine!'),
     Echo('Active version:').addArg('$(version)'),
-    Exec('echo -e \n'),
+    Echo('-e \n'),
     p4helperScript.addArg('--unmerged').withComment('Check for defects not yet in mainstream'),
 
-    Exec('ls /u').muteOutput(3).ifFailed('echo "[WARNING]: Drives aren\'t mapped!"'),
+    Exec('ls /u').muteOutput(),
+    IfPreviousFailed(EchoWarning('Drives aren\'t mapped!')).Else(EchoSuccess('Drives mapped')),
 
     ]
 
@@ -163,7 +163,7 @@ def murexCliOptions() -> list[ConfigOption]:
     Alias('p4helper').to(p4helperScript).withTag('P4 Helpers'),
     Alias('psubmit').to('p4helper').addArg('--submit').addArg('"$(paste)"').withTag('P4 Helpers'),
     Alias('submit').to('p4helper --submit').withTag('P4 Helpers'),
-    Alias('isItMerged').to('echo "looking for $(paste)..."').andThen('p4helper --me --build').pipe('greppaste').withTag('P4 Helpers'),
+    Alias('isItMerged').to(Echo('looking for $(paste)...')).andThen('p4helper --me --build').pipe('greppaste').withTag('P4 Helpers'),
     Alias('dtk').to('start').addPath('D:\\tools\\dtk\\tk.3.rc.1\\toolkit.bat').withTag('P4 Helpers'),
 
     # Jira
@@ -217,7 +217,8 @@ def vimPlugins() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
 
-        checkVimPlugInstalled.ifFailed(Exec('( echo vimplug not found, installing...').andThen(downloadVimPlug)).addArg(')'),
+        checkVimPlugInstalled,
+        IfPreviousFailed(EchoWarning('vim-plug not found, installing...').andThen(downloadVimPlug)),
     ]
 
     for option in options:
@@ -237,7 +238,7 @@ def fdCommandUtilities() -> list[ConfigOption]:
     zipUrl: str = 'https://github.com/sharkdp/fd/releases/download/v10.3.0/fd-v10.3.0-i686-pc-windows-msvc.zip'
 
     downloadFdZip = Exec('curl -Ls').addArg(zipUrl).addArg('-o').addPath(zipFilePath)
-    unzipFd = Exec('unzip.exe').addPath(zipFilePath).addArg('-d').addPath(GlobalEnv().repoBinPath).muteOutput(3)
+    unzipFd = Exec('unzip.exe').addPath(zipFilePath).addArg('-d').addPath(GlobalEnv().repoBinPath).muteOutput()
     renameExtractedZip = Exec('mv').addPath(Path(GlobalEnv().repoBinPath) / 'fd-v10.3.0-i686-pc-windows-msvc').addPath(fdFolder)
 
     updateFd = clearFdFolder.andThen(downloadFdZip).andThen(unzipFd).andThen(renameExtractedZip).andThen(Exec('rm').addPath(zipFilePath))
@@ -248,7 +249,8 @@ def fdCommandUtilities() -> list[ConfigOption]:
 
         Alias('find').to('fd'),
 
-        checkFdInstalled.ifFailed(Exec('( echo fd not found, installing...').andThen(updateFd)).addArg(')'),
+        checkFdInstalled,
+        IfPreviousFailed(EchoWarning('fd not found, installing...').andThen(updateFd)),
         Alias('updatefd').to(updateFd),
     ]
 
@@ -269,7 +271,7 @@ def batUtilityAliases() -> list[ConfigOption]:
     zipUrl: str = 'https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-pc-windows-msvc.zip'
 
     downloadBatZip = Exec('curl -L').addArg(zipUrl).addArg('-o').addPath(zipFilePath).addArg('-s')
-    unzipBat = Exec('unzip.exe').addPath(zipFilePath).addArg('-d').addPath(GlobalEnv().repoBinPath).muteOutput(3)
+    unzipBat = Exec('unzip.exe').addPath(zipFilePath).addArg('-d').addPath(GlobalEnv().repoBinPath).muteOutput()
     renameExtractedZip = Exec('mv').addPath(Path(GlobalEnv().repoBinPath) / 'bat-v0.26.1-x86_64-pc-windows-msvc').addPath(batFolder)
 
     updateBat = clearBatFolder.andThen(downloadBatZip).andThen(unzipBat).andThen(renameExtractedZip).andThen(Exec('rm').addPath(zipFilePath))
@@ -279,7 +281,8 @@ def batUtilityAliases() -> list[ConfigOption]:
         Alias('bat').to(batFolder / 'bat.exe'),
         Alias('cat').to('bat'),
 
-        checkBatInstalled.ifFailed(Exec('( echo bat not found, installing...').andThen(updateBat)).addArg(')'),
+        checkBatInstalled,
+        IfPreviousFailed(EchoWarning('bat not found, installing...').andThen(updateBat)),
         Alias('updatebat').to(updateBat),
     ]
 
@@ -302,7 +305,8 @@ def jqUtilityAliases() -> list[ConfigOption]:
         Alias('updatejq').to(installLatestjq),
         Alias('jq').to(jqExePath),
 
-        checkJqInstalled.ifFailed(Exec('( echo jq not found, installing...').andThen(installLatestjq)).addArg(')'),
+        checkJqInstalled,
+        IfPreviousFailed(EchoWarning('jq not found, installing...').andThen(installLatestjq)),
     ]
 
     for option in options:
@@ -324,12 +328,6 @@ def usualShellAliases() -> list[ConfigOption]:
 
     Alias('commit').to('git commit').withTag('Git'),
     Alias('commitFromClipBoard').to('git commit -m "$(paste)"').withTag('Git'),
-
-    Function('commitFromJiraId').thenExecute([
-        # save the commit message from jira id passed as argument 1
-        Exec('description=$(jira --id $1)').ifFailed(Echo('Jira ID $1 not found!').andThen('return 1')),
-        Exec('git commit -m "$description"'),
-        ]).withTag('Git').withScope(ConfigScope.MUREX),
 
     Alias('amend').to('git commit --amend').withTag('Git'),
     Alias('push').to('git push').withTag('Git'),
@@ -363,7 +361,7 @@ def usualShellAliases() -> list[ConfigOption]:
 
     # network
     Alias('connected').to('curl -s www.google.com').muteOutput().withTag('network'),
-    Alias('checkConnection').to('connected').then('echo $?').withTag('network'),
+    Alias('checkConnection').to('connected').then(Echo('$?')).withTag('network'),
 
     SectionFromFile('unzip_to_dir.sh'),
 
@@ -374,20 +372,21 @@ def usualShellAliases() -> list[ConfigOption]:
 def initSSH() -> list[ConfigOption]:
 
     killAllSshAgents = Exec('ps aux').grep('ssh-agent').pipe('awk').addArg("'{print $1}'").pipe('xargs -r kill')
-    startNewSshAgent = Exec('eval "$(ssh-agent -s)"').muteOutput(3)
+    startNewSshAgent = Exec('eval "$(ssh-agent -s)"').muteOutput()
 
-    attemptPrivateKeyDecryption = RunPython(Path(GlobalEnv().repoRootPath) / 'src' / 'GlobalEnv.py').muteOutput(3).addArg('--decrypt')
-    printFailureMessage = Exec('echo -n SSH Failed. config.json might contain a bad passphrase')
+    attemptPrivateKeyDecryption = RunPython(Path(GlobalEnv().repoRootPath) / 'src' / 'GlobalEnv.py').muteOutput().addArg('--decrypt')
 
     options: list[ConfigOption] = [
 
-    Exec('echo Init SSH...'),
+    Echo(r'-ne Init SSH...\\r'),
     killAllSshAgents,
     startNewSshAgent,
 
     attemptPrivateKeyDecryption\
-        .andThen('ssh-add').addPath(Path(GlobalEnv().repoRootPath) / 'encrypted' / 'github_key').muteOutput(3).withTag('Start Git SSH')\
-            .ifFailed(printFailureMessage),
+        .andThen('ssh-add').addPath(Path(GlobalEnv().repoRootPath) / 'encrypted' / 'github_key').muteOutput().withTag('Start Git SSH'),
+
+    IfPreviousFailed(EchoError('SSH Failed. config.json might contain a bad passphrase'))\
+        .Else(EchoSuccess('Init SSH')),
 
     cdInto(GlobalEnv().repoRootPath).withComment('Set git remote to use SSH for EnvSync repo'),
     Exec('git remote set-url origin git@github.com:lebenebou/EnvSync.git'),
@@ -571,6 +570,25 @@ def windowsAliases() -> list[ConfigOption]:
 
     return options
 
+def requirementsTests() -> list[ConfigOption]:
+
+    checkPythonInstalled = Exec('python -V').muteOutput()
+    importRequirements = Exec('cat').addPath(Path(GlobalEnv().repoRootPath) / 'requirements.txt').pipe('sed "s/^/import /"').pipe('python -')
+
+    options: list[ConfigOption] = [
+
+        Echo(r'-ne Checking requirements...\\r'),
+        checkPythonInstalled.andThen(importRequirements),
+
+        IfPreviousSucceeded(EchoSuccess('Requirements check'))\
+            .Else(EchoError('Failed to import requirements.')),
+    ]
+
+    # for option in options:
+        # option.withTag('Requirements Check')
+
+    return options
+
 if __name__ == "__main__":
 
     # parse args
@@ -595,6 +613,9 @@ if __name__ == "__main__":
     *configAliases(),
     *vsCodeAliases(),
 
+    Echo(r'-e \\nWelcome $(whoami)!\\n').withScope(ConfigScope.COMMON).withTag('Welcome message'),
+    *requirementsTests(),
+
     *vimPlugins(),
     *windowsAliases(),
     *jqUtilityAliases(),
@@ -616,7 +637,7 @@ if __name__ == "__main__":
 
     cdInto(GlobalEnv().repoRootPath).withComment('Set EnvSync repo as starting directory').withTag('Starting Directory'),
 
-    Echo('Bashprofile simulation done.').withTag('Completion Message').onlyIfThroughScript(),
+    EchoSuccess('Bashprofile simulation done.').withTag('Completion Message').onlyIfThroughScript(),
 
     ]
 

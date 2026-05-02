@@ -118,7 +118,7 @@ class Exec(ConfigOption):
         return self
 
     def addArg(self, arg: str):
-        arg = arg.strip()
+        arg = arg.strip(' \t\r')
         self.args.append(arg)
         return self
 
@@ -144,14 +144,14 @@ class Exec(ConfigOption):
         assert self.aliasName is None, "onlyIfThroughScript cannot be used on an alias"
 
         prependExec = Exec('[[ -n "$PS1" ]]')
-        return prependExec.ifFailed(self)
+        return prependExec.addArg('||').addCommand(self)
 
     def onlyIfThroughGitBash(self):
 
         assert self.aliasName is None, "onlyIfThroughGitBash cannot be used on an alias"
 
         prependExec = Exec('[[ -z "$PS1" ]]')
-        return prependExec.ifFailed(self)
+        return prependExec.addArg('||').addCommand(self)
 
     def andThen(self, command: str):
         self.addArg('&&')
@@ -161,10 +161,8 @@ class Exec(ConfigOption):
         self.addArg(';')
         return self.addCommand(command)
 
-    def ifFailed(self, command: str):
-        self.addArg('||')
-        return self.addCommand(command)
-
+    def forceFail(self):
+        return self.then('false')
 
     def delay(self, seconds: int):
         return self.andThen(f'sleep {seconds}')
@@ -320,11 +318,41 @@ class OpenLink(Exec):
         self.addArg(link)
         self.tag = 'Open link'
 
+class IfStatement(Exec):
+
+    def __init__(self, condition: str, command: str | Exec):
+
+        super().__init__(f'if {condition}; then\n')
+        self.addCommand(command).addArg('\n')
+
+    def Else(self, command: str | Exec):
+
+        self.addArg('else\n')
+        self.addCommand(command).addArg('\n')
+        return self
+
+    # override
+    def toString(self) -> str:
+        self.args.append('fi')
+        return super().toString()
+
+class IfPreviousFailed(IfStatement):
+    def __init__(self, command: str | Exec):
+        super().__init__('[ $? -ne 0 ]', command)
+
+class IfPreviousSucceeded(IfStatement):
+    def __init__(self, command: str | Exec):
+        super().__init__('[ $? -eq 0 ]', command)
+
 class Echo(Exec):
 
     def __init__(self, message: str):
 
         super().__init__('echo')
+
+        if message is None:
+            message = ''
+
         self.addArg(message)
 
     def toOutput(self, outputType: int = 1):
@@ -337,6 +365,33 @@ class Echo(Exec):
             self.addArg(f'>{outputType}>&1')
 
         return self
+
+class EchoError(Echo):
+
+    def __init__(self, message: str):
+
+        message = f'[ ERR] {message}'
+        # print message in RED
+        message = f'\033[91m{message}\033[0m'
+        super().__init__(message)
+
+class EchoSuccess(Echo):
+
+    def __init__(self, message: str):
+
+        message = f'[DONE] {message}'
+        # print message in GREEN
+        message = f'\033[92m{message}\033[0m'
+        super().__init__(message)
+
+class EchoWarning(Echo):
+
+    def __init__(self, message: str):
+
+        message = f'[WARN] {message}'
+        # print message in YELLOW
+        message = f'\033[93m{message}\033[0m'
+        super().__init__(message)
 
 class InlinePython(RunPython):
 
