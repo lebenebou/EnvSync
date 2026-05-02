@@ -2,3 +2,4 @@ pandas
 pyperclip
 pyautogui
 tabulate
+pdfplumber
