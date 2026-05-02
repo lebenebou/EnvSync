@@ -14,7 +14,9 @@ def printPasteContent() -> int:
         print(pasteContent, end='', file=sys.stdout)
 
     finally: # avoid BrokenPipeError
-        return 0
+        pass
+
+    return 0
 
 def copyFileContent(filePath: str):
 
