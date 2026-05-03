@@ -441,7 +441,22 @@ def envSyncAliases() -> list[ConfigOption]:
 
     ]
 
-    return options
+    generateBashProfile = RunPython(CURRENT_FILE).muteOutput(2)
+    checkDiff = Exec('diff -Bwq').addPath(globalEnv.getBashProfilePath()).addArg(f'<({generateBashProfile.toString()})')
+    bashProfileCompareOptions: list[ConfigOption] = [
+
+        Echo(r'-ne Checking bashprofile...\\r'),
+        checkDiff.muteOutput(),
+
+        IfPreviousSucceeded(EchoSuccess('Bashprofile up to date'))\
+            .Else(EchoWarning('Bashprofile might be outdated. Consider running init.sh')),
+
+    ]
+
+    for option in bashProfileCompareOptions:
+        option.withTag('BashProfile Check')
+
+    return bashProfileCompareOptions + options
 
 def windowsAliases() -> list[ConfigOption]:
 
