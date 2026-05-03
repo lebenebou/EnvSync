@@ -227,94 +227,6 @@ def vimPlugins() -> list[ConfigOption]:
 
     return options
 
-def fdCommandUtilities() -> list[ConfigOption]:
-
-    fdFolder = Path(GlobalEnv().repoBinPath) / 'fd'
-    zipFilePath = Path(GlobalEnv().repoBinPath) / 'fd.zip'
-
-    checkFdInstalled = Exec(f'[ -f "{(fdFolder / "fd.exe").toLinuxPath()}" ]')
-    clearFdFolder = Exec('rm -rf').addPath(fdFolder).addPath(fdFolder)
-
-    zipUrl: str = 'https://github.com/sharkdp/fd/releases/download/v10.3.0/fd-v10.3.0-i686-pc-windows-msvc.zip'
-
-    downloadFdZip = Exec('curl -Ls').addArg(zipUrl).addArg('-o').addPath(zipFilePath)
-    unzipFd = Exec('unzip.exe').addPath(zipFilePath).addArg('-d').addPath(GlobalEnv().repoBinPath).muteOutput()
-    renameExtractedZip = Exec('mv').addPath(Path(GlobalEnv().repoBinPath) / 'fd-v10.3.0-i686-pc-windows-msvc').addPath(fdFolder)
-
-    updateFd = clearFdFolder.andThen(downloadFdZip).andThen(unzipFd).andThen(renameExtractedZip).andThen(Exec('rm').addPath(zipFilePath))
-
-    options: list[ConfigOption] = [
-
-        Alias('fd').to(fdFolder / 'fd.exe').addArg('-iHI').addArg('-E .git').addArg('--glob').addArg('--no-ignore-vcs').withComment('case insensitive by default, exclude .git folders'),
-
-        Alias('find').to('fd'),
-
-        checkFdInstalled,
-        IfPreviousFailed(EchoWarning('fd not found, installing...').andThen(updateFd)),
-        Alias('updatefd').to(updateFd),
-    ]
-
-    for option in options:
-        option.withScope(ConfigScope.COMMON)
-        option.withTag('fd Utility')
-
-    return options
-
-def batUtilityAliases() -> list[ConfigOption]:
-
-    batFolder = Path(GlobalEnv().repoBinPath) / 'bat'
-    zipFilePath = Path(GlobalEnv().repoBinPath) / 'bat.zip'
-
-    checkBatInstalled = Exec(f'[ -f "{(batFolder / "bat.exe").toLinuxPath()}" ]')
-    clearBatFolder = Exec('rm -rf').addPath(batFolder).addPath(batFolder)
-
-    zipUrl: str = 'https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-pc-windows-msvc.zip'
-
-    downloadBatZip = Exec('curl -L').addArg(zipUrl).addArg('-o').addPath(zipFilePath).addArg('-s')
-    unzipBat = Exec('unzip.exe').addPath(zipFilePath).addArg('-d').addPath(GlobalEnv().repoBinPath).muteOutput()
-    renameExtractedZip = Exec('mv').addPath(Path(GlobalEnv().repoBinPath) / 'bat-v0.26.1-x86_64-pc-windows-msvc').addPath(batFolder)
-
-    updateBat = clearBatFolder.andThen(downloadBatZip).andThen(unzipBat).andThen(renameExtractedZip).andThen(Exec('rm').addPath(zipFilePath))
-
-    options: list[ConfigOption] = [
-
-        Alias('bat').to(batFolder / 'bat.exe'),
-        Alias('cat').to('bat'),
-
-        checkBatInstalled,
-        IfPreviousFailed(EchoWarning('bat not found, installing...').andThen(updateBat)),
-        Alias('updatebat').to(updateBat),
-    ]
-
-    for option in options:
-        option.withScope(ConfigScope.COMMON)
-        option.withTag('bat Utility')
-
-    return options
-
-def jqUtilityAliases() -> list[ConfigOption]:
-
-    jqLatestExeUrl = 'https://github.com/jqlang/jq/releases/latest/download/jq-win64.exe'
-    jqExePath = Path(GlobalEnv().repoRootPath) / 'bin' / 'jq.exe'
-
-    installLatestjq = Exec(f'curl -L {jqLatestExeUrl}').addArg('-o').addPath(jqExePath).addArg('-s')
-    checkJqInstalled = Exec(f'[ -f "{jqExePath.toLinuxPath()}" ]')
-
-    options: list[ConfigOption] = [
-
-        Alias('updatejq').to(installLatestjq),
-        Alias('jq').to(jqExePath),
-
-        checkJqInstalled,
-        IfPreviousFailed(EchoWarning('jq not found, installing...').andThen(installLatestjq)),
-    ]
-
-    for option in options:
-        option.withScope(ConfigScope.COMMON)
-        option.withTag('jq Utility')
-
-    return options
-
 def usualShellAliases() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
@@ -500,30 +412,6 @@ def vsCodeAliases() -> list[ConfigOption]:
 
     return options
 
-def configAliases() -> list[ConfigOption]:
-
-    globalEnv = GlobalEnv()
-    envSyncSrcPath = Path(globalEnv.repoSrcPath)
-
-    updateBashProfile = RunPython(CURRENT_FILE).addArg('--in_place')
-    updateVimrc = RunPython(envSyncSrcPath / 'config' / 'VimRC.py').addArg('--in_place')
-    syncVimPlugins = Exec('vim +PlugInstall +qall').andThen('vim +PlugClean +qall')
-
-    options: list[ConfigOption] = [
-
-    # BashProfile config
-    Alias('bashprofile').to('vim').addPath(globalEnv.getBashProfilePath()).withScope(ConfigScope.WINDOWS),
-    Alias('editbashprofile').to('vim').addPath(CURRENT_FILE),
-
-    Alias('sync').to(updateBashProfile).andThen(updateVimrc).andThen(syncVimPlugins),
-
-    ]
-
-    for op in options:
-        op.withTag('BashProfile config')
-
-    return options
-
 def envSyncAliases() -> list[ConfigOption]:
 
     globalEnv = GlobalEnv()
@@ -531,6 +419,10 @@ def envSyncAliases() -> list[ConfigOption]:
     utilsPath = (envSyncSrcPath / 'utils').withName('UTILS PATH')
 
     options: list[ConfigOption] = [
+
+    # EnvSync main
+    Alias('init').to(os.path.join(globalEnv.repoRootPath, 'init.sh')).withTag('EnvSync main'),
+    Alias('reset').to(os.path.join(globalEnv.repoRootPath, 'reset.sh')).withTag('EnvSync main'),
 
     # EnvSync utils
     Alias('aspath').to(RunPython(utilsPath / 'aspath.py').addArg('--from_stdin')).withTag('EnvSync utils'),
@@ -545,6 +437,7 @@ def envSyncAliases() -> list[ConfigOption]:
 
     # EnvSync personal
     Alias('money').to(RunPython(envSyncSrcPath / 'finance' / 'main.py')).withTag('EnvSync personal'),
+    Alias('theplan').to('start').addPath(os.path.join('G:\\', 'My Drive', 'THE_PLAN.xlsx')).withScope(ConfigScope.WINDOWS).withTag('EnvSync personal'),
 
     ]
 
@@ -575,19 +468,42 @@ def requirementsTests() -> list[ConfigOption]:
     checkPythonInstalled = Exec('python -V').muteOutput()
     importRequirements = Exec('cat').addPath(Path(GlobalEnv().repoRootPath) / 'requirements.txt').pipe('sed "s/^/import /"').pipe('python -')
 
-    options: list[ConfigOption] = [
+    exeFiles: list[str] = ['fd.exe', 'bat.exe', 'jq.exe']
+    outputExeFiles = Exec(f'find').addPath(GlobalEnv().repoBinPath).addArg('-type f -name "*.exe"')
+    outputVarName: str = 'exeOutput'
+    grepSeries = Exec(':')
+
+    for exe in exeFiles:
+        grepSeries.andThen(Echo(f'"${outputVarName}"').pipe('grep -q').addArg(exe))
+
+    pythonImportOptions: list[ConfigOption] = [
 
         Echo(r'-ne Checking requirements...\\r'),
         checkPythonInstalled.andThen(importRequirements),
 
-        IfPreviousSucceeded(EchoSuccess('Requirements check'))\
+        IfPreviousSucceeded(EchoSuccess('Python requirements check'))\
             .Else(EchoError('Failed to import requirements.')),
+
     ]
 
-    # for option in options:
-        # option.withTag('Requirements Check')
+    binaryCheckOptions: list[ConfigOption] = [
 
-    return options
+        Echo(r'-ne Checking binary utilities...\\r'),
+        Variable(outputExeFiles).withName(outputVarName),
+        grepSeries,
+
+        IfPreviousSucceeded(EchoSuccess('Binary utilities check'))\
+            .Else(EchoError('Some binary utilities are missing from bin dir. You can run ./init.sh to install them')),
+
+    ]
+
+    for option in pythonImportOptions:
+        option.withTag('Python requirements check')
+
+    for option in binaryCheckOptions:
+        option.withTag('Binary utilities check')
+
+    return pythonImportOptions + binaryCheckOptions
 
 if __name__ == "__main__":
 
@@ -610,7 +526,6 @@ if __name__ == "__main__":
     *gitBashManipulationAliases(),
 
     *envSyncAliases(),
-    *configAliases(),
     *vsCodeAliases(),
 
     Echo(r'-e \\nWelcome $(whoami)!\\n').withScope(ConfigScope.COMMON).withTag('Welcome message'),
@@ -618,11 +533,6 @@ if __name__ == "__main__":
 
     *vimPlugins(),
     *windowsAliases(),
-    *jqUtilityAliases(),
-    *fdCommandUtilities(),
-    *batUtilityAliases(),
-
-    Alias('theplan').to('start').addPath(os.path.join('G:\\', 'My Drive', 'THE_PLAN.xlsx')).withScope(ConfigScope.WINDOWS).withTag('Personal Files'),
 
     *mxVersionManagementOptions(),
     *mxdevenvOptions(),

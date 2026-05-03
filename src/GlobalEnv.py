@@ -197,6 +197,17 @@ class GlobalEnv:
         configData: dict = readJsonFile(self.configJsonFile)
         return configData.get(configName, valueIfNotFound)
 
+    def setConfigValue(self, configName: str, value: any) -> None:
+
+        if not os.path.isfile(self.configJsonFile):
+            self.initJsonConfig()
+
+        configData: dict = readJsonFile(self.configJsonFile)
+        configData[configName] = value
+
+        with open(self.configJsonFile, 'w') as f:
+            json.dump(configData, f, indent=4)
+
     def getEncryptionPassphrase(self, cmdFallback: bool = False) -> str:
 
         passphrase: str = self.getConfigValue('passphrase')
@@ -214,7 +225,7 @@ class GlobalEnv:
 
         return passphrase
 
-    def accessEncryptedFiles(self, cmdFallback: bool = False) -> int:
+    def accessEncryptedFiles(self, cmdFallback: bool = True) -> int:
 
         if os.path.isdir(self.encryptedPath):
             return 0
@@ -234,6 +245,11 @@ class GlobalEnv:
 
         zip.unzipFile(tmpZipFile, self.repoRootPath)
         os.remove(tmpZipFile)
+
+        # Correct passphrase cached in config.json
+        if passphrase:
+            self.setConfigValue('passphrase', passphrase)
+            print('[INFO] Passphrase saved to config.json', file=sys.stderr)
 
         return 0
 
@@ -276,7 +292,7 @@ class GlobalEnv:
 
 if __name__ == '__main__':
 
-    parser = argparse.ArgumentParser(description='Parse an account activity report from Bank Audi')
+    parser = argparse.ArgumentParser(description='Configure and manipulate the environment')
     encryptionArgs = parser.add_mutually_exclusive_group(required=False)
 
     encryptionArgs.add_argument('--encrypt', nargs='?', const=None, type=str, help='--encrypt=M: update encrypted zip file with M as commit message')
@@ -293,7 +309,7 @@ if __name__ == '__main__':
 
         print('[INFO] Removing existing encrypted folder if any...', file=sys.stderr)
         cli.runCommand(f'rm -rf {GlobalEnv().encryptedPath}')
-        returnCode: int = GlobalEnv().accessEncryptedFiles(cmdFallback=False)
+        returnCode: int = GlobalEnv().accessEncryptedFiles()
         sys.exit(returnCode)
 
     parser.print_help()
