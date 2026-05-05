@@ -122,7 +122,7 @@ def murexWelcomeMessage() -> list[ConfigOption]:
     p4helperScript.addArg('--unmerged').withComment('Check for defects not yet in mainstream'),
 
     Exec('ls /u').muteOutput(),
-    IfPreviousFailed(EchoWarning('Drives aren\'t mapped!')).Else(EchoSuccess('Drives mapped')),
+    IfPreviousFailed(EchoWarning('Drives are not mapped!')).Else(EchoSuccess('Drives mapped')),
 
     ]
 
