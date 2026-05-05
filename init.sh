@@ -31,6 +31,8 @@ log_error() {
     echo -e "${RED}[ ERR]${NC} $1"
 }
 
+clear
+
 # Verify we're in the repo root
 if [ ! -d "$REPO_ROOT/.git" ]; then
     log_error "Not in EnvSync repository root. .git folder not found."
@@ -101,68 +103,68 @@ echo "Step 5: Installing utility binaries (jq, fd, bat)..."
 mkdir -p "$REPO_ROOT/bin"
 
 # Install jq
-echo "  Installing jq..."
+echo -ne "Installing jq...\\r"
 JQ_URL="https://github.com/jqlang/jq/releases/latest/download/jq-win64.exe"
 JQ_PATH="$REPO_ROOT/bin/jq.exe"
 if [ -f "$JQ_PATH" ]; then
-    log_success "  jq already installed"
+    log_success "jq installed"
 else
     if curl -L "$JQ_URL" -o "$JQ_PATH" -s 2>/dev/null; then
-        log_success "  jq installed successfully"
+        log_success "jq installed"
     else
-        log_warn "  jq installation encountered an issue (non-critical)"
+        log_warn "jq installation encountered an issue (non-critical)"
     fi
 fi
 
 # Install fd
-echo "  Installing fd..."
+echo -ne "Installing fd...\\r"
 FD_URL="https://github.com/sharkdp/fd/releases/download/v10.3.0/fd-v10.3.0-i686-pc-windows-msvc.zip"
 FD_ZIP="$REPO_ROOT/bin/fd.zip"
 FD_DIR="$REPO_ROOT/bin/fd"
 FD_EXE="$FD_DIR/fd.exe"
 if [ -f "$FD_EXE" ]; then
-    log_success "  fd already installed"
+    log_success "fd installed"
 else
     rm -rf "$FD_DIR" "$FD_ZIP" 2>/dev/null
     if curl -Ls "$FD_URL" -o "$FD_ZIP" 2>/dev/null; then
         if unzip.exe "$FD_ZIP" -d "$REPO_ROOT/bin" &>/dev/null; then
             if mv "$REPO_ROOT/bin/fd-v10.3.0-i686-pc-windows-msvc" "$FD_DIR" 2>/dev/null; then
                 rm -f "$FD_ZIP" 2>/dev/null
-                log_success "  fd installed successfully"
+                log_success "fd installed"
             else
-                log_warn "  fd installation encountered an issue (non-critical)"
+                log_warn "fd installation encountered an issue (non-critical)"
             fi
         else
-            log_warn "  fd installation encountered an issue (non-critical)"
+            log_warn "fd installation encountered an issue (non-critical)"
         fi
     else
-        log_warn "  fd installation encountered an issue (non-critical)"
+        log_warn "fd installation encountered an issue (non-critical)"
     fi
 fi
 
 # Install bat
-echo "  Installing bat..."
+echo -ne "Installing bat...\\r"
 BAT_URL="https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-pc-windows-msvc.zip"
 BAT_ZIP="$REPO_ROOT/bin/bat.zip"
 BAT_DIR="$REPO_ROOT/bin/bat"
 BAT_EXE="$BAT_DIR/bat.exe"
 if [ -f "$BAT_EXE" ]; then
-    log_success "  bat already installed"
+    log_success "bat installed"
 else
     rm -rf "$BAT_DIR" "$BAT_ZIP" 2>/dev/null
     if curl -L "$BAT_URL" -o "$BAT_ZIP" -s 2>/dev/null; then
         if unzip.exe "$BAT_ZIP" -d "$REPO_ROOT/bin" &>/dev/null; then
             if mv "$REPO_ROOT/bin/bat-v0.26.1-x86_64-pc-windows-msvc" "$BAT_DIR" 2>/dev/null; then
                 rm -f "$BAT_ZIP" 2>/dev/null
-                log_success "  bat installed successfully"
+                log_success "bat installed"
             else
-                log_warn "  bat installation encountered an issue (non-critical)"
+                log_warn "bat installation encountered an issue (non-critical)"
             fi
         else
-            log_warn "  bat installation encountered an issue (non-critical)"
+            log_warn "bat installation encountered an issue (non-critical)"
         fi
     else
-        log_warn "  bat installation encountered an issue (non-critical)"
+        log_warn "bat installation encountered an issue (non-critical)"
     fi
 fi
 

@@ -118,7 +118,7 @@ class GlobalEnv:
         if self._bashProfilePath is not None:
             return self._bashProfilePath
 
-        print('Finding bashprofile file...', file=sys.stderr)
+        print('Finding bashprofile file...', end='\r', file=sys.stderr)
 
         options = ['.bash_profile', '.bashrc', '.profile']
         for filename in options:
@@ -128,6 +128,7 @@ class GlobalEnv:
                 continue
 
             self._bashProfilePath = fullPath
+            print(f'[DONE] bashprofile in: {self._bashProfilePath}', file=sys.stderr)
             return self._bashProfilePath
 
         print(f'[INFO] Creating empty bash profile file: {self._bashProfilePath}', file=sys.stderr)
@@ -135,6 +136,7 @@ class GlobalEnv:
         with open(self._bashProfilePath, 'w') as f:
             f.write('# Bash profile created by EnvSync\n')
 
+        print(f'[DONE] bashprofile in: {self._bashProfilePath}', file=sys.stderr)
         return self._bashProfilePath
 
     def getVimrcPath(self) -> str:
@@ -142,7 +144,7 @@ class GlobalEnv:
         if self._vimRcPath is not None:
             return self._vimRcPath
 
-        print('Getting .vimrc file...', file=sys.stderr)
+        print('Getting .vimrc file...', end='\r', file=sys.stderr)
 
         self._vimRcPath = os.path.join(self.userHomeDir, '.vimrc')
 
@@ -152,6 +154,7 @@ class GlobalEnv:
             with open(self._vimRcPath, 'w') as f:
                 f.write('" Vim config file created by EnvSync')
 
+        print(f'[DONE] vimrc in: {self._vimRcPath}', file=sys.stderr)
         return self._vimRcPath
 
     def getNvimrcPath(self) -> str:
