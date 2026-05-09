@@ -226,7 +226,6 @@ def usualShellAliases() -> list[ConfigOption]:
     Alias('push').to('git push').withTag('Git'),
 
     Alias('master').to('git switch master').withTag('Git'),
-    Alias('main').to('git switch main').withTag('Git'),
 
     # Git Options
     Exec('git config --global core.untrackedCache false').withTag('Git Options'),
@@ -439,6 +438,10 @@ def windowsAliases() -> list[ConfigOption]:
 
     return options
 
+def initScript() -> ConfigOption:
+
+    return SectionFromFile(os.path.join(GlobalEnv().repoRootPath, 'init.sh')).withTag('Init Script')
+
 if __name__ == "__main__":
 
     # parse args
@@ -453,6 +456,7 @@ if __name__ == "__main__":
     bashprofile.options = [
 
     maximizeAndZoomScreen(),
+    initScript(),
 
     *usualShellAliases(),
     *navigationAliases(),

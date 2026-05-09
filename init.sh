@@ -10,6 +10,10 @@ _esync_pre_vars=$(compgen -v)
 _esync_pre_fns=$(declare -F | awk '{print $3}')
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+[ -f "$REPO_ROOT/init.sh" ] || REPO_ROOT="/c/EnvSync"
+[ -f "$REPO_ROOT/init.sh" ] || REPO_ROOT="$HOME/EnvSync"
+cd "$REPO_ROOT" || { echo "Failed to change directory to repository root: $REPO_ROOT"; exit 1; }
+
 SRC_DIR="$REPO_ROOT/src"
 CONFIG_DIR="$SRC_DIR/config"
 
@@ -328,40 +332,39 @@ ensure_bin_utils()
     return 0
 }
 
-main()
+_esync_main()
 {
-    clear
-
     echo -e \\nWelcome $(whoami)!\\n
 
-    ensure_git || exit $?
-    ensure_auth_ssh || exit $?
-    verify_repo || exit $?
+    ensure_git || return $?
+    ensure_auth_ssh || return $?
+    verify_repo || return $?
 
-    ensure_python || exit $?
+    ensure_python || return $?
 
     echo ""
     if ! $SOFT; then
-        update_bash_profile || { $FAIL_FAST && exit 1; }
-        update_vimrc || { $FAIL_FAST && exit 1; }
+        update_bash_profile || { $FAIL_FAST && return 1; }
+        update_vimrc || { $FAIL_FAST && return 1; }
     fi
 
     if $FULL; then
         # steps inside this block may take time
-        sync_vim_plugins || { $FAIL_FAST && exit 1; }
+        sync_vim_plugins || { $FAIL_FAST && return 1; }
     fi
 
-    ensure_bin_utils || { $FAIL_FAST && exit 1; }
+    ensure_bin_utils || { $FAIL_FAST && return 1; }
 
     echo ""
     log_success "EnvSync Ready!"
     return 0
 }
 
-main "$@"
+clear
+_esync_main
 
 # Cleanup functions
 unset -f $(comm -13 <(sort <<< "$_esync_pre_fns") <(declare -F | awk '{print $3}' | sort))
 
 # Cleanup variables
-unset $(comm -13 <(sort <<< "$_esync_pre_vars") <(compgen -v | sort)); unset _esync_pre_vars _esync_pre_fns
+unset $(comm -13 <(sort <<< "$_esync_pre_vars") <(compgen -v | sort) | grep -v '^SSH_'); unset _esync_pre_vars _esync_pre_fns
