@@ -12,9 +12,11 @@ CONFIG_DIR="$SRC_DIR/config"
 
 VERBOSE=false
 SOFT=false
+FAIL_FAST=false
 for arg in "$@"; do
     case "$arg" in
         --verbose) VERBOSE=true ;;
+        --fail-fast) FAIL_FAST=true ;;
         --soft)    SOFT=true ;;
     esac
 done
@@ -51,14 +53,14 @@ ensure_jq()
         return 0
     fi
 
-    $VERBOSE && log_warn "jq not found, installing..."
-    if curl -L "$JQ_URL" -o "$JQ_EXE" -s 2>/dev/null; then
-        $VERBOSE && log_success "jq installed"
-        return 0
+    log_warn "jq not found, installing..."
+    if ! curl -L "$JQ_URL" -o "$JQ_EXE" -s 2>/dev/null; then
+        log_error "jq installation encountered an issue"
+        return 1
     fi
 
-    log_error "jq installation encountered an issue"
-    return 1
+    log_success "jq installed"
+    return 0
 }
 
 ensure_fd()
@@ -73,7 +75,7 @@ ensure_fd()
         return 0
     fi
 
-    $VERBOSE && log_warn "fd not found, installing..."
+    log_warn "fd not found, installing..."
     rm -rf "$FD_DIR" "$FD_ZIP" 2>/dev/null
     if ! curl -Ls "$FD_URL" -o "$FD_ZIP" 2>/dev/null; then
         log_error "fd installation encountered an issue"
@@ -91,8 +93,7 @@ ensure_fd()
     fi
 
     rm -f "$FD_ZIP" 2>/dev/null
-
-    $VERBOSE && log_success "fd installed"
+    log_success "fd installed"
     return 0
 }
 
@@ -108,7 +109,7 @@ ensure_bat()
         return 0
     fi
 
-    $VERBOSE && log_warn "bat not found, installing..."
+    log_warn "bat not found, installing..."
     rm -rf "$BAT_DIR" "$BAT_ZIP" 2>/dev/null
 
     if ! curl -L "$BAT_URL" -o "$BAT_ZIP" -s 2>/dev/null; then
@@ -128,7 +129,7 @@ ensure_bat()
 
     rm -f "$BAT_ZIP" 2>/dev/null
 
-    $VERBOSE && log_success "bat installed"
+    log_success "bat installed"
     return 0
 }
 
@@ -148,11 +149,10 @@ ensure_python()
 step_decrypt()
 {
     echo ""
-
     echo -ne "Checking decryption...\r"
 
     out="/dev/null"
-    if [ "$1" = true ]; then
+    if $VERBOSE; then
         out="/dev/stdout"
     fi
 
@@ -170,9 +170,12 @@ step_decrypt()
 
 step_update_bash_profile()
 {
-    echo ""
+    out="/dev/null"
+    if $VERBOSE; then
+        out="/dev/stdout"
+    fi
 
-    python "$CONFIG_DIR/BashProfile.py" --in_place
+    python "$CONFIG_DIR/BashProfile.py" --in_place >"$out" 2>&1
 
     local EXIT_CODE=$?
     if [ $EXIT_CODE -ne 0 ]; then
@@ -186,8 +189,13 @@ step_update_bash_profile()
 
 step_update_vimrc()
 {
-    echo ""
-    python "$CONFIG_DIR/VimRC.py" --in_place
+    out="/dev/null"
+    if $VERBOSE; then
+        out="/dev/stdout"
+    fi
+
+    python "$CONFIG_DIR/VimRC.py" --in_place >"$out" 2>&1
+
     local EXIT_CODE=$?
     if [ $EXIT_CODE -ne 0 ]; then
         log_error "Vim configuration update failed with exit code: $EXIT_CODE"
@@ -200,20 +208,38 @@ step_update_vimrc()
 step_sync_vim_plugins()
 {
     echo ""
+
+    $VERBOSE && echo "Checking vim installation..."
     if ! command -v vim &> /dev/null; then
         log_warn "vim not found in PATH, skipping plugin sync"
         return 0
     fi
+
+    local VIM_PLUG="$HOME/.vim/autoload/plug.vim"
+    local VIM_PLUG_URL="https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim"
+    if [ ! -f "$VIM_PLUG" ]; then
+        $VERBOSE && log_warn "vim-plug not found, installing..."
+        if ! curl -fLo "$VIM_PLUG" --create-dirs "$VIM_PLUG_URL" 2>/dev/null; then
+            log_error "vim-plug installation encountered an issue"
+            return 1
+        fi
+        $VERBOSE && log_success "vim-plug installed"
+    fi
+
+    $VERBOSE && echo "Syncing vim plugins..."
     if vim +PlugInstall +qall 2>/dev/null; then
         log_success "Vim plugins installed"
     else
         log_warn "Vim plugin installation encountered an issue"
     fi
+
+    $VERBOSE && echo "Cleaning vim plugins..."
     if vim +PlugClean +qall 2>/dev/null; then
         log_success "Vim plugins cleaned"
     else
         log_warn "Vim plugin cleanup encountered an issue"
     fi
+
     return 0
 }
 
@@ -262,24 +288,20 @@ main()
 {
     clear
 
-    local FAIL_FAST=false
-
-    for arg in "$@"; do
-        case "$arg" in
-            --fail-fast) FAIL_FAST=true ;;
-        esac
-    done
+    echo -e \\nWelcome $(whoami)!\\n
 
     ensure_python "$@" || exit $?
     verify_repo_root || exit $?
 
-    step_decrypt "$VERBOSE" || { $FAIL_FAST && exit 1; }
+    echo ""
+    step_update_bash_profile || { $FAIL_FAST && exit 1; }
+    step_update_vimrc || { $FAIL_FAST && exit 1; }
+
+
+    step_decrypt || { $FAIL_FAST && exit 1; }
 
     if ! $SOFT; then
-        # steps inside this block may take time, or modify user files.
-
-        step_update_bash_profile || { $FAIL_FAST && exit 1; }
-        step_update_vimrc || { $FAIL_FAST && exit 1; }
+        # steps inside this block may take time
 
         step_sync_vim_plugins || { $FAIL_FAST && exit 1; }
     fi
@@ -295,7 +317,9 @@ main()
     ensure_jq  || { $FAIL_FAST && exit 1; }
     ensure_fd  || { $FAIL_FAST && exit 1; }
     ensure_bat || { $FAIL_FAST && exit 1; }
-    log_success "Bin utilities check"
+    if [ $? -eq 0 ]; then
+        log_success "Bin utilities check"
+    fi
 
     echo ""
     log_success "EnvSync Ready!"

@@ -208,25 +208,6 @@ def enableGitUntrackedCacheForMurexVersion() -> ConfigOption:
 
     return cdIntoVersion.andThen(enableCacheLocally).andThen(enableFsMonitor).withScope(ConfigScope.MUREX)
 
-def vimPlugins() -> list[ConfigOption]:
-
-    vimPlugFile = Path(GlobalEnv().userHomeDir) / '.vim' / 'autoload' / 'plug.vim'
-
-    checkVimPlugInstalled = Exec(f'[ -f "{(vimPlugFile).toLinuxPath()}" ]')
-    downloadVimPlug = Exec('curl').addArg('-fLo').addPath(vimPlugFile).addArg('--create-dirs').addArg('https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim')
-
-    options: list[ConfigOption] = [
-
-        checkVimPlugInstalled,
-        IfPreviousFailed(EchoWarning('vim-plug not found, installing...').andThen(downloadVimPlug)),
-    ]
-
-    for option in options:
-        option.withScope(ConfigScope.COMMON)
-        option.withTag('vim plugins')
-
-    return options
-
 def usualShellAliases() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
@@ -426,21 +407,6 @@ def aliasBinUtilities() -> list[ConfigOption]:
 
     return options
 
-def vsCodeAliases() -> list[ConfigOption]:
-
-    killVsCode = Exec('tasklist').grep('-i ^code.exe').pipe('col 2').pipe('xargs -n1 -r taskkill //PID').muteOutput(2)
-
-    options: list[ConfigOption] = [
-
-    Alias('vscode').to(killVsCode).then('code'),
-
-    ]
-
-    for option in options:
-        option.withTag('VS Code')
-
-    return options
-
 def envSyncAliases() -> list[ConfigOption]:
 
     globalEnv = GlobalEnv()
@@ -528,11 +494,7 @@ if __name__ == "__main__":
     *aliasBinUtilities(),
 
     *envSyncAliases(),
-    *vsCodeAliases(),
 
-    Echo(r'-e \\nWelcome $(whoami)!\\n').withScope(ConfigScope.COMMON).withTag('Welcome message'),
-
-    *vimPlugins(),
     *windowsAliases(),
 
     *mxVersionManagementOptions(),
