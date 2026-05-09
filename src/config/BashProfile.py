@@ -262,40 +262,6 @@ def usualShellAliases() -> list[ConfigOption]:
 
     return options
 
-def initSSH() -> list[ConfigOption]:
-
-    killAllSshAgents = Exec('ps aux').grep('ssh-agent').pipe('awk').addArg("'{print $1}'").pipe('xargs -r kill')
-    startNewSshAgent = Exec('eval "$(ssh-agent -s)"').muteOutput()
-
-    attemptPrivateKeyDecryption = RunPython(Path(GlobalEnv().repoRootPath) / 'src' / 'GlobalEnv.py').muteOutput().addArg('--decrypt')
-
-    options: list[ConfigOption] = [
-
-    Echo(r'-ne Init SSH...\\r'),
-    killAllSshAgents,
-    startNewSshAgent,
-
-    attemptPrivateKeyDecryption\
-        .andThen('ssh-add').addPath(Path(GlobalEnv().repoRootPath) / 'encrypted' / 'github_key').muteOutput().withTag('Start Git SSH'),
-
-    IfPreviousFailed(EchoError('SSH Failed. config.json might contain a bad passphrase'))\
-        .Else(EchoSuccess('Init SSH')),
-
-    cdInto(GlobalEnv().repoRootPath).withComment('Set git remote to use SSH for EnvSync repo'),
-    Exec('git remote set-url origin git@github.com:lebenebou/EnvSync.git'),
-
-    ]
-
-    for option in options:
-
-        if isinstance(option, Exec):
-            option.onlyIfThroughGitBash()
-
-        option.withScope(ConfigScope.WINDOWS)
-        option.withTag('Start Git SSH')
-
-    return options
-
 
 def maximizeAndZoomScreen() -> ConfigOption:
 
@@ -505,8 +471,6 @@ if __name__ == "__main__":
     *murexCliOptions(),
     *murexWelcomeMessage(),
     # enableGitUntrackedCacheForMurexVersion(),
-
-    *initSSH(),
 
     cdInto(GlobalEnv().repoRootPath).withComment('Set EnvSync repo as starting directory').withTag('Starting Directory'),
 

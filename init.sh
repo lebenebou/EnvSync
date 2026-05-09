@@ -135,6 +135,8 @@ ensure_bat()
 
 ensure_python()
 {
+    echo ""
+
     if ! command -v python &> /dev/null; then
         log_error "Python is not installed or not in PATH. Please install Python to continue."
         return 1
@@ -146,36 +148,59 @@ ensure_python()
     return 0
 }
 
-step_decrypt()
+ensure_git()
 {
-    echo ""
-    echo -ne "Checking decryption...\r"
-
-    out="/dev/null"
-    if $VERBOSE; then
-        out="/dev/stdout"
+    if ! command -v git &> /dev/null; then
+        log_error "Git is not installed or not in PATH. Please install Git to continue."
+        return 1
     fi
 
-    python "$SRC_DIR/GlobalEnv.py" --decrypt >"$out" 2>&1
+    gversion=$(git --version 2>&1 | awk '{print $3}')
+    log_success "Git version: $gversion"
 
-    local EXIT_CODE=$?
-    if [ $EXIT_CODE -ne 0 ]; then
-        log_error "Decryption check failed with exit code: $EXIT_CODE"
-        return $EXIT_CODE
-    fi
-
-    log_success "Decryption check passed"
     return 0
 }
 
-step_update_bash_profile()
+ensure_auth_ssh()
 {
-    out="/dev/null"
-    if $VERBOSE; then
-        out="/dev/stdout"
+    echo ""
+    echo -ne "Checking auth...\r"
+
+    decryptionOutput=$(python "$SRC_DIR/GlobalEnv.py" --decrypt 2>&1)
+
+    local RETURN_CODE=$?
+    if [ $RETURN_CODE -ne 0 ]; then
+        echo "$decryptionOutput"
+        log_error "Decryption failed with exit code: $RETURN_CODE"
+        return $RETURN_CODE
     fi
 
-    python "$CONFIG_DIR/BashProfile.py" --in_place >"$out" 2>&1
+    log_success "Decryption success"
+
+    # kill running ssh-agents if any
+    ps aux | grep ssh-agent | awk '{print $1}' | xargs -r kill 2>/dev/null
+    eval "$(ssh-agent -s)" &>/dev/null
+
+    local KEY="$REPO_ROOT/encrypted/github_key"
+    if [ ! -f "$KEY" ]; then
+        log_error "SSH github key file not found at: $KEY"
+        return 1
+    fi
+
+    ssh-add "$KEY" &>/dev/null
+    if [ $? -ne 0 ]; then
+        log_error "SSH Failed. Could not add key: $KEY"
+        return 1
+    fi
+
+    git remote set-url origin git@github.com:lebenebou/EnvSync.git
+    log_success "Init SSH"
+    return 0
+}
+
+update_bash_profile()
+{
+    python "$CONFIG_DIR/BashProfile.py" --in_place 2> /dev/null
 
     local EXIT_CODE=$?
     if [ $EXIT_CODE -ne 0 ]; then
@@ -183,36 +208,32 @@ step_update_bash_profile()
         return $EXIT_CODE
     fi
 
-    log_success "Bash profile updated successfully"
+    log_success "Bash profile updated"
     return 0
 }
 
-step_update_vimrc()
+update_vimrc()
 {
-    out="/dev/null"
-    if $VERBOSE; then
-        out="/dev/stdout"
-    fi
-
-    python "$CONFIG_DIR/VimRC.py" --in_place >"$out" 2>&1
+    python "$CONFIG_DIR/VimRC.py" --in_place 2> /dev/null
 
     local EXIT_CODE=$?
     if [ $EXIT_CODE -ne 0 ]; then
         log_error "Vim configuration update failed with exit code: $EXIT_CODE"
         return $EXIT_CODE
     fi
-    log_success "Vim configuration updated successfully"
+
+    log_success "Vim configuration updated"
     return 0
 }
 
-step_sync_vim_plugins()
+sync_vim_plugins()
 {
     echo ""
 
     $VERBOSE && echo "Checking vim installation..."
     if ! command -v vim &> /dev/null; then
         log_warn "vim not found in PATH, skipping plugin sync"
-        return 0
+        return 1
     fi
 
     local VIM_PLUG="$HOME/.vim/autoload/plug.vim"
@@ -243,8 +264,10 @@ step_sync_vim_plugins()
     return 0
 }
 
-verify_repo_root()
+verify_repo()
 {
+    echo ""
+
     if [ ! -d "$REPO_ROOT/.git" ]; then
         log_error "Not in EnvSync repository root. .git folder not found."
         echo "Expected: $REPO_ROOT/.git"
@@ -284,42 +307,41 @@ verify_repo_root()
     return 0
 }
 
+ensure_bin_utils()
+{
+    echo ""
+    mkdir -p "$REPO_ROOT/bin"
+
+    ensure_jq  || return 1
+    ensure_fd  || return 1
+    ensure_bat || return 1
+
+    log_success "Bin utilities check"
+    return 0
+}
+
 main()
 {
     clear
 
     echo -e \\nWelcome $(whoami)!\\n
 
-    ensure_python "$@" || exit $?
-    verify_repo_root || exit $?
+    ensure_git || exit $?
+    ensure_auth_ssh || exit $?
+    verify_repo || exit $?
+
+    ensure_python || exit $?
 
     echo ""
-    step_update_bash_profile || { $FAIL_FAST && exit 1; }
-    step_update_vimrc || { $FAIL_FAST && exit 1; }
-
-
-    step_decrypt || { $FAIL_FAST && exit 1; }
+    update_bash_profile || { $FAIL_FAST && exit 1; }
+    update_vimrc || { $FAIL_FAST && exit 1; }
 
     if ! $SOFT; then
         # steps inside this block may take time
-
-        step_sync_vim_plugins || { $FAIL_FAST && exit 1; }
+        sync_vim_plugins || { $FAIL_FAST && exit 1; }
     fi
 
-    echo ""
-    mkdir -p "$REPO_ROOT/bin"
-
-    out="/dev/null"
-    if $VERBOSE; then
-        out="/dev/stdout"
-    fi
-
-    ensure_jq  || { $FAIL_FAST && exit 1; }
-    ensure_fd  || { $FAIL_FAST && exit 1; }
-    ensure_bat || { $FAIL_FAST && exit 1; }
-    if [ $? -eq 0 ]; then
-        log_success "Bin utilities check"
-    fi
+    ensure_bin_utils || { $FAIL_FAST && exit 1; }
 
     echo ""
     log_success "EnvSync Ready!"
