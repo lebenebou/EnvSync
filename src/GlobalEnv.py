@@ -187,7 +187,7 @@ class GlobalEnv:
         if os.path.isfile(self.configJsonFile):
             return
 
-        print(f'[INFO] Creating config json: {self.configJsonFile}', file=sys.stderr)
+        if self.loggingEnabled: print(f'[INFO] Creating config json: {self.configJsonFile}', file=sys.stderr)
 
         with open(self.configJsonFile, 'w') as f:
             json.dump(defaultConfig, f, indent=4)
@@ -215,11 +215,11 @@ class GlobalEnv:
 
         passphrase: str = self.getConfigValue('passphrase')
         if passphrase:
-            print('[INFO] Using encryption passphrase from config.json', file=sys.stderr)
+            if self.loggingEnabled: print('[INFO] Using encryption passphrase from config.json', file=sys.stderr)
             return passphrase
 
         if cmdFallback:
-            print('No encryption passphrase found in config.json. Please input manually', file=sys.stderr)
+            if self.loggingEnabled: print('No encryption passphrase found in config.json. Please input manually', file=sys.stderr)
             passphrase = input('Enter encryption passphrase: ')
 
         if not passphrase:
@@ -233,7 +233,7 @@ class GlobalEnv:
         if os.path.isdir(self.encryptedPath):
             return 0
 
-        print('[INFO] Accessing encrypted files...', file=sys.stderr)
+        if self.loggingEnabled: print('[INFO] Accessing encrypted files...', file=sys.stderr)
 
         tmpZipFile: str = os.path.join(self.repoRootPath, 'encrypted.zip')
         lockedZipFile: str = os.path.join(self.repoRootPath, 'encrypted.zip.locked')
@@ -252,7 +252,7 @@ class GlobalEnv:
         # Correct passphrase cached in config.json
         if passphrase:
             self.setConfigValue('passphrase', passphrase)
-            print('[INFO] Passphrase saved to config.json', file=sys.stderr)
+            if self.loggingEnabled: print('[INFO] Passphrase saved to config.json', file=sys.stderr)
 
         return 0
 
@@ -311,9 +311,10 @@ if __name__ == '__main__':
 
     if args.decrypt:
 
-        print('[INFO] Removing existing encrypted folder if any...', file=sys.stderr)
-        cli.runCommand(f'rm -rf {GlobalEnv().encryptedPath}')
-        returnCode: int = GlobalEnv().accessEncryptedFiles()
+        env = GlobalEnv()
+        if env.loggingEnabled: print('[INFO] Removing existing encrypted folder if any...', file=sys.stderr)
+        cli.runCommand(f'rm -rf {env.encryptedPath}')
+        returnCode: int = env.accessEncryptedFiles()
         sys.exit(returnCode)
 
     parser.print_help()

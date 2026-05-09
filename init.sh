@@ -166,11 +166,10 @@ ensure_auth_ssh()
     echo ""
     echo -ne "Checking auth...\r"
 
-    decryptionOutput=$(python "$SRC_DIR/GlobalEnv.py" --decrypt 2>&1)
+    python "$SRC_DIR/GlobalEnv.py" --decrypt
 
     local RETURN_CODE=$?
     if [ $RETURN_CODE -ne 0 ]; then
-        echo "$decryptionOutput"
         log_error "Decryption failed with exit code: $RETURN_CODE"
         return $RETURN_CODE
     fi
