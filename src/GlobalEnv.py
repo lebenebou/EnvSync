@@ -285,6 +285,7 @@ class GlobalEnv:
         if self.loggingEnabled:
             print('[DEL] Deleting GlobalEnv singleton instance...', file=sys.stderr)
 
+        return
         elapsedMs: float = (time.perf_counter() - self._creationTime)*1000
         if elapsedMs < 10**3:
             print(f'\n{int(elapsedMs)} ms', file=sys.stderr)

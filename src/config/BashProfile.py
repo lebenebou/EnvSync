@@ -397,6 +397,35 @@ def gitBashManipulationAliases() -> list[ConfigOption]:
 
     return options
 
+def aliasBinUtilities() -> list[ConfigOption]:
+
+    options: list[ConfigOption] = []
+
+    if not os.path.isdir(GlobalEnv().repoBinPath):
+        return options
+
+    for file in os.listdir(GlobalEnv().repoBinPath):
+
+        if not file.endswith('.exe'):
+            continue
+
+        utilityBaseName = os.path.splitext(file)[0]
+        options.append(
+            Alias(utilityBaseName).to(os.path.join(GlobalEnv().repoBinPath, file))
+        )
+
+        continue
+
+    # fd options
+    options.append(
+        Alias('find').to('fd').addArg('--ignore-case').addArg('--hidden').addArg('--exclude .git')
+    )
+
+    for option in options:
+        option.withTag('Bin Utilities')
+
+    return options
+
 def vsCodeAliases() -> list[ConfigOption]:
 
     killVsCode = Exec('tasklist').grep('-i ^code.exe').pipe('col 2').pipe('xargs -n1 -r taskkill //PID').muteOutput(2)
@@ -478,48 +507,6 @@ def windowsAliases() -> list[ConfigOption]:
 
     return options
 
-def requirementsTests() -> list[ConfigOption]:
-
-    checkPythonInstalled = Exec('python -V').muteOutput()
-    importRequirements = Exec('cat').addPath(Path(GlobalEnv().repoRootPath) / 'requirements.txt').pipe('sed "s/^/import /"').pipe('python -')
-
-    exeFiles: list[str] = ['fd.exe', 'bat.exe', 'jq.exe']
-    outputExeFiles = Exec(f'find').addPath(GlobalEnv().repoBinPath).addArg('-type f -name "*.exe"')
-    outputVarName: str = 'exeOutput'
-    grepSeries = Exec(':')
-
-    for exe in exeFiles:
-        grepSeries.andThen(Echo(f'"${outputVarName}"').pipe('grep -q').addArg(exe))
-
-    pythonImportOptions: list[ConfigOption] = [
-
-        Echo(r'-ne Checking requirements...\\r'),
-        checkPythonInstalled.andThen(importRequirements),
-
-        IfPreviousSucceeded(EchoSuccess('Python requirements check'))\
-            .Else(EchoError('Failed to import requirements.')),
-
-    ]
-
-    binaryCheckOptions: list[ConfigOption] = [
-
-        Echo(r'-ne Checking binary utilities...\\r'),
-        Variable(outputExeFiles).withName(outputVarName),
-        grepSeries,
-
-        IfPreviousSucceeded(EchoSuccess('Binary utilities check'))\
-            .Else(EchoError('Some binary utilities are missing from bin dir. You can run ./init.sh to install them')),
-
-    ]
-
-    for option in pythonImportOptions:
-        option.withTag('Python requirements check')
-
-    for option in binaryCheckOptions:
-        option.withTag('Binary utilities check')
-
-    return pythonImportOptions + binaryCheckOptions
-
 if __name__ == "__main__":
 
     # parse args
@@ -534,17 +521,16 @@ if __name__ == "__main__":
     bashprofile.options = [
 
     maximizeAndZoomScreen(),
-    Exec('mkdir -p').addPath(Path(GlobalEnv().repoRootPath) / 'bin').withComment('Ensure bin directory exists'),
 
     *usualShellAliases(),
     *navigationAliases(),
     *gitBashManipulationAliases(),
+    *aliasBinUtilities(),
 
     *envSyncAliases(),
     *vsCodeAliases(),
 
     Echo(r'-e \\nWelcome $(whoami)!\\n').withScope(ConfigScope.COMMON).withTag('Welcome message'),
-    *requirementsTests(),
 
     *vimPlugins(),
     *windowsAliases(),

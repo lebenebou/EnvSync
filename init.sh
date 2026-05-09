@@ -6,11 +6,18 @@
 # 
 # Usage: ./init.sh
 
-set -e  # Exit on any error
-
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_DIR="$REPO_ROOT/src"
 CONFIG_DIR="$SRC_DIR/config"
+
+VERBOSE=false
+SOFT=false
+for arg in "$@"; do
+    case "$arg" in
+        --verbose) VERBOSE=true ;;
+        --soft)    SOFT=true ;;
+    esac
+done
 
 # Color codes for output
 RED='\033[0;31m'
@@ -19,155 +26,281 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Helper functions
-log_success() {
+log_success()
+{
     echo -e "${GREEN}[DONE]${NC} $1"
 }
 
-log_warn() {
+log_warn()
+{
     echo -e "${YELLOW}[WARN]${NC} $1"
 }
 
-log_error() {
+log_error()
+{
     echo -e "${RED}[ ERR]${NC} $1"
 }
 
-clear
+ensure_jq()
+{
+    local JQ_URL="https://github.com/jqlang/jq/releases/latest/download/jq-win64.exe"
+    local JQ_EXE="$REPO_ROOT/bin/jq.exe"
 
-# Verify we're in the repo root
-if [ ! -d "$REPO_ROOT/.git" ]; then
-    log_error "Not in EnvSync repository root. .git folder not found."
-    echo "Expected: $REPO_ROOT/.git"
-    exit 1
-fi
+    if [ -f "$JQ_EXE" ]; then
+        $VERBOSE && log_success "jq installed"
+        return 0
+    fi
 
-echo "Starting EnvSync initialization..."
-echo "Repository root: $REPO_ROOT"
+    $VERBOSE && log_warn "jq not found, installing..."
+    if curl -L "$JQ_URL" -o "$JQ_EXE" -s 2>/dev/null; then
+        $VERBOSE && log_success "jq installed"
+        return 0
+    fi
 
-# Step 1: Decrypt encrypted files
-echo ""
-echo "Step 1: Decrypting files (GlobalEnv --decrypt)..."
-if python "$SRC_DIR/GlobalEnv.py" --decrypt; then
+    log_error "jq installation encountered an issue"
+    return 1
+}
+
+ensure_fd()
+{
+    local FD_URL="https://github.com/sharkdp/fd/releases/download/v10.3.0/fd-v10.3.0-i686-pc-windows-msvc.zip"
+    local FD_ZIP="$REPO_ROOT/bin/fd.zip"
+    local FD_DIR="$REPO_ROOT/bin/fd"
+    local FD_EXE="$FD_DIR/fd.exe"
+
+    if [ -f "$FD_EXE" ]; then
+        $VERBOSE && log_success "fd installed"
+        return 0
+    fi
+
+    $VERBOSE && log_warn "fd not found, installing..."
+    rm -rf "$FD_DIR" "$FD_ZIP" 2>/dev/null
+    if ! curl -Ls "$FD_URL" -o "$FD_ZIP" 2>/dev/null; then
+        log_error "fd installation encountered an issue"
+        return 1
+    fi
+
+    if ! unzip.exe "$FD_ZIP" -d "$REPO_ROOT/bin" &>/dev/null; then
+        log_error "extraction of $FD_ZIP encountered an issue"
+        return 1
+    fi
+
+    if ! mv "$REPO_ROOT/bin/fd-v10.3.0-i686-pc-windows-msvc" "$FD_DIR" 2>/dev/null; then
+        log_error "fd installation encountered an issue"
+        return 1
+    fi
+
+    rm -f "$FD_ZIP" 2>/dev/null
+
+    $VERBOSE && log_success "fd installed"
+    return 0
+}
+
+ensure_bat()
+{
+    local BAT_URL="https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-pc-windows-msvc.zip"
+    local BAT_ZIP="$REPO_ROOT/bin/bat.zip"
+    local BAT_DIR="$REPO_ROOT/bin/bat"
+    local BAT_EXE="$BAT_DIR/bat.exe"
+
+    if [ -f "$BAT_EXE" ]; then
+        $VERBOSE && log_success "bat installed"
+        return 0
+    fi
+
+    $VERBOSE && log_warn "bat not found, installing..."
+    rm -rf "$BAT_DIR" "$BAT_ZIP" 2>/dev/null
+
+    if ! curl -L "$BAT_URL" -o "$BAT_ZIP" -s 2>/dev/null; then
+        log_error "bat installation encountered an issue"
+        return 1
+    fi
+
+    if ! unzip.exe "$BAT_ZIP" -d "$REPO_ROOT/bin" &>/dev/null; then
+        log_error "extraction of $BAT_ZIP encountered an issue"
+        return 1
+    fi
+
+    if ! mv "$REPO_ROOT/bin/bat-v0.26.1-x86_64-pc-windows-msvc" "$BAT_DIR" 2>/dev/null; then
+        log_error "bat installation encountered an issue"
+        return 1
+    fi
+
+    rm -f "$BAT_ZIP" 2>/dev/null
+
+    $VERBOSE && log_success "bat installed"
+    return 0
+}
+
+ensure_python()
+{
+    if ! command -v python &> /dev/null; then
+        log_error "Python is not installed or not in PATH. Please install Python to continue."
+        return 1
+    fi
+
+    pversion=$(python -V 2>&1 | awk '{print $2}')
+    log_success "Python version: $pversion"
+
+    return 0
+}
+
+step_decrypt()
+{
+    echo ""
+
+    echo -ne "Checking decryption...\r"
+
+    out="/dev/null"
+    if [ "$1" = true ]; then
+        out="/dev/stdout"
+    fi
+
+    python "$SRC_DIR/GlobalEnv.py" --decrypt >"$out" 2>&1
+
+    local EXIT_CODE=$?
+    if [ $EXIT_CODE -ne 0 ]; then
+        log_error "Decryption check failed with exit code: $EXIT_CODE"
+        return $EXIT_CODE
+    fi
+
     log_success "Decryption check passed"
-else
-    DECRYPT_EXIT=$?
-    log_error "Decryption check failed with exit code: $DECRYPT_EXIT"
-    exit $DECRYPT_EXIT
-fi
+    return 0
+}
 
-# Step 2: Update bash profile
-echo ""
-echo "Step 2: Updating bash profile (--in_place)..."
-if python "$CONFIG_DIR/BashProfile.py" --in_place; then
+step_update_bash_profile()
+{
+    echo ""
+
+    python "$CONFIG_DIR/BashProfile.py" --in_place
+
+    local EXIT_CODE=$?
+    if [ $EXIT_CODE -ne 0 ]; then
+        log_error "Bash profile update failed with exit code: $EXIT_CODE"
+        return $EXIT_CODE
+    fi
+
     log_success "Bash profile updated successfully"
-else
-    BASH_EXIT=$?
-    log_error "Bash profile update failed with exit code: $BASH_EXIT"
-    exit $BASH_EXIT
-fi
+    return 0
+}
 
-# Step 3: Update vim configuration
-echo ""
-echo "Step 3: Updating vim configuration (--in_place)..."
-if python "$CONFIG_DIR/VimRC.py" --in_place; then
+step_update_vimrc()
+{
+    echo ""
+    python "$CONFIG_DIR/VimRC.py" --in_place
+    local EXIT_CODE=$?
+    if [ $EXIT_CODE -ne 0 ]; then
+        log_error "Vim configuration update failed with exit code: $EXIT_CODE"
+        return $EXIT_CODE
+    fi
     log_success "Vim configuration updated successfully"
-else
-    VIM_EXIT=$?
-    log_error "Vim configuration update failed with exit code: $VIM_EXIT"
-    exit $VIM_EXIT
-fi
+    return 0
+}
 
-# Step 4: Sync vim plugins (optional, graceful failure)
-echo ""
-echo "Step 4: Syncing vim plugins..."
-if command -v vim &> /dev/null; then
+step_sync_vim_plugins()
+{
+    echo ""
+    if ! command -v vim &> /dev/null; then
+        log_warn "vim not found in PATH, skipping plugin sync"
+        return 0
+    fi
     if vim +PlugInstall +qall 2>/dev/null; then
         log_success "Vim plugins installed"
     else
-        log_warn "Vim plugin installation encountered an issue (non-critical)"
+        log_warn "Vim plugin installation encountered an issue"
     fi
-    
     if vim +PlugClean +qall 2>/dev/null; then
         log_success "Vim plugins cleaned"
     else
-        log_warn "Vim plugin cleanup encountered an issue (non-critical)"
+        log_warn "Vim plugin cleanup encountered an issue"
     fi
-else
-    log_warn "vim not found in PATH, skipping plugin sync"
-fi
+    return 0
+}
 
-# Step 5: Install utility binaries (optional, graceful failure)
-echo ""
-echo "Step 5: Installing utility binaries (jq, fd, bat)..."
+verify_repo_root()
+{
+    if [ ! -d "$REPO_ROOT/.git" ]; then
+        log_error "Not in EnvSync repository root. .git folder not found."
+        echo "Expected: $REPO_ROOT/.git"
+        return 1
+    fi
 
-# Create bin directory if it doesn't exist
-mkdir -p "$REPO_ROOT/bin"
+    # Check if main branch is ahead of the current commit
+    cd "$REPO_ROOT"
+    echo -ne "git fetch --all...\r"
+    git fetch --all &> /dev/null
+    if [ $? -ne 0 ]; then
+        log_warn "Failed to fetch remote repository. Skipping update check."
+        return 0
+    fi
 
-# Install jq
-echo -ne "Installing jq...\\r"
-JQ_URL="https://github.com/jqlang/jq/releases/latest/download/jq-win64.exe"
-JQ_PATH="$REPO_ROOT/bin/jq.exe"
-if [ -f "$JQ_PATH" ]; then
-    log_success "jq installed"
-else
-    if curl -L "$JQ_URL" -o "$JQ_PATH" -s 2>/dev/null; then
-        log_success "jq installed"
+    echo -ne "Checking EnvSync status...\r"
+    LOCAL=$(git rev-parse @)
+    REMOTE=$(git rev-parse @{u} 2>/dev/null)
+    BASE=$(git merge-base @ @{u} 2>/dev/null)
+
+    if [ -z "$REMOTE" ]; then
+        log_warn "No upstream branch found. Skipping update check."
+
+    elif [ $LOCAL = $REMOTE ]; then
+        log_success "Repository is up to date with remote."
+
+    elif [ $LOCAL = $BASE ]; then
+        log_warn "Your local repository is behind the remote. Consider pulling the latest changes."
+
+    elif [ $REMOTE = $BASE ]; then
+        log_warn "Your local repository is ahead of the remote. Consider pushing your changes."
+
     else
-        log_warn "jq installation encountered an issue (non-critical)"
+        log_warn "Your local repository has diverged from the remote. Please resolve the divergence."
     fi
-fi
 
-# Install fd
-echo -ne "Installing fd...\\r"
-FD_URL="https://github.com/sharkdp/fd/releases/download/v10.3.0/fd-v10.3.0-i686-pc-windows-msvc.zip"
-FD_ZIP="$REPO_ROOT/bin/fd.zip"
-FD_DIR="$REPO_ROOT/bin/fd"
-FD_EXE="$FD_DIR/fd.exe"
-if [ -f "$FD_EXE" ]; then
-    log_success "fd installed"
-else
-    rm -rf "$FD_DIR" "$FD_ZIP" 2>/dev/null
-    if curl -Ls "$FD_URL" -o "$FD_ZIP" 2>/dev/null; then
-        if unzip.exe "$FD_ZIP" -d "$REPO_ROOT/bin" &>/dev/null; then
-            if mv "$REPO_ROOT/bin/fd-v10.3.0-i686-pc-windows-msvc" "$FD_DIR" 2>/dev/null; then
-                rm -f "$FD_ZIP" 2>/dev/null
-                log_success "fd installed"
-            else
-                log_warn "fd installation encountered an issue (non-critical)"
-            fi
-        else
-            log_warn "fd installation encountered an issue (non-critical)"
-        fi
-    else
-        log_warn "fd installation encountered an issue (non-critical)"
+    return 0
+}
+
+main()
+{
+    clear
+
+    local FAIL_FAST=false
+
+    for arg in "$@"; do
+        case "$arg" in
+            --fail-fast) FAIL_FAST=true ;;
+        esac
+    done
+
+    ensure_python "$@" || exit $?
+    verify_repo_root || exit $?
+
+    step_decrypt "$VERBOSE" || { $FAIL_FAST && exit 1; }
+
+    if ! $SOFT; then
+        # steps inside this block may take time, or modify user files.
+
+        step_update_bash_profile || { $FAIL_FAST && exit 1; }
+        step_update_vimrc || { $FAIL_FAST && exit 1; }
+
+        step_sync_vim_plugins || { $FAIL_FAST && exit 1; }
     fi
-fi
 
-# Install bat
-echo -ne "Installing bat...\\r"
-BAT_URL="https://github.com/sharkdp/bat/releases/download/v0.26.1/bat-v0.26.1-x86_64-pc-windows-msvc.zip"
-BAT_ZIP="$REPO_ROOT/bin/bat.zip"
-BAT_DIR="$REPO_ROOT/bin/bat"
-BAT_EXE="$BAT_DIR/bat.exe"
-if [ -f "$BAT_EXE" ]; then
-    log_success "bat installed"
-else
-    rm -rf "$BAT_DIR" "$BAT_ZIP" 2>/dev/null
-    if curl -L "$BAT_URL" -o "$BAT_ZIP" -s 2>/dev/null; then
-        if unzip.exe "$BAT_ZIP" -d "$REPO_ROOT/bin" &>/dev/null; then
-            if mv "$REPO_ROOT/bin/bat-v0.26.1-x86_64-pc-windows-msvc" "$BAT_DIR" 2>/dev/null; then
-                rm -f "$BAT_ZIP" 2>/dev/null
-                log_success "bat installed"
-            else
-                log_warn "bat installation encountered an issue (non-critical)"
-            fi
-        else
-            log_warn "bat installation encountered an issue (non-critical)"
-        fi
-    else
-        log_warn "bat installation encountered an issue (non-critical)"
+    echo ""
+    mkdir -p "$REPO_ROOT/bin"
+
+    out="/dev/null"
+    if $VERBOSE; then
+        out="/dev/stdout"
     fi
-fi
 
-echo ""
-log_success "EnvSync initialization completed successfully!"
-exit 0
+    ensure_jq  || { $FAIL_FAST && exit 1; }
+    ensure_fd  || { $FAIL_FAST && exit 1; }
+    ensure_bat || { $FAIL_FAST && exit 1; }
+    log_success "Bin utilities check"
+
+    echo ""
+    log_success "EnvSync Ready!"
+    return 0
+}
+
+main "$@"
+exit $?
