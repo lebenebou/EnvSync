@@ -152,6 +152,18 @@ ensure_python()
     fi
 
     pversion=$(python -V 2>&1 | awk '{print $2}')
+
+    local JQ_EXE="$REPO_ROOT/bin/jq.exe"
+    if $FULL && [ -f "$JQ_EXE" ]; then
+
+        latestVersion=$(curl -s https://endoflife.date/api/python.json | "$JQ_EXE" -r '.[0].latest')
+        pMajorMinor=$(echo "$pversion" | cut -d. -f1,2)
+        latestMajorMinor=$(echo "$latestVersion" | cut -d. -f1,2)
+        if [ "$pMajorMinor" != "$latestMajorMinor" ]; then
+            log_warn "Consider updating python to $latestVersion."
+        fi
+    fi
+
     log_success "Python version: $pversion"
 
     return 0
