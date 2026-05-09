@@ -6,6 +6,9 @@
 # 
 # Usage: ./init.sh
 
+_esync_pre_vars=$(compgen -v)
+_esync_pre_fns=$(declare -F | awk '{print $3}')
+
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SRC_DIR="$REPO_ROOT/src"
 CONFIG_DIR="$SRC_DIR/config"
@@ -356,4 +359,9 @@ main()
 }
 
 main "$@"
-exit $?
+
+# Cleanup functions
+unset -f $(comm -13 <(sort <<< "$_esync_pre_fns") <(declare -F | awk '{print $3}' | sort))
+
+# Cleanup variables
+unset $(comm -13 <(sort <<< "$_esync_pre_vars") <(compgen -v | sort)); unset _esync_pre_vars _esync_pre_fns
