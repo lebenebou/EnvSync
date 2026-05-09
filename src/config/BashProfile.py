@@ -350,22 +350,26 @@ def aliasBinUtilities() -> list[ConfigOption]:
     if not os.path.isdir(GlobalEnv().repoBinPath):
         return options
 
-    for file in os.listdir(GlobalEnv().repoBinPath):
+    for root, dirs, files in os.walk(GlobalEnv().repoBinPath):
+        for file in files:
 
-        if not file.endswith('.exe'):
+            if not file.endswith('.exe'):
+                continue
+
+            utilityBaseName = os.path.splitext(file)[0]
+            options.append(
+                Alias(utilityBaseName).to(os.path.join(root, file))
+            )
+
             continue
-
-        utilityBaseName = os.path.splitext(file)[0]
-        options.append(
-            Alias(utilityBaseName).to(os.path.join(GlobalEnv().repoBinPath, file))
-        )
 
         continue
 
-    # fd options
-    options.append(
-        Alias('find').to('fd').addArg('--ignore-case').addArg('--hidden').addArg('--exclude .git')
-    )
+    # custom options
+    options.extend([
+        Alias('find').to('fd').addArg('--ignore-case').addArg('--hidden').addArg('--exclude .git'),
+        Alias('cat').to('bat')
+    ])
 
     for option in options:
         option.withTag('Bin Utilities')
