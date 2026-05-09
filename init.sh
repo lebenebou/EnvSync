@@ -214,6 +214,14 @@ ensure_auth_ssh()
     fi
 
     git remote set-url origin git@github.com:lebenebou/EnvSync.git
+
+    ssh -T git@github.com >/dev/null 2>&1
+    local SSH_EXIT=$?
+    if [ $SSH_EXIT -ne 0 ] && [ $SSH_EXIT -ne 1 ]; then
+        log_error "SSH Failed. Could not connect to github with SSH."
+        return 1
+    fi
+
     log_success "Init SSH"
     return 0
 }
