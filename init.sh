@@ -12,12 +12,14 @@ CONFIG_DIR="$SRC_DIR/config"
 
 VERBOSE=false
 SOFT=false
+FULL=false
 FAIL_FAST=false
 for arg in "$@"; do
     case "$arg" in
         --verbose) VERBOSE=true ;;
         --fail-fast) FAIL_FAST=true ;;
         --soft)    SOFT=true ;;
+        --full)    FULL=true ; SOFT=false ;;
     esac
 done
 
@@ -273,13 +275,17 @@ verify_repo()
         return 1
     fi
 
+    if $SOFT; then
+        return 0
+    fi
+
     # Check if main branch is ahead of the current commit
     cd "$REPO_ROOT"
     echo -ne "git fetch --all...\r"
     git fetch --all &> /dev/null
     if [ $? -ne 0 ]; then
         log_warn "Failed to fetch remote repository. Skipping update check."
-        return 0
+        return 1
     fi
 
     echo -ne "Checking EnvSync status...\r"
@@ -332,10 +338,12 @@ main()
     ensure_python || exit $?
 
     echo ""
-    update_bash_profile || { $FAIL_FAST && exit 1; }
-    update_vimrc || { $FAIL_FAST && exit 1; }
-
     if ! $SOFT; then
+        update_bash_profile || { $FAIL_FAST && exit 1; }
+        update_vimrc || { $FAIL_FAST && exit 1; }
+    fi
+
+    if $FULL; then
         # steps inside this block may take time
         sync_vim_plugins || { $FAIL_FAST && exit 1; }
     fi
