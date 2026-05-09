@@ -4,7 +4,7 @@
 # This script orchestrates the initialization of the EnvSync repository
 # It decrypts encrypted files, updates bash profile, and syncs vim configuration
 # 
-# Usage: ./init.sh
+# Usage: ./init.sh [--verbose] [--fail-fast] [--soft] [--full]
 
 _esync_pre_vars=$(compgen -v)
 _esync_pre_fns=$(declare -F | awk '{print $3}')
@@ -366,6 +366,16 @@ _esync_main()
     fi
 
     ensure_bin_utils || { $FAIL_FAST && return 1; }
+
+    if $FULL; then
+
+        if ! "$REPO_ROOT/tests/run_all.sh" ; then
+            log_error "Some tests failed. Please review the test output above."
+            $FAIL_FAST && return 1
+        else
+            log_success "All tests passed successfully!"
+        fi
+    fi
 
     echo ""
     log_success "EnvSync Ready!"
