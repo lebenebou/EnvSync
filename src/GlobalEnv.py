@@ -317,5 +317,9 @@ if __name__ == '__main__':
         returnCode: int = env.accessEncryptedFiles()
         sys.exit(returnCode)
 
-    parser.print_help()
+    env = GlobalEnv()
+    print('[INFO] Current config scope includes:')
+    for scope in ConfigScope:
+        if scope & env.currentScope:
+            print(f'\t- {scope.name}')
     sys.exit(0)
