@@ -27,7 +27,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          bash tests/general_config.sh
+          python src/GlobalEnv.py
           bash tests/python_files.sh
           bash tests/bash_profile.sh
         env:
