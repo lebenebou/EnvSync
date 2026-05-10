@@ -27,9 +27,8 @@ jobs:
         shell: bash
         run: |
           set -e
-          python tests/main.py
-          python tests/general_config.py
-          python tests/python_files.py
-          python tests/bash_profile.py
+          bash tests/general_config.sh
+          bash tests/python_files.sh
+          bash tests/bash_profile.sh
         env:
           PYTHONPATH: ${{ github.workspace }}/src
