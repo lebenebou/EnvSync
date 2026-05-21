@@ -295,7 +295,7 @@ class Transaction:
         self.uniqueId = int(self.uniqueId)
 
         if self.type not in TransactionType.__members__:
-            print(f'Warning: Transaction type {self.type} not found in TransactionType enum. Defaulting to "other".', file=sys.stderr)
+            print(f'[WARN] Transaction type: {self.type} not found in TransactionType enum. Defaulting to "other".', file=sys.stderr)
             self.type = 'other'
 
         self.type = TransactionType[self.type] # string to enum
@@ -349,6 +349,10 @@ class Transaction:
         self.currency = targetCurrency
 
     def cleanDescription(self):
+
+        if not isinstance(self.description, str) or not self.description:
+            self.description = "No Description"
+            return
 
         regexToRemove = ['branch', 'pos', 'prch', 'cash', 'onsite', 'offsite', 'mpfx', r'm\S*8831\S*', r'[^\w]{2,}', '^-', r'\b\d+\b']
         for w in regexToRemove:
