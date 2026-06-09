@@ -82,11 +82,9 @@ if __name__ == '__main__':
 
         bankAudi = Account('Bank Audi', 'USD', transactionsFromBankAudiPDF(audiPdf, cacheAfterParsingPath=os.path.join(REPORTS_DIR, 'audi_copy.pdf')))
         bankAudi.normalizeTransactionsWithFees()
-        revolutUsd = Account('Revolut USD', 'USD', transactionsFromRevolutCSV(os.path.join(REPORTS_DIR, 'revolut_usd.csv')))
         revolutEur = Account('Revolut EUR', 'EUR', transactionsFromRevolutCSV(os.path.join(REPORTS_DIR, 'revolut_eur.csv')))
 
         cacheAccount(bankAudi)
-        cacheAccount(revolutUsd)
         cacheAccount(revolutEur)
 
         today: str = datetime.now().strftime('%Y-%m-%d')
@@ -95,12 +93,10 @@ if __name__ == '__main__':
     else: # if not refreshing, read from cached csv
         
         bankAudi = Account('Bank Audi', 'USD', transactionsFromCachedCsv(os.path.join(CACHE_DIR, 'bank_audi.csv')))
-        revolutUsd = Account('Revolut USD', 'USD', transactionsFromCachedCsv(os.path.join(CACHE_DIR, 'revolut_usd.csv')))
         revolutEur = Account('Revolut EUR', 'EUR', transactionsFromCachedCsv(os.path.join(CACHE_DIR, 'revolut_eur.csv')))
 
     portfolio = Portfolio('USD')
     portfolio.withAccount(bankAudi)
-    portfolio.withAccount(revolutUsd)
     portfolio.withAccount(revolutEur)
 
     filter: TransactionFilter = TransactionFilter()
