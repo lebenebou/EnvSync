@@ -436,7 +436,7 @@ class Transaction:
                                     self.type.name
                                       ]).lower()
 
-        if filter.excludeTerm is not None and filter.excludeTerm in fullString:
+        if filter.excludeRegex is not None and re.search(filter.excludeRegex, fullString):
             return False
 
         return True
@@ -457,7 +457,7 @@ class TransactionFilter(Transaction):
 
         self.dateLowerBound = None
         self.dateUpperBound = None
-        self.excludeTerm = None
+        self.excludeRegex: re.Pattern = None
 
     def isEmpty(self) -> bool:
         return all(value is None for value in self.__dict__.values())
