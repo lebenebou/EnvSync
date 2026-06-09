@@ -89,6 +89,7 @@ class Transaction:
         TransactionType.entertainment:
             [
              "billard",
+             "ping pang",
              "disney",
             ],
 
@@ -145,6 +146,7 @@ class Transaction:
         TransactionType.groceries:
             [
              "market",
+             "relay",
              "marche",
              "superm",
              "carrefour",
@@ -162,6 +164,7 @@ class Transaction:
             [
              "uniqlo",
              "outlet",
+             "tweeter",
              "nordstrom",
              "amazon",
              "zara",
@@ -198,6 +201,7 @@ class Transaction:
         TransactionType.hotel:
             [
              "meridien",
+             "hotel",
             ],
 
         TransactionType.salary:
