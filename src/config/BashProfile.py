@@ -478,7 +478,7 @@ if __name__ == "__main__":
 
     *murexCliOptions(),
     *murexWelcomeMessage(),
-    # enableGitUntrackedCacheForMurexVersion(),
+    enableGitUntrackedCacheForMurexVersion(),
 
     cdInto(GlobalEnv().repoRootPath).withComment('Set EnvSync repo as starting directory').withTag('Starting Directory'),
 
