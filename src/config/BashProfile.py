@@ -217,10 +217,12 @@ def usualShellAliases() -> list[ConfigOption]:
     # Git
     Alias('gs').to('git status').withTag('Git'),
     Alias('gd').to('git diff -w').withTag('Git'),
+    Alias('gd1').to('git diff head~1 head').withTag('Git'),
     Alias('gln').to('git log --oneline --pretty=format:"%h by %al - %s" -n').withTag('Git'),
 
     Alias('commit').to('git commit').withTag('Git'),
     Alias('commitFromClipBoard').to('git commit -m "$(paste)"').withTag('Git'),
+    Alias('jiraCommit').to('git commit -m "$(jira --id $(paste))"').withTag('Git').withScope(ConfigScope.MUREX),
 
     Alias('amend').to('git commit --amend').withTag('Git'),
     Alias('push').to('git push').withTag('Git'),
