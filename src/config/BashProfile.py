@@ -147,6 +147,7 @@ def murexCliOptions() -> list[ConfigOption]:
     p4helperScript = RunPython(MUREX_CLI / 'p4helper.py')
     jenkinsScript = RunPython(MUREX_CLI / 'JenkinsRequestHandler.py')
     integrationScript = RunPython(MUREX_CLI / 'IntegrationRequestHandler.py')
+    wikiScript = RunPython(MUREX_CLI / 'WikiPageRequestHandler.py')
 
     options: list[ConfigOption] = [
 
@@ -158,6 +159,9 @@ def murexCliOptions() -> list[ConfigOption]:
 
     Alias('displayAlien').to(RunPython(MUREX_CLI / 'display_alien' / 'excel_refresher.py')\
                              .andThen('start').addPath(MUREX_CLI / 'display_alien' / 'display_alien.xlsx')),
+
+    # Wiki Helpers
+    Alias('wikitext').to(wikiScript).addArg('--pageLink').addArg('"$(paste)"').withTag('Wiki Helpers'),
 
     # P4 Helpers
     Alias('p4helper').to(p4helperScript).withTag('P4 Helpers'),
