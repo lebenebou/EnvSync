@@ -58,6 +58,7 @@ class TransactionType(Enum):
     transport = auto()
     travel = auto()
     service = auto()
+    investment = auto()
     games = auto()
     hotel = auto()
     salary = auto()
@@ -76,6 +77,11 @@ class Transaction:
         TransactionType.service:
             [
                 "poste"
+            ],
+
+        TransactionType.investment:
+            [
+                "interactive broker"
             ],
 
         TransactionType.cinema:
