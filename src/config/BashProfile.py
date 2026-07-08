@@ -373,7 +373,7 @@ def aliasBinUtilities() -> list[ConfigOption]:
 
     # custom options
     options.extend([
-        Alias('find').to('fd').addArg('--ignore-case').addArg('--hidden').addArg('--exclude .git'),
+        Alias('find').to('fd').addArg('--no-ignore').addArg('--ignore-case').addArg('--hidden').addArg('--exclude .git'),
         Alias('cat').to('bat')
     ])
 
