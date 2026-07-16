@@ -70,6 +70,11 @@ def mxVersionManagementOptions() -> list[ConfigOption]:
     CURRENT_VERSION = murexSettings.get('version', None)
     OLD_VERSION = murexSettings.get('previous_version', None)
 
+    vfind = Exec('cdversion').andThen('find').addArg('-t f')
+
+    for ext in ['obj', 'pdb', 'ipch', 'user']:
+        vfind.addArg('--exclude').addArg(f'*.{ext}')
+
     options: list[ConfigOption] = [
 
     # MxVersion
@@ -86,6 +91,8 @@ def mxVersionManagementOptions() -> list[ConfigOption]:
     Alias('versionUpgrade').to(RunPython(ONEDRIVE_MUREX / 'Downloads' / 'scripts' / 'upgradeVersion.py')).withTag('MxVersion Manipulation'),
 
     Alias('settings').to('vim').addPath(murexSettingsJsonPath),
+
+    Alias('vfind').to(vfind),
 
     ]
 
