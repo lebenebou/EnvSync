@@ -79,7 +79,6 @@ def mxVersionManagementOptions() -> list[ConfigOption]:
 
     # MxVersion manipulation
     Alias('cdversion').to(cdInto('/d/$(version)')).withTag('MxVersion Manipulation'),
-    Alias('thorversion').to(cdInto('/d/$(latestThorVersion)')).withTag('MxVersion Manipulation'),
     Alias('cdapps').to(cdInto('/d/apps/$(version)*')).withTag('MxVersion Manipulation'),
 
     Alias('startversion').to('start').addArg('/d/$(version)/mx-$(version).sln.lnk').withTag('MxVersion Manipulation'),
@@ -204,37 +203,65 @@ def murexCliOptions() -> list[ConfigOption]:
 
     return options
 
-def enableGitUntrackedCacheForMurexVersion() -> ConfigOption:
+def gitEnableCacheForLargeRepo() -> Exec:
 
-    cdIntoVersion = Exec('cdversion')
     enableCacheLocally = Exec('git config core.untrackedCache true')
     enableFsMonitor = Exec('git config core.fsmonitor true')
 
-    return cdIntoVersion.andThen(enableCacheLocally).andThen(enableFsMonitor).withScope(ConfigScope.MUREX)
+    return enableCacheLocally.andThen(enableFsMonitor).withScope(ConfigScope.MUREX)
 
+def enableGitCacheForMurexVersion() -> Exec:
+
+    cdVersion = cdInto('/d/$(version)')
+    return cdVersion.andThen(gitEnableCacheForLargeRepo()).withScope(ConfigScope.MUREX)
+
+def gitAliases() -> list[ConfigOption]:
+
+    commitCount: int = 3
+    improvedGitStatus = Exec('git status').\
+                                andThen(Echo(rf'-e "\nLast {commitCount}" commits:'))\
+                                .andThen(f'gln {commitCount}')
+
+    gitOptions: list[ConfigOption] = [
+
+    Alias('gs').to(improvedGitStatus),
+    Alias('gd').to('git diff -w'),
+    Alias('gln').to('git log --oneline --pretty=format:"%h by %al - %s" -n'),
+
+    # git enable cache for large repo
+    Alias('gitEnableCacheForLargeRepo').to(gitEnableCacheForLargeRepo()),
+
+    # commit
+    Alias('commit').to('git commit'),
+    Alias('commitFromClipBoard').to('git commit -m "$(paste)"'),
+    Alias('jiraCommit').to('git commit -m "$(jira --id $(paste))"').withScope(ConfigScope.MUREX),
+    Alias('amend').to('git commit --amend'),
+
+    # push
+    Alias('push').to('git push'),
+
+    # branch
+    Alias('master').to('git switch master'),
+
+    # Git Options
+    Exec('git config --global core.untrackedCache false'),
+
+    ]
+
+    for i in range(1, 11):
+        # Example: gd1 => git diff head~1 head
+        gdnAlias = Alias(f'gd{i}').to(f'git diff head~{i} head')
+        gitOptions.append(gdnAlias)
+
+    for op in gitOptions:
+        op.withTag('Git')
+
+    return gitOptions
 def usualShellAliases() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
 
     Alias('cls').to('clear').then('jobs').withComment('List running jobs when terminal is cleared'),
-
-    # Git
-    Alias('gs').to('git status').andThen(Echo('\nLast 2 commits:')).andThen('gln 2').withTag('Git'),
-    Alias('gd').to('git diff -w').withTag('Git'),
-    Alias('gd1').to('git diff head~1 head').withTag('Git'),
-    Alias('gln').to('git log --oneline --pretty=format:"%h by %al - %s" -n').withTag('Git'),
-
-    Alias('commit').to('git commit').withTag('Git'),
-    Alias('commitFromClipBoard').to('git commit -m "$(paste)"').withTag('Git'),
-    Alias('jiraCommit').to('git commit -m "$(jira --id $(paste))"').withTag('Git').withScope(ConfigScope.MUREX),
-
-    Alias('amend').to('git commit --amend').withTag('Git'),
-    Alias('push').to('git push').withTag('Git'),
-
-    Alias('master').to('git switch master').withTag('Git'),
-
-    # Git Options
-    Exec('git config --global core.untrackedCache false').withTag('Git Options'),
 
     # grep
     Alias('grep').to('grep -i --color --binary-files=without-match --exclude-dir=".git"').withTag('grep'),
@@ -468,6 +495,7 @@ if __name__ == "__main__":
     maximizeAndZoomScreen(),
     initScript(),
 
+    *gitAliases(),
     *usualShellAliases(),
     *navigationAliases(),
     *gitBashManipulationAliases(),
@@ -484,7 +512,7 @@ if __name__ == "__main__":
 
     *murexCliOptions(),
     *murexWelcomeMessage(),
-    enableGitUntrackedCacheForMurexVersion(),
+    enableGitCacheForMurexVersion(),
 
     cdInto(GlobalEnv().repoRootPath).withComment('Set EnvSync repo as starting directory').withTag('Starting Directory'),
 
