@@ -54,7 +54,7 @@ class SectionFromFile(ConfigOption):
         if not os.path.exists(self.filePath):
             self.filePath = os.path.join(fileSectionsDir, self.filePath)
 
-        assert os.path.exists(self.filePath), f"File does not exist: {self.filePath}"
+        assert os.path.exists(self.filePath), f"Section file does not exist: {self.filePath}"
 
         lines: str = None
         with open(self.filePath, 'r') as f:

@@ -455,6 +455,21 @@ def envSyncAliases() -> list[ConfigOption]:
 
     return bashProfileCompareOptions + options
 
+def visualStudioAliases() -> list[ConfigOption]:
+
+    options: list[ConfigOption] = [
+
+    # vs command to open a file with vs
+    SectionFromFile('vs.sh'),
+
+    ]
+
+    for option in options:
+        option.withScope(ConfigScope.MUREX)
+        option.withTag('Visual Studio')
+
+    return options
+
 def windowsAliases() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
@@ -503,6 +518,7 @@ if __name__ == "__main__":
 
     *envSyncAliases(),
 
+    *visualStudioAliases(),
     *windowsAliases(),
 
     *mxVersionManagementOptions(),
