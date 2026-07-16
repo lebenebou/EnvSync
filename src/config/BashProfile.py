@@ -219,7 +219,7 @@ def usualShellAliases() -> list[ConfigOption]:
     Alias('cls').to('clear').then('jobs').withComment('List running jobs when terminal is cleared'),
 
     # Git
-    Alias('gs').to('git status').withTag('Git'),
+    Alias('gs').to('git status').andThen(Echo('\nLast 2 commits:')).andThen('gln 2').withTag('Git'),
     Alias('gd').to('git diff -w').withTag('Git'),
     Alias('gd1').to('git diff head~1 head').withTag('Git'),
     Alias('gln').to('git log --oneline --pretty=format:"%h by %al - %s" -n').withTag('Git'),
