@@ -21,12 +21,69 @@ VERBOSE=false
 SOFT=false
 FULL=false
 FAIL_FAST=false
+
+print_help()
+{
+    cat <<EOF
+EnvSync Repository Initialization Script
+
+Usage:
+    ./init.sh [OPTIONS]
+
+Options:
+    -h, --help      Show this help message and exit
+    --verbose       Enable verbose output
+    --fail-fast     Stop immediately when a step fails
+    --soft          Perform validation and authentication only.
+                    Skip bash/vim configuration updates.
+    --full          Run the complete setup:
+                      - update configurations
+                      - sync vim plugins
+                      - install bin utilities
+                      - run repository tests
+
+Examples:
+    ./init.sh
+        Standard initialization
+
+    ./init.sh --verbose
+        Standard initialization with additional logging
+
+    ./init.sh --soft
+        Validate repository, SSH, Git, and Python only
+
+    ./init.sh --full --verbose
+        Run the complete setup with verbose logging
+
+Notes:
+    --full overrides --soft.
+EOF
+}
+
 for arg in "$@"; do
     case "$arg" in
-        --verbose) VERBOSE=true ;;
-        --fail-fast) FAIL_FAST=true ;;
-        --soft)    SOFT=true ;;
-        --full)    FULL=true ; SOFT=false ;;
+        -h|--help)
+            print_help
+            exit 0
+            ;;
+        --verbose)
+            VERBOSE=true
+            ;;
+        --fail-fast)
+            FAIL_FAST=true
+            ;;
+        --soft)
+            SOFT=true
+            ;;
+        --full)
+            FULL=true
+            SOFT=false
+            ;;
+        *)
+            echo "Unknown option: $arg"
+            echo "Run './init.sh --help' for usage information."
+            exit 1
+            ;;
     esac
 done
 
