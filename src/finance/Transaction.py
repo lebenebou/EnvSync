@@ -97,6 +97,7 @@ class Transaction:
              "billard",
              "ping pang",
              "disney",
+             "faraya",
             ],
 
         TransactionType.concert:
