@@ -4,7 +4,7 @@
 # This script orchestrates the initialization of the EnvSync repository
 # It decrypts encrypted files, updates bash profile, and syncs vim configuration
 # 
-# Usage: ./init.sh [--verbose] [--fail-fast] [--soft] [--full]
+# Usage: ./init.sh [--verbose] [--fail-fast] [--config] [--full]
 
 _esync_pre_vars=$(compgen -v)
 _esync_pre_fns=$(declare -F | awk '{print $3}')
@@ -18,7 +18,7 @@ SRC_DIR="$REPO_ROOT/src"
 CONFIG_DIR="$SRC_DIR/config"
 
 VERBOSE=false
-SOFT=false
+CONFIG=false
 FULL=false
 FAIL_FAST=false
 
@@ -34,7 +34,7 @@ Options:
     -h, --help      Show this help message and exit
     --verbose       Enable verbose output
     --fail-fast     Stop immediately when a step fails
-    --soft          Perform validation and authentication only.
+    --config        Perform validation and authentication only.
                     Skip bash/vim configuration updates.
     --full          Run the complete setup:
                       - update configurations
@@ -44,19 +44,19 @@ Options:
 
 Examples:
     ./init.sh
-        Standard initialization
+        Standard initialization: updates bash profile, vimrc, and ensures python is installed.
 
     ./init.sh --verbose
         Standard initialization with additional logging
 
-    ./init.sh --soft
-        Validate repository, SSH, Git, and Python only
+    ./init.sh --config
+        Validate/Update bashprofile, vimrc.
 
     ./init.sh --full --verbose
         Run the complete setup with verbose logging
 
 Notes:
-    --full overrides --soft.
+    --full overrides --config.
 EOF
 }
 
@@ -72,12 +72,12 @@ for arg in "$@"; do
         --fail-fast)
             FAIL_FAST=true
             ;;
-        --soft)
-            SOFT=true
+        --config)
+            CONFIG=true
             ;;
         --full)
             FULL=true
-            SOFT=false
+            CONFIG=false
             ;;
         *)
             echo "Unknown option: $arg"
@@ -359,7 +359,7 @@ verify_repo()
         return 1
     fi
 
-    if $SOFT; then
+    if ! $FULL; then
         return 0
     fi
 
@@ -413,16 +413,18 @@ _esync_main()
 {
     echo -e \\nWelcome $(whoami)!\\n
 
-    ensure_git || return $?
-    ensure_auth_ssh || return $?
-    verify_repo || return $?
+    if $CONFIG || $FULL; then
+        update_bash_profile || { $FAIL_FAST && return 1; }
+        update_vimrc || { $FAIL_FAST && return 1; }
+    fi
 
     ensure_python || return $?
 
     echo ""
-    if ! $SOFT; then
-        update_bash_profile || { $FAIL_FAST && return 1; }
-        update_vimrc || { $FAIL_FAST && return 1; }
+    if ! $CONFIG; then
+        ensure_git || return $?
+        ensure_auth_ssh || return $?
+        verify_repo || return $?
     fi
 
     if $FULL; then
