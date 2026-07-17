@@ -8,7 +8,6 @@ SRC_DIR = os.path.dirname(CONFIG_DIR)
 sys.path.append(SRC_DIR)
 
 from GlobalEnv import GlobalEnv, ConfigScope
-from config.ConfigFile import SectionFromFile
 from config.Aliases import *
 
 import json
@@ -23,7 +22,6 @@ def mxdevenvOptions() -> list[ConfigOption]:
 
     mxdevenvRepoPath = 'C:\\mxdevenv'
     mxdevenvUtilityScriptsPath = os.path.join(mxdevenvRepoPath, 'Mxdevenvpp', '_Scripts')
-
     options: list[ConfigOption] = [
 
     Alias('mde').to('D:\\.mxdevenvpp\\bin\\mde++.cmd').withTag('mxdevenv runners'),
@@ -60,7 +58,7 @@ def mxdevenvOptions() -> list[ConfigOption]:
 def mxVersionManagementOptions() -> list[ConfigOption]:
 
     D_DRIVE = Path("D:\\")
-    ONEDRIVE_MUREX = (D_DRIVE / "OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX | ConfigScope.WINDOWS)
+    ONEDRIVE_MUREX = (D_DRIVE / "OneDrive - Murex").withScope(ConfigScope.MUREX | ConfigScope.WINDOWS)
     murexSettingsJsonPath = os.path.join('D:\\', '.mxdevenvpp', 'settings', 'python_scripts_settings.json')
 
     murexSettings = dict()
@@ -142,9 +140,9 @@ def murexWelcomeMessage() -> list[ConfigOption]:
 
 def murexCliOptions() -> list[ConfigOption]:
 
-    C_DRIVE = Path("C:\\").withName('C Drive').withScope(ConfigScope.WINDOWS)
-    D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigScope.WINDOWS)
-    ONEDRIVE_MUREX = (D_DRIVE / "OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX | ConfigScope.WINDOWS)
+    C_DRIVE = Path("C:\\").withScope(ConfigScope.WINDOWS)
+    D_DRIVE = Path("D:\\").withScope(ConfigScope.WINDOWS)
+    ONEDRIVE_MUREX = (D_DRIVE / "OneDrive - Murex").withScope(ConfigScope.MUREX | ConfigScope.WINDOWS)
 
     MUREX_CLI = (C_DRIVE / 'murexcli')
 
@@ -200,8 +198,6 @@ def murexCliOptions() -> list[ConfigOption]:
 
     Alias('tpks').to(RunPython(GQAF_SCRIPTS / 'jobs.py')).withTag('GQAF Scripts'),
     Alias('allMxVersions').to(RunPython(GQAF_SCRIPTS / 'allMxVersions.py')).withTag('GQAF Scripts'),
-
-    Alias('latestThorVersion').to('allMxVersions').grep('-E').addQuoted(r'mar.tho.[0-9]+\S+[0-9]$').pipe('sort -Vr').pipe('head -n 1').withTag('Thor Team'),
 
     ]
 
@@ -295,7 +291,7 @@ def usualShellAliases() -> list[ConfigOption]:
     Alias('connected').to('curl -s www.google.com').muteOutput().withTag('network'),
     Alias('checkConnection').to('connected').then(Echo('$?')).withTag('network'),
 
-    SectionFromFile('unzip_to_dir.sh'),
+    Alias('unzip').to(Script('unzip_to_dir.sh')),
 
     ]
 
@@ -324,13 +320,13 @@ def navigationAliases() -> list[ConfigOption]:
     globalEnv = GlobalEnv()
 
     # Windows drives
-    D_DRIVE = Path("D:\\").withName('D Drive').withScope(ConfigScope.WINDOWS)
-    ONEDRIVE_MUREX = (D_DRIVE / "OneDrive - Murex").withName('ONEDRIVE').withScope(ConfigScope.MUREX | ConfigScope.WINDOWS)
+    D_DRIVE = Path("D:\\").withScope(ConfigScope.WINDOWS)
+    ONEDRIVE_MUREX = (D_DRIVE / "OneDrive - Murex").withScope(ConfigScope.MUREX | ConfigScope.WINDOWS)
 
     # User folders
-    DESKTOP = Path(os.path.join(globalEnv.userHomeDir, 'Desktop')).withName('DESKTOP').withScope(ConfigScope.LAPTOP | ConfigScope.LINUX)
-    DOWNLOADS = Path(os.path.join(globalEnv.userHomeDir, 'Downloads')).withName('DOWNLOADS').withScope(ConfigScope.LAPTOP)
-    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withName('DOCUMENTS').withScope(ConfigScope.LAPTOP)
+    DESKTOP = Path(os.path.join(globalEnv.userHomeDir, 'Desktop')).withScope(ConfigScope.LAPTOP | ConfigScope.LINUX)
+    DOWNLOADS = Path(os.path.join(globalEnv.userHomeDir, 'Downloads')).withScope(ConfigScope.LAPTOP)
+    DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withScope(ConfigScope.LAPTOP)
 
     if globalEnv.currentScope & ConfigScope.MUREX:
 
@@ -339,7 +335,7 @@ def navigationAliases() -> list[ConfigOption]:
         DOCUMENTS = (ONEDRIVE_MUREX / 'Documents').withScope(ConfigScope.MUREX)
 
     if globalEnv.currentScope & ConfigScope.LINUX:
-        DOCUMENTS = Path(os.path.join(globalEnv.userHomeDir, 'Documents')).withName('DOCUMENTS').withScope(ConfigScope.LINUX)
+        DOCUMENTS = Path(os.path.join(globalEnv.userHomeDir, 'Documents')).withScope(ConfigScope.LINUX)
     options: list[ConfigOption] = [
 
     # Usual directories
@@ -373,6 +369,9 @@ def gitBashManipulationAliases() -> list[ConfigOption]:
     options: list[ConfigOption] = [
 
     Alias('updategitbash').to('git update-git-for-windows').withScope(ConfigScope.WINDOWS).withTag('Git-Bash Update'),
+
+    Alias('runbashprofile').to(RunPython(CURRENT_FILE)).withTag('bashprofile'),
+    Alias('editbashprofile').to('code').addPath(CURRENT_FILE).withTag('bashprofile'),
 
     Alias('restart').to('win 2').disown().then('exit').withTag('bash').withScope(ConfigScope.WINDOWS),
 
@@ -419,14 +418,15 @@ def aliasBinUtilities() -> list[ConfigOption]:
 def envSyncAliases() -> list[ConfigOption]:
 
     globalEnv = GlobalEnv()
-    envSyncSrcPath = Path(globalEnv.repoSrcPath).withName('SRC PATH')
-    utilsPath = (envSyncSrcPath / 'utils').withName('UTILS PATH')
+    envSyncSrcPath = Path(globalEnv.repoSrcPath)
+    utilsPath = (envSyncSrcPath / 'utils')
 
-    options: list[ConfigOption] = [
+    debugMode: bool = bool(0)
+    options: list[ConfigOption] = [] if debugMode else [
 
     # EnvSync main
-    Alias('init').to(os.path.join(globalEnv.repoRootPath, 'init.sh')).withTag('EnvSync main'),
-    Alias('reset').to(os.path.join(globalEnv.repoRootPath, 'reset.sh')).withTag('EnvSync main'),
+    Alias('init').to(initScript()).withTag('EnvSync main'),
+    Alias('reset').to(Script(os.path.join(globalEnv.repoRootPath, 'reset.sh'))).withTag('EnvSync main'),
 
     # EnvSync utils
     Alias('aspath').to(RunPython(utilsPath / 'aspath.py').addArg('--from_stdin')).withTag('EnvSync utils'),
@@ -453,7 +453,7 @@ def envSyncAliases() -> list[ConfigOption]:
         checkDiff.muteOutput(),
 
         IfPreviousSucceeded(EchoSuccess('Bashprofile up to date'))\
-            .Else(EchoWarning('Bashprofile might be outdated. Consider running init.sh')),
+            .Else(EchoWarning('Bashprofile might be outdated. Consider running init.sh --config')),
 
     ]
 
@@ -467,7 +467,7 @@ def visualStudioAliases() -> list[ConfigOption]:
     options: list[ConfigOption] = [
 
     # vs command to open a file with vs
-    SectionFromFile('vs.sh'),
+    Alias('vs').to(Script('vs.sh')),
 
     ]
 
@@ -499,9 +499,12 @@ def windowsAliases() -> list[ConfigOption]:
 
 def initScript() -> ConfigOption:
 
-    return SectionFromFile(os.path.join(GlobalEnv().repoRootPath, 'init.sh')).withTag('Init Script')
+    initScriptPath = os.path.join(GlobalEnv().repoRootPath, 'init.sh')
+    return Script(initScriptPath).toExecute()
 
 if __name__ == "__main__":
+
+    debugMode: bool = bool(0)
 
     # parse args
     parser = argparse.ArgumentParser(description='Update your bashprofile through Python')
@@ -512,7 +515,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     bashprofile: ConfigFile = BashProfile()
-    bashprofile.options = [
+    bashprofile.options = [] if debugMode else [
 
     maximizeAndZoomScreen(),
     initScript(),
@@ -543,6 +546,11 @@ if __name__ == "__main__":
 
     ]
 
+    if debugMode:
+        bashprofile.options = [
+            Alias('init').to(initScript()).withTag('EnvSync main')
+        ]
+
     assert all(isinstance(option, ConfigOption) for option in bashprofile.options), "All items in bashprofile.options must be of type ConfigOption"
 
     globalEnv = GlobalEnv()
@@ -552,5 +560,8 @@ if __name__ == "__main__":
         ConfigFile.writeToFile(globalEnv.getBashProfilePath(), bashprofileContent)
     else:
         print(bashprofile.toString(), file=sys.stdout)
+
+    if debugMode:
+        exit(1)
 
     exit(0)

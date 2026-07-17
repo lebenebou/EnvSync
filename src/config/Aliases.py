@@ -12,46 +12,11 @@ from utils import aspath
 
 import re
 
-class Variable(ConfigOption):
-
-    def __init__(self, value: str | Exec):
-
-        super().__init__()
-        self.isCommandOutput: bool = False
-        self.name: str = None
-
-        if isinstance(value, Exec):
-            self.value: str = value.toString()
-            self.isCommandOutput = True
-        else:
-            self.value: str = value
-
-    def asCommandOutput(self):
-
-        assert not self.isCommandOutput, "Variable is already a command output"
-        self.isCommandOutput = True
-        return self
-
-    def withName(self, name: str):
-        self.name = name
-        return self
-
-    def toString(self) -> str:
-
-        if self.isCommandOutput:
-            self.value = '$(' + self.value + ')'
-
-        return f'{self.name}="{self.value}"'
-
-class Path(Variable):
+class Path(ConfigOption):
 
     def __init__(self, fileOrFolder: str):
-
-        super().__init__(fileOrFolder)
-
+        super().__init__()
         self.value = fileOrFolder
-        self.name: str = None
-        self.hasBeenGivenAlternate: bool = False
 
     def slash(self, otherPath):
         otherPath = Path(otherPath)
@@ -71,14 +36,49 @@ class Path(Variable):
     def toString(self) -> str:
 
         assert self.value, f"Path doesn't have value"
-        assert self.name, f"Path doesn't have name: {self.value}"
 
         # assert os.path.exists(self.value), f"Path doesn't exist: {self.value}"
         if not os.path.exists(self.value):
             self.withComment('[WARNING] THIS PATH DOESNT EXIST')
 
-        self.value = self.toLinuxPath()
-        return super().toString()
+        return self.toLinuxPath()
+
+class Script(Path):
+
+    def __init__(self, fileOrFolder: str):
+        super().__init__(fileOrFolder)
+
+    def resolvePath(self) -> str:
+
+        assert self.value, f"Script path doesn't have value"
+
+        if not os.path.exists(self.value):
+            self.value = os.path.join(GlobalEnv().repoSrcPath, 'config', 'scripts', self.value)
+
+        assert os.path.exists(self.value), f"Script path doesn't exist: {self.value}"
+        return self.value
+
+    def getFileContent(self) -> str:
+        
+        self.resolvePath()
+
+        with open(self.value, 'r') as f:
+            content = f.read()
+
+        return content
+
+    def toExecute(self) -> Exec:
+        self.resolvePath()
+        return Exec('source').addPath(self)
+
+    # override
+    def toLinuxPath(self) -> str:
+        self.resolvePath()
+        return super().toLinuxPath()
+
+    # override
+    def toString(self) -> str:
+        return self.getFileContent()
 
 class Exec(ConfigOption):
 
@@ -233,12 +233,15 @@ class Alias(ConfigOption):
         super().__init__()
         self.name = name
 
-    def to(self, exec: Exec | str) -> Exec:
+    def to(self, exec: Exec | str | Script) -> Exec:
 
         assert self.name, f'Name not specified for alias'
 
+        if isinstance(exec, Script):
+            exec = Exec('source').addPath(exec)
+
         if isinstance(exec, Path):
-            exec = Exec(exec.toLinuxPath())
+            exec = exec.toString()
 
         if isinstance(exec, str) or isinstance(exec, Exec):
             exec = Exec(exec) # deep copy the exec

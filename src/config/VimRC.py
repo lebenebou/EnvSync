@@ -8,7 +8,7 @@ SRC_DIR = os.path.dirname(CONFIG_DIR)
 sys.path.append(SRC_DIR)
 
 from config.Remaps import *
-from config.ConfigFile import SectionFromFile
+from config.Aliases import Script
 from GlobalEnv import GlobalEnv, ConfigScope
 
 if __name__ == "__main__":
@@ -21,8 +21,8 @@ if __name__ == "__main__":
 
     vimConfig.options = [
 
-    SectionFromFile('vimplug.vimrc').withTag('vim plugins'),
-    # SectionFromFile('coc.vimrc').withTag('vim plugins'),
+    Script('vimplug.vimrc').withTag('vim plugins'),
+    # Script('coc.vimrc').withTag('vim plugins'),
 
     VimOption('relativenumber'),
     VimOption('number'),
