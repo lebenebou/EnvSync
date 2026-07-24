@@ -62,7 +62,7 @@ def mxVersionManagementOptions() -> list[ConfigOption]:
     murexSettingsJsonPath = os.path.join('D:\\', '.mxdevenvpp', 'settings', 'python_scripts_settings.json')
 
     murexSettings = dict()
-    if GlobalEnv().currentScope & ConfigScope.MUREX:
+    if GlobalEnv().isInScope(ConfigScope.MUREX):
         murexSettings = readJsonFromFile(murexSettingsJsonPath)
 
     CURRENT_VERSION = murexSettings.get('version', None)
@@ -302,11 +302,14 @@ def maximizeAndZoomScreen() -> ConfigOption:
 
     pythonLinesToRun: list[str] = [
         'import pyautogui',
-        'pyautogui.hotkey("win", "up")',
+        'pyautogui.press("alt")',
+        'pyautogui.press("space")',
+        'pyautogui.press("r")',
+        'pyautogui.hotkey("ctrl", "0")',
     ]
 
     zoomIterations = 3
-    if GlobalEnv().currentScope & ConfigScope.LAPTOP:
+    if GlobalEnv().isInScope(ConfigScope.LAPTOP):
         zoomIterations = 2
 
     for _ in range(zoomIterations):
@@ -328,13 +331,13 @@ def navigationAliases() -> list[ConfigOption]:
     DOWNLOADS = Path(os.path.join(globalEnv.userHomeDir, 'Downloads')).withScope(ConfigScope.LAPTOP)
     DOCUMENTS = Path('C:\\Users\\yyamm\\Documents\\MyDocuments').withScope(ConfigScope.LAPTOP)
 
-    if globalEnv.currentScope & ConfigScope.MUREX:
+    if globalEnv.isInScope(ConfigScope.MUREX):
 
         DESKTOP = (ONEDRIVE_MUREX / 'Desktop').withScope(ConfigScope.MUREX)
         DOWNLOADS = (ONEDRIVE_MUREX / 'Downloads').withScope(ConfigScope.MUREX)
         DOCUMENTS = (ONEDRIVE_MUREX / 'Documents').withScope(ConfigScope.MUREX)
 
-    if globalEnv.currentScope & ConfigScope.LINUX:
+    if globalEnv.isInScope(ConfigScope.LINUX):
         DOCUMENTS = Path(os.path.join(globalEnv.userHomeDir, 'Documents')).withScope(ConfigScope.LINUX)
     options: list[ConfigOption] = [
 
@@ -426,6 +429,7 @@ def envSyncAliases() -> list[ConfigOption]:
 
     # EnvSync main
     Alias('init').to(initScript()).withTag('EnvSync main'),
+    Alias('config').to('init --config').withTag('EnvSync main'),
     Alias('reset').to(Script(os.path.join(globalEnv.repoRootPath, 'reset.sh'))).withTag('EnvSync main'),
 
     # EnvSync utils
@@ -447,8 +451,10 @@ def envSyncAliases() -> list[ConfigOption]:
 
     generateBashProfile = RunPython(CURRENT_FILE).muteOutput(2)
     checkDiff = Exec('diff -Bwq').addPath(globalEnv.getBashProfilePath()).addArg(f'<({generateBashProfile.toString()})')
+
     bashProfileCompareOptions: list[ConfigOption] = [
 
+        Alias('checkbashprofile').to(checkDiff).andThen(Echo('$?')).withTag('BashProfile Check'),
         Echo(r'-ne Checking bashprofile...\\r'),
         checkDiff.muteOutput(),
 

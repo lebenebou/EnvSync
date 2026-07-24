@@ -71,6 +71,9 @@ class ConfigScope(IntFlag):
 
         return currentScope
 
+    def includes(self, otherScope: 'ConfigScope') -> bool:
+        return (self & otherScope)
+
 class GlobalEnv:
 
     _singletonInstance = None
@@ -112,6 +115,9 @@ class GlobalEnv:
         self._nvimRcPath: str = None
 
         self.gPavilion15Path = os.path.join('G:\\', 'Other computers', 'Pavilion15')
+
+    def isInScope(self, scope: ConfigScope) -> bool:
+        return self.currentScope.includes(scope)
 
     def getBashProfilePath(self) -> str:
 
@@ -162,10 +168,10 @@ class GlobalEnv:
         if self._nvimRcPath:
             return self._nvimRcPath
 
-        if self.currentScope & ConfigScope.WINDOWS:
+        if self.currentScope.includes(ConfigScope.WINDOWS):
             self._nvimRcPath = os.path.join(self.userHomeDir, 'AppData', 'Local', 'nvim', 'init.vim')
 
-        if self.currentScope & ConfigScope.LINUX:
+        if self.currentScope.includes(ConfigScope.LINUX):
             self._nvimRcPath = os.path.join(self.userHomeDir, '.config', 'nvim', 'init.vim')
 
         if not os.path.isfile(self._nvimRcPath):
@@ -320,6 +326,6 @@ if __name__ == '__main__':
     env = GlobalEnv()
     print('[INFO] Current config scope includes:')
     for scope in ConfigScope:
-        if scope & env.currentScope:
+        if scope.includes(env.currentScope):
             print(f'\t- {scope.name}')
     sys.exit(0)

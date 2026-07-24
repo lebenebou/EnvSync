@@ -62,7 +62,7 @@ class ConfigFile:
         
         res = '\n'
         currentTag = None
-        for option in (op for op in self.options if op.scope & scopeFilter):
+        for option in (op for op in self.options if op.scope.includes(scopeFilter)):
             
             if currentTag != option.tag:
 
