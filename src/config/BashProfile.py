@@ -75,18 +75,17 @@ def mxVersionManagementOptions() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
 
-    # MxVersion
-    Alias('version').to(Echo(CURRENT_VERSION)).withTag('MxVersion'),
-    Alias('clipVersion').to('version').tee('clip').withTag('MxVersion'),
-    Alias('oldversion').to(Echo(OLD_VERSION)).withTag('MxVersion'),
+    Alias('version').to(Echo(CURRENT_VERSION)),
+    Alias('clipVersion').to('version').tee('clip'),
+    Alias('oldversion').to(Echo(OLD_VERSION)),
 
-    # MxVersion manipulation
-    Alias('cdversion').to(cdInto('/d/$(version)')).withTag('MxVersion Manipulation'),
-    Alias('cdapps').to(cdInto('/d/apps/$(version)*')).withTag('MxVersion Manipulation'),
+    Alias('cdversion').to(cdInto('/d/$(version)')),
+    Alias('cdapps').to(cdInto('/d/apps/$(version)*')),
 
-    Alias('startversion').to('start').addArg('/d/$(version)/mx-$(version).sln.lnk').withTag('MxVersion Manipulation'),
+    Alias('startversion').to('start').addArg('/d/$(version)/mx-$(version).sln.lnk'),
 
-    Alias('versionUpgrade').to(RunPython(ONEDRIVE_MUREX / 'Downloads' / 'scripts' / 'upgradeVersion.py')).withTag('MxVersion Manipulation'),
+    Alias('versionUpgrade').to(RunPython(ONEDRIVE_MUREX / 'Downloads' / 'scripts' / 'upgradeVersion.py'))\
+        .andThen(Alias('version').to(Echo('$(paste)'))),
 
     Alias('settings').to('vim').addPath(murexSettingsJsonPath),
 
@@ -96,6 +95,7 @@ def mxVersionManagementOptions() -> list[ConfigOption]:
 
     for option in options:
         option.withScope(ConfigScope.MUREX)
+        option.withTag('MxVersion')
 
     return options
 
@@ -480,11 +480,6 @@ def visualStudioAliases() -> list[ConfigOption]:
 def windowsAliases() -> list[ConfigOption]:
 
     options: list[ConfigOption] = [
-
-    Alias('tm').to(InlinePython().linesAre([
-        'import pyautogui',
-        'pyautogui.hotkey("ctrl", "shift", "esc")'
-    ])).withTag('Windows Task Manager'),
 
     Alias('cmd').to('start').addPath('C:\\Windows\\System32\\cmd.exe').withTag('Windows CMD'),
 
