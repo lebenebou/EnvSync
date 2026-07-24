@@ -305,6 +305,7 @@ def maximizeAndZoomScreen() -> ConfigOption:
         'pyautogui.press("alt")',
         'pyautogui.press("space")',
         'pyautogui.press("r")',
+        'pyautogui.hotkey("win", "up")',
         'pyautogui.hotkey("ctrl", "0")',
     ]
 
