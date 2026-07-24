@@ -47,7 +47,6 @@ class TransactionType(Enum):
     food = auto()
     concert = auto()
     entertainment = auto()
-    cinema = auto()
     software = auto()
     gym = auto()
     mobile = auto()
@@ -84,20 +83,16 @@ class Transaction:
                 "interactive broker"
             ],
 
-        TransactionType.cinema:
-            [
-             "pathe",
-             "grand rex",
-             "cinema",
-             "max linder",
-            ],
-
         TransactionType.entertainment:
             [
              "billard",
              "ping pang",
              "disney",
-             "faraya",
+             "pathe",
+             "grand rex",
+             "cinema",
+             "max linder",
+            "faraya",
             ],
 
         TransactionType.concert:
