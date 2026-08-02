@@ -520,6 +520,7 @@ if __name__ == "__main__":
     bashprofile.options = [] if debugMode else [
 
     maximizeAndZoomScreen(),
+    Alias('python').to('py').withTag('Python').withScope(ConfigScope.LAPTOP),
     initScript(),
 
     *gitAliases(),

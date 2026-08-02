@@ -413,12 +413,12 @@ _esync_main()
 {
     echo -e \\nWelcome $(whoami)!\\n
 
+    ensure_python || return $?
+
     if $CONFIG || $FULL; then
         update_bash_profile || { $FAIL_FAST && return 1; }
         update_vimrc || { $FAIL_FAST && return 1; }
     fi
-
-    ensure_python || return $?
 
     echo ""
     if ! $CONFIG; then
