@@ -13,8 +13,8 @@ for dir in "$REPO_ROOT/src/config" "$REPO_ROOT/src"; do
     for file in "$dir"/*.py; do
         [ -f "$file" ] || continue
 
-        echo "[ RUN] python $file"
-        if python "$file" > /dev/null 2>&1; then
+        echo "[ RUN] py $file"
+        if py "$file" > /dev/null 2>&1; then
             echo -e "${GREEN}[DONE]${NC} python $file"
         else
             echo -e "${RED}[FAIL]${NC} python $file"
