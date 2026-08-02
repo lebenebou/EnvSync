@@ -519,8 +519,9 @@ if __name__ == "__main__":
     bashprofile: ConfigFile = BashProfile()
     bashprofile.options = [] if debugMode else [
 
-    maximizeAndZoomScreen(),
     Alias('python').to('py').withTag('Python').withScope(ConfigScope.LAPTOP),
+
+    maximizeAndZoomScreen(),
     initScript(),
 
     *gitAliases(),
