@@ -41,7 +41,7 @@ def mxdevenvOptions() -> list[ConfigOption]:
     Alias('logsVisualizer').to('mde logsVisualizer').inParallel().withTag('Logbook'),
 
     # debugging
-    Alias('debugme').to('mde envDebug -v $(version) -clientPath /d/apps/$(version)*').inParallel().withTag('DebugMe++'),
+    Alias('debugme').to('mde envDebug -v $(version) -clientPath /d/apps/$(version)*').disown().withTag('DebugMe++'),
 
     # drive mapping
     Alias('drivesmapped').to('[ -d "/u" ]').then(Echo('$?')).withTag('Drive Mapping'),
