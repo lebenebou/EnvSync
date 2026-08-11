@@ -34,11 +34,11 @@ def mxdevenvOptions() -> list[ConfigOption]:
     Alias('repomxdevenv').to(cdInto(mxdevenvRepoPath)).withTag('mxdevenv path shortcuts'),
 
     # version management
-    Alias('prepareVersionFromClipBoard').to('mde prepareVersion -v $(paste) &').withTag('MxVersion Management'),
-    Alias('versionManager').to('mde versionManager').inParallel().withTag('MxVersion Management'),
+    Alias('prepareVersionFromClipBoard').to('mde prepareVersion -v $(paste)').disown().withTag('MxVersion Management'),
+    Alias('versionManager').to('mde versionManager').disown().withTag('MxVersion Management'),
 
     # logbook
-    Alias('logsVisualizer').to('mde logsVisualizer').inParallel().withTag('Logbook'),
+    Alias('logsVisualizer').to('mde logsVisualizer').disown().withTag('Logbook'),
 
     # debugging
     Alias('debugme').to('mde envDebug -v $(version) -clientPath /d/apps/$(version)*').disown().withTag('DebugMe++'),
