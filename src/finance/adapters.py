@@ -55,25 +55,30 @@ def transactionsFromBankAudiPDF(pdfPath: str, cacheAfterParsingPath: str = None)
     dataFrame.dropna(how='all', inplace=True)
 
     transactions: list[Transaction] = []
-    for _, row in dataFrame.iterrows():
+    for i, row in dataFrame.iterrows():
 
-        t = Transaction()
+        try:
+            t = Transaction()
 
-        t.uniqueId = row['Serial Number'].replace(' ', '')
-        t.uniqueId = int(t.uniqueId)
+            t.uniqueId = row['Serial Number'].replace(' ', '')
+            t.uniqueId = int(t.uniqueId)
 
-        t.date = parseDate(row['Transaction Date'])
-        t.description = str(row['Description'])
+            t.date = parseDate(row['Transaction Date'])
+            t.description = str(row['Description'])
 
-        t.credit = parseFloat(row['Credit'])
+            t.credit = parseFloat(row['Credit'])
 
-        if t.credit == 0:
-            t.credit = -1 * parseFloat(row['Debit'])
+            if t.credit == 0:
+                t.credit = -1 * parseFloat(row['Debit'])
 
-        t.balance = parseFloat(row['Running Balance'])
+            t.balance = parseFloat(row['Running Balance'])
 
-        t.guessAndFillType()
-        transactions.append(t)
+            t.guessAndFillType()
+            transactions.append(t)
+
+        except Exception as e:
+            print(f'[WARN] failed to parse transaction row number {i}', flush=True, file=sys.stderr)
+            continue
 
     print(f'Parsed {len(transactions)} transactions.', flush=True, file=sys.stderr)
 
