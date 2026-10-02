@@ -116,6 +116,7 @@ if __name__ == '__main__':
 
     portfolioAccount: Account = portfolio.build()
 
+    args.currency = args.currency.upper()
     assert Currency.currencySupported(args.currency), f'Currency not supported: {args.currency}'
     portfolioAccount.convertToCurrency(args.currency)
 
