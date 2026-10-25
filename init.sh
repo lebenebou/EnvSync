@@ -242,39 +242,15 @@ ensure_requirements()
         return 1
     fi
 
-    echo "Checking Python requirements..."
+    echo "Ensuring required pip packages..."
 
-    # Install missing requirements (pip install is already idempotent)
-    if ! pip install -r "$REQUIREMENTS_FILE" --quiet; then
-        log_error "Failed to install requirements."
+    # Install and upgrade packages from requirements.txt
+    if ! pip install -r "$REQUIREMENTS_FILE" --upgrade --quiet; then
+        log_error "Failed to install or upgrade requirements."
         return 1
     fi
 
-    log_success "Requirements installed"
-
-    # Update all installed packages
-    echo "Updating pip packages..."
-
-    pip list --outdated --format=json | python -c '
-import json
-import subprocess
-import sys
-
-packages = json.load(sys.stdin)
-
-for pkg in packages:
-    subprocess.run(
-        [sys.executable, "-m", "pip", "install", "--upgrade", pkg["name"]],
-        check=False
-    )
-' 
-
-    if [ $? -ne 0 ]; then
-        log_warn "Some packages may not have updated successfully."
-        return 1
-    fi
-
-    log_success "All pip packages updated"
+    log_success "Project pip packages installed and updated"
 
     return 0
 }
