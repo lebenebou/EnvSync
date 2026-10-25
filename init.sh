@@ -4,7 +4,7 @@
 # This script orchestrates the initialization of the EnvSync repository
 # It decrypts encrypted files, updates bash profile, and syncs vim configuration
 # 
-# Usage: ./init.sh [--verbose] [--fail-fast] [--config] [--full]
+# Usage: ./init.sh [--verbose] [--fail-fast] [--light] [--full]
 
 _esync_pre_vars=$(compgen -v)
 _esync_pre_fns=$(declare -F | awk '{print $3}')
@@ -18,7 +18,7 @@ SRC_DIR="$REPO_ROOT/src"
 CONFIG_DIR="$SRC_DIR/config"
 
 VERBOSE=false
-CONFIG=false
+LIGHT=false
 FULL=false
 FAIL_FAST=false
 
@@ -34,7 +34,7 @@ Options:
     -h, --help      Show this help message and exit
     --verbose       Enable verbose output
     --fail-fast     Stop immediately when a step fails
-    --config        Perform validation and authentication only.
+    --light        Perform validation and authentication only.
                     Skip bash/vim configuration updates.
     --full          Run the complete setup:
                       - update configurations
@@ -49,14 +49,14 @@ Examples:
     ./init.sh --verbose
         Standard initialization with additional logging
 
-    ./init.sh --config
+    ./init.sh --light
         Validate/Update bashprofile, vimrc.
 
     ./init.sh --full --verbose
         Run the complete setup with verbose logging
 
 Notes:
-    --full overrides --config.
+    --full overrides --light.
 EOF
 }
 
@@ -72,12 +72,12 @@ for arg in "$@"; do
         --fail-fast)
             FAIL_FAST=true
             ;;
-        --config)
-            CONFIG=true
+        --light)
+            LIGHT=true
             ;;
         --full)
             FULL=true
-            CONFIG=false
+            LIGHT=false
             ;;
         *)
             echo "Unknown option: $arg"
@@ -480,13 +480,13 @@ _esync_main()
     fi
 
 
-    if $CONFIG || $FULL; then
+    if $LIGHT || $FULL; then
         update_bash_profile || { $FAIL_FAST && return 1; }
         update_vimrc || { $FAIL_FAST && return 1; }
     fi
 
     echo ""
-    if ! $CONFIG; then
+    if ! $LIGHT; then
         ensure_git || return $?
         ensure_auth_ssh || return $?
         verify_repo || return $?

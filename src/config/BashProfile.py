@@ -430,7 +430,7 @@ def envSyncAliases() -> list[ConfigOption]:
 
     # EnvSync main
     Alias('init').to(initScript()).withTag('EnvSync main'),
-    Alias('config').to('init --config').withTag('EnvSync main'),
+    Alias('config').to('init --light').withTag('EnvSync main'),
     Alias('reset').to(Script(os.path.join(globalEnv.repoRootPath, 'reset.sh'))).withTag('EnvSync main'),
 
     # EnvSync utils
@@ -461,7 +461,7 @@ def envSyncAliases() -> list[ConfigOption]:
         checkDiff.muteOutput(),
 
         IfPreviousSucceeded(EchoSuccess('Bashprofile up to date'))\
-            .Else(EchoWarning('Bashprofile might be outdated. Consider running init.sh --config')),
+            .Else(EchoWarning('Bashprofile might be outdated. Consider running init.sh --light')),
 
     ]
 
