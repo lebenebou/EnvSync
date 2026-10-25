@@ -290,13 +290,8 @@ ensure_git()
     return 0
 }
 
-ensure_auth_ssh()
+ensure_decrypted()
 {
-    echo ""
-    echo -ne "Checking auth...\r"
-
-    ensure_online "SSH authentication" || return 0
-
     python "$SRC_DIR/GlobalEnv.py" --decrypt
 
     local RETURN_CODE=$?
@@ -306,6 +301,17 @@ ensure_auth_ssh()
     fi
 
     log_success "Decryption success"
+    return 0
+}
+
+ensure_auth_ssh()
+{
+    echo ""
+    echo -ne "Checking auth...\r"
+
+    ensure_decrypted || return $?
+
+    ensure_online "SSH authentication" || return 0
 
     # kill running ssh-agents if any
     ps aux | grep ssh-agent | awk '{print $1}' | xargs -r kill 2>/dev/null
@@ -332,7 +338,7 @@ ensure_auth_ssh()
         return 1
     fi
 
-    log_success "Init SSH"
+    log_success "SSH Handshake"
     return 0
 }
 
