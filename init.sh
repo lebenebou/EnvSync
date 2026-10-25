@@ -109,6 +109,20 @@ log_error()
     echo -e "${RED}[ ERR]${NC} $1"
 }
 
+ensure_online()
+{
+    local reason="${1:-}"
+
+    # Timeout is set to 2 seconds to ensure performance
+    if curl -s --head --connect-timeout 2 google.com > /dev/null; then
+        log_success "Internet connection"
+        return 0
+    fi
+
+    [ -n "$reason" ] && log_warn "[OFFLINE] Skipping $reason"
+    return 1
+}
+
 ensure_jq()
 {
     local JQ_URL="https://github.com/jqlang/jq/releases/latest/download/jq-win64.exe"
@@ -120,6 +134,8 @@ ensure_jq()
     fi
 
     log_warn "jq not found, installing..."
+    ensure_online "jq installation" || return 0
+
     if ! curl -L "$JQ_URL" -o "$JQ_EXE" -s 2>/dev/null; then
         log_error "jq installation encountered an issue"
         return 1
@@ -142,6 +158,8 @@ ensure_fd()
     fi
 
     log_warn "fd not found, installing..."
+    ensure_online "fd installation" || return 0
+
     rm -rf "$FD_DIR" "$FD_ZIP" 2>/dev/null
     if ! curl -Ls "$FD_URL" -o "$FD_ZIP" 2>/dev/null; then
         log_error "fd installation encountered an issue"
@@ -176,6 +194,8 @@ ensure_bat()
     fi
 
     log_warn "bat not found, installing..."
+    ensure_online "bat installation" || return 0
+
     rm -rf "$BAT_DIR" "$BAT_ZIP" 2>/dev/null
 
     if ! curl -L "$BAT_URL" -o "$BAT_ZIP" -s 2>/dev/null; then
@@ -212,6 +232,7 @@ ensure_python()
 
     local JQ_EXE="$REPO_ROOT/bin/jq.exe"
     if $FULL && [ -f "$JQ_EXE" ]; then
+        ensure_online "Python version check" || return 0
 
         latestVersion=$(curl -s https://endoflife.date/api/python.json | "$JQ_EXE" -r '.[0].latest')
         pMajorMinor=$(echo "$pversion" | cut -d. -f1,2)
@@ -243,6 +264,7 @@ ensure_requirements()
     fi
 
     echo "Ensuring required pip packages..."
+    ensure_online "PIP packages install and update" || return 0
 
     # Install and upgrade packages from requirements.txt
     if ! pip install -r "$REQUIREMENTS_FILE" --upgrade --quiet; then
@@ -272,6 +294,8 @@ ensure_auth_ssh()
 {
     echo ""
     echo -ne "Checking auth...\r"
+
+    ensure_online "SSH authentication" || return 0
 
     python "$SRC_DIR/GlobalEnv.py" --decrypt
 
@@ -352,8 +376,11 @@ sync_vim_plugins()
 
     local VIM_PLUG="$HOME/.vim/autoload/plug.vim"
     local VIM_PLUG_URL="https://raw.githubusercontent.com/junegunn/vim-plug/master/plug.vim"
+
     if [ ! -f "$VIM_PLUG" ]; then
-        $VERBOSE && log_warn "vim-plug not found, installing..."
+
+        log_warn "vim-plug not found, installing..."
+        ensure_online "vim-plug installation" || return 0
         if ! curl -fLo "$VIM_PLUG" --create-dirs "$VIM_PLUG_URL" 2>/dev/null; then
             log_error "vim-plug installation encountered an issue"
             return 1
@@ -362,6 +389,8 @@ sync_vim_plugins()
     fi
 
     $VERBOSE && echo "Syncing vim plugins..."
+    ensure_online "vim plugin sync" || return 0
+
     if vim +PlugInstall +qall 2>/dev/null; then
         log_success "Vim plugins installed"
     else
@@ -391,6 +420,8 @@ verify_repo()
     if ! $FULL; then
         return 0
     fi
+
+    ensure_online "repository update check" || return 0
 
     # Check if main branch is ahead of the current commit
     cd "$REPO_ROOT"
