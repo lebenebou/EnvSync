@@ -3,3 +3,4 @@ pyperclip
 pyautogui
 tabulate
 pdfplumber
+psutil
