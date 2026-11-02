@@ -1,5 +1,6 @@
 
 import os, sys
+import argparse
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PARENT_DIR = os.path.dirname(CURRENT_DIR)
@@ -40,10 +41,15 @@ class OllamaModel(Model):
 
 if __name__ == '__main__':
 
+    parser = argparse.ArgumentParser(description="AI Agent CLI")
+    parser.add_argument('query', nargs='+', help="The query to ask the agent")
+    args = parser.parse_args()
+
+    agentQuery = " ".join(args.query)
+
     ollama7b: Model = OllamaModel("qwen2.5-coder:14b")
     agent = IterativeAgent(ollama7b, verbose=True)
 
-    agentQuery: str = "what is the purpose of the main.py of the finance project? please look inside that file and tell me how it operates"
     response: str = agent.ask(agentQuery)
 
     print(end="\n\n", file=sys.stderr, flush=True)

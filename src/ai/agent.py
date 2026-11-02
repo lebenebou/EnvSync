@@ -56,18 +56,22 @@ class IterativeAgent:
             self.queryMessage: str = queryMessage
             self.previouslyRunCommands: list[CompletedProcess] = []
 
+            self.previouslyRunCommands.append(cli.runCommand('pwd'))
+
         def toString(self) -> str:
             # builds an .md file
-            res: str = "You are about to help a human with a request, they're asking:\n"
+            res: str = "You are helping a human with a request, they're asking:\n"
             res += f'"{self.queryMessage}"\n\n'
 
-            res += "If you believe that you can help them further by having them run some comamnds on their machine,\n"
+            res += "If you believe that you can help them further by running some comamnds on their machine,\n"
             res += "then reply in a very specific RAW json format:\n"
             res += createJsonExample()
             res += "\n\n"
 
+            res += "Do not suggest commands with placeholders. If you need the results of some commands before executing other ones, reply with those first, then those will be run and you will have their results\n"
+
             if len(self.previouslyRunCommands) > 0:
-                res += "They have already run some commands on their machine which can help you navigate and discover the environment, here are their outputs:\n"
+                res += "As a reminder, here are the commands that you have aleady run, in order to discover more about their environment:"
                 history = [
                     completedProcessToDict(proc)
                     for proc in self.previouslyRunCommands
@@ -77,16 +81,19 @@ class IterativeAgent:
             if len(self.previouslyRunCommands) > 0:
                 res += "If the previous commands are enough to provide a satisfactory answer (it must be satisfactory), go ahead and answer them in the \"reply\" section of your JSON response.\n"
                 res += "Otherwise, leave the reply section empty in the JSON reply, and fill the \"commands\" array instead with commands that might help them out further.\n"
-                res += "If the human typed a wrong command, or doesnt have privileges, try to suggest other commands as workardounds\n"
                 res += "You can even suggest commands which look for files, etc... in order to look around and discover the environment further\n"
+                res += "Try to avoid running the same command more than twice. Especially if it appears to have failed in the command history above, it might just mean the command requires priviliges or the task is impossible. In that case, try to suggest workaround commands, OR, if it's really impossible let them know in your 'reply' section."
                 res += "\n"
 
             res += "## Info about our human\n"
-            res += " - The terminal they will use to run the command(s): GitBash on Windows\n\n"
+            res += " - The terminal they will use to run the command(s): CMD on Windows\n"
+            # res += " - So if some commands fail (i.e powershell or CMD) try to call them from git bash as such: powershell.exe -NoProfile ...\n"
+            res += "\n"
 
             res += "## Your reply style (IMPORTANT)\n"
             res += " - Always output a parsable JSON string\n"
             res += " - Never ask follow up questions\n"
+            res += "\n"
 
             return res
 
