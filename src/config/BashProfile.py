@@ -445,6 +445,9 @@ def envSyncAliases() -> list[ConfigOption]:
     Alias('clip').to(RunPython(utilsPath / 'clipboard.py').addArg('--copy')).withTag('EnvSync clipboard'),
     Alias('paste').to(RunPython(utilsPath / 'clipboard.py').addArg('--paste')).pipe('tr -d').addArg(r'"\r"').withTag('EnvSync clipboard'),
 
+    # EnvSync ai
+    Alias('ai').to(RunPython(envSyncSrcPath / 'ai' / 'main.py')).withTag('EnvSync ai'),
+
     # EnvSync personal
     Alias('money').to(RunPython(envSyncSrcPath / 'finance' / 'main.py')).withTag('EnvSync personal'),
     Alias('theplan').to('start').addPath(os.path.join('G:\\', 'My Drive', 'THE_PLAN.xlsx')).withScope(ConfigScope.WINDOWS).withTag('EnvSync personal'),
