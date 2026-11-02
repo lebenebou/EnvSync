@@ -6,3 +6,5 @@ bin/
 
 config.json
 .vscode/
+
+src/ai/query.md
