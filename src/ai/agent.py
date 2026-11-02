@@ -23,6 +23,7 @@ def createJsonExample() -> str:
 
 def completedProcessToDict(proc: CompletedProcess) -> dict:
     return {
+        "command": " ".join(proc.args) if isinstance(proc.args, list) else proc.args,
         "stdout": proc.stdout,
         "stderr": proc.stderr,
         "returnCode": proc.returncode
@@ -61,12 +62,12 @@ class IterativeAgent:
             res += f'"{self.queryMessage}"\n\n'
 
             res += "If you believe that you can help them further by having them run some comamnds on their machine,\n"
-            res += "then reply in a very specific RAW json format (without the backticks ```json stuff, just RAW json):\n"
+            res += "then reply in a very specific RAW json format:\n"
             res += createJsonExample()
             res += "\n\n"
 
             if len(self.previouslyRunCommands) > 0:
-                res += "They have already run some commands on their machine, here are their outputs:\n"
+                res += "They have already run some commands on their machine which can help you navigate and discover the environment, here are their outputs:\n"
                 history = [
                     completedProcessToDict(proc)
                     for proc in self.previouslyRunCommands
@@ -74,22 +75,18 @@ class IterativeAgent:
                 res += f"```json\n{json.dumps(history, indent=4)}\n```\n\n"
 
             if len(self.previouslyRunCommands) > 0:
-                res += "If you think these commands and their output is enough to answer them, go ahead and answer them with a short and consice answer in the \"reply\" section of you JSON response.\n"
-                res += "Otherwise, leave the reply section empty in the JSON reply, and fill the \"commands\" array instead with commands that might help them out further.\n\n"
+                res += "If the previous commands are enough to provide a satisfactory answer (it must be satisfactory), go ahead and answer them in the \"reply\" section of your JSON response.\n"
+                res += "Otherwise, leave the reply section empty in the JSON reply, and fill the \"commands\" array instead with commands that might help them out further.\n"
+                res += "If the human typed a wrong command, or doesnt have privileges, try to suggest other commands as workardounds\n"
+                res += "You can even suggest commands which look for files, etc... in order to look around and discover the environment further\n"
+                res += "\n"
 
             res += "## Info about our human\n"
             res += " - The terminal they will use to run the command(s): GitBash on Windows\n\n"
 
             res += "## Your reply style (IMPORTANT)\n"
             res += " - Always output a parsable JSON string\n"
-
-            # Write the results to query.md and overwrite it at each run
-            query_path = os.path.join(CURRENT_DIR, "query.md")
-            try:
-                with open(query_path, "w", encoding="utf-8") as f:
-                    f.write(res)
-            except Exception as e:
-                print(f"Warning: Could not write to {query_path}: {e}")
+            res += " - Never ask follow up questions\n"
 
             return res
 
@@ -109,7 +106,11 @@ class IterativeAgent:
             else:
                 raise ValueError(f"Invalid JSON string: {jsonString}")
             
-            data: dict = json.loads(jsonString)
+            try:
+                data: dict = json.loads(jsonString)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Invalid JSON string: {jsonString}. Error: {str(e)}")
+
             response = IterativeAgent.Response()
             response.reply = data.get("reply", None)
             response.commands = data.get("commands", [])
@@ -119,6 +120,7 @@ class IterativeAgent:
 
         self.model: Model = model
         self.verbose: bool = verbose
+        self.workingDir: str = os.getcwd()
         assert self.model.isAvailable, f"Model '{self.model.name}' is not available, cannot create Agent."
 
     def ask(self, queryMessage: str) -> str:
@@ -127,6 +129,7 @@ class IterativeAgent:
 
         while True:
 
+            print(f"Thinking...", file=sys.stderr, end='\r', flush=True)
             modelResponse: str = self.model.run(query.toString())
             response = IterativeAgent.Response.fromJson(modelResponse)
 
@@ -140,7 +143,12 @@ class IterativeAgent:
 
             for command in response.commands:
 
-                res: CompletedProcess = cli.runCommand(command)
+                print(f"[ RUN]: {command}", file=sys.stderr, end=' ')
+
+                res: CompletedProcess = cli.runCommand(command, muteOutput=True, workingDir=self.workingDir)
+                message: str = "\033[92m[ OK ]\033[0m" if res.returncode == 0 else "\033[91m[ ERR]\033[0m"
+                print(message, file=sys.stderr, flush=True)
+
                 query.previouslyRunCommands.append(res)
 
                 continue
