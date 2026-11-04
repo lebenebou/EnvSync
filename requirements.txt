@@ -4,3 +4,4 @@ pyautogui
 tabulate
 pdfplumber
 psutil
+ollama

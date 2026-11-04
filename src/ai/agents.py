@@ -1,5 +1,6 @@
 
 import os, sys, json
+from typing import Optional
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 PARENT_DIR = os.path.dirname(CURRENT_DIR)
@@ -8,18 +9,17 @@ sys.path.append(PARENT_DIR)
 from utils import cli
 from subprocess import CompletedProcess
 
-def createJsonExample() -> str:
+from pydantic import BaseModel, Field, model_validator
 
-    example = {
-        "reply": "your_optional_reply_here (leave empty if you want to ask the human to run some commands)",
-        "commands": [
-            "command1",
-            "command2",
-            "commandx..."
-        ]
-    }
+class AgentResponse(BaseModel):
+    reply: str = ""
+    commands: list[str] = Field(default_factory=list)
 
-    return json.dumps(example, indent=4)
+    @model_validator(mode="after")
+    def validate_response(self):
+        if not self.reply and not self.commands:
+            raise ValueError("Response must contain a reply or commands")
+        return self
 
 def completedProcessToDict(proc: CompletedProcess) -> dict:
     return {
@@ -32,7 +32,6 @@ def completedProcessToDict(proc: CompletedProcess) -> dict:
 
 class Model:
     def __init__(self, name: str):
-
         self.name: str = name
         self.isAvailable: bool = self.checkAvailability()
 
@@ -40,13 +39,9 @@ class Model:
         assert self.isAvailable, f"Model '{self.name}' is not available."
 
     def checkAvailability(self) -> bool:
-        # This method should be overridden
-        # It should return True if the model is available for use, and False otherwise
         raise NotImplementedError("You must implement the check availability method in subclasses of Model")
 
-    def run(self, queryMessage: str) -> str:
-        # This method should be overridden
-        # It should take a Query object and return a Response object
+    def run(self, queryMessage: str, response_format: Optional[dict] = None) -> str:
         raise NotImplementedError("You must implement the run method in subclasses of Model")
 
 class IterativeAgent:
@@ -55,39 +50,31 @@ class IterativeAgent:
         def __init__(self, queryMessage: str):
             self.queryMessage: str = queryMessage
             self.previouslyRunCommands: list[CompletedProcess] = []
-
             self.previouslyRunCommands.append(cli.runCommand('pwd'))
 
         def toString(self) -> str:
-            # builds an .md file
             res: str = "You are helping a human with a request, they're asking:\n"
             res += f'"{self.queryMessage}"\n\n'
 
-            res += "If you believe that you can help them further by running some comamnds on their machine,\n"
-            res += "then reply in a very specific RAW json format:\n"
-            res += createJsonExample()
-            res += "\n\n"
-
+            res += "If you believe that you can help them further by running some commands on their machine,\n"
+            res += "then reply in a JSON format with 'reply' and 'commands' fields.\n\n"
             res += "Do not suggest commands with placeholders. If you need the results of some commands before executing other ones, reply with those first, then those will be run and you will have their results\n"
 
             if len(self.previouslyRunCommands) > 0:
-                res += "As a reminder, here are the commands that you have aleady run, in order to discover more about their environment:"
+                res += "\nAs a reminder, here are the commands that you have already run, in order to discover more about their environment:"
                 history = [
                     completedProcessToDict(proc)
                     for proc in self.previouslyRunCommands
                 ]
-                res += f"```json\n{json.dumps(history, indent=4)}\n```\n\n"
+                res += f"\n```json\n{json.dumps(history, indent=4)}\n```\n\n"
 
-            if len(self.previouslyRunCommands) > 0:
-                res += "If the previous commands are enough to provide a satisfactory answer (it must be satisfactory), go ahead and answer them in the \"reply\" section of your JSON response.\n"
+                res += "If the previous commands are enough to provide a satisfactory answer, go ahead and answer them in the \"reply\" section of your JSON response.\n"
                 res += "Otherwise, leave the reply section empty in the JSON reply, and fill the \"commands\" array instead with commands that might help them out further.\n"
                 res += "You can even suggest commands which look for files, etc... in order to look around and discover the environment further\n"
-                res += "Try to avoid running the same command more than twice. Especially if it appears to have failed in the command history above, it might just mean the command requires priviliges or the task is impossible. In that case, try to suggest workaround commands, OR, if it's really impossible let them know in your 'reply' section."
-                res += "\n"
+                res += "Try to avoid running the same command more than twice. Especially if it appears to have failed in the command history above, it might just mean the command requires privileges or the task is impossible. In that case, try to suggest workaround commands, OR, if it's really impossible let them know in your 'reply' section.\n"
 
-            res += "## Info about our human\n"
+            res += "\n## Info about our human\n"
             res += " - The terminal they will use to run the command(s): CMD on Windows\n"
-            # res += " - So if some commands fail (i.e powershell or CMD) try to call them from git bash as such: powershell.exe -NoProfile ...\n"
             res += "\n"
 
             res += "## Your reply style (IMPORTANT)\n"
@@ -95,36 +82,15 @@ class IterativeAgent:
             res += " - Never ask follow up questions\n"
             res += "\n"
 
+            res += "## Your skills\n"
+            res += " - You are in an /c/EnvSync directory"
+            res += " - You can look for files using the fd.exe in /c/EnvSync/bin/fd/fd.exe | example: fd.exe flight G: (NEVER use other methods to find files)"
+            res += " - You can open a file by running python /c/EnvSync/src/utils/start.py <file_path>"
+            res += "\n"
+
             return res
 
-    class Response:
-        def __init__(self):
-            self.reply: str = None
-            self.commands: list[str] = []
-
-        @staticmethod
-        def fromJson(jsonString: str) -> 'IterativeAgent.Response':
-
-            start: int = jsonString.find('{')
-            end: int = jsonString.rfind('}')
-
-            if start != -1 and end != -1:
-                jsonString = jsonString[start:end+1]
-            else:
-                raise ValueError(f"Invalid JSON string: {jsonString}")
-            
-            try:
-                data: dict = json.loads(jsonString)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid JSON string: {jsonString}. Error: {str(e)}")
-
-            response = IterativeAgent.Response()
-            response.reply = data.get("reply", None)
-            response.commands = data.get("commands", [])
-            return response
-
     def __init__(self, model: Model, verbose: bool = False):
-
         self.model: Model = model
         self.verbose: bool = verbose
         self.workingDir: str = os.getcwd()
@@ -133,34 +99,27 @@ class IterativeAgent:
         assert self.model.isAvailable, f"Model '{self.model.name}' is not available, cannot create Agent."
 
     def ask(self, queryMessage: str) -> str:
-
         query = IterativeAgent.Query(queryMessage)
 
         while True:
-
             print(f"Thinking...", file=sys.stderr, end='\r', flush=True)
-            modelResponse: str = self.model.run(query.toString())
-            response = IterativeAgent.Response.fromJson(modelResponse)
+            
+            # Use Pydantic schema for structured output
+            modelResponse: str = self.model.run(query.toString(), response_format=AgentResponse.model_json_schema())
+            
+            modelResponse = '\n'.join(line for line in modelResponse.splitlines() if not line.count('```'))
+            response = AgentResponse.model_validate_json(modelResponse)
 
             if not response.commands:
                 assert response.reply is not None, f"Model '{self.model.name}' did not provide any commands to run, and did not provide a reply either. This is an invalid response."
                 return response.reply
 
-            # handle commands
-            if not response.commands or len(response.commands) == 0:
-                raise ValueError(f"Model '{self.model.name}' did not provide any commands to run, and did not provide a reply either. This is an invalid response.")
-
             for command in response.commands:
-
-                print(f"[ RUN]: {command}", file=sys.stderr, end=' ')
-
+                print(f"[ RUN]: {command}", file=sys.stderr, end=' ', flush=True)
                 res: CompletedProcess = cli.runCommand(command, muteOutput=True, workingDir=self.workingDir)
                 message: str = "\033[92m[ OK ]\033[0m" if res.returncode == 0 else "\033[91m[ ERR]\033[0m"
                 print(message, file=sys.stderr, flush=True)
-
                 query.previouslyRunCommands.append(res)
-
-                continue
 
             continue
 
