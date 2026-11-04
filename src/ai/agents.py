@@ -10,6 +10,73 @@ from utils import cli
 from subprocess import CompletedProcess
 
 from pydantic import BaseModel, Field, model_validator
+from enum import IntEnum, auto
+
+class CommandImpact(IntEnum):
+
+    Minimal = auto()
+    Medium = auto()
+    Dangerous = auto()
+
+    @staticmethod
+    def measure(command: str) -> 'CommandImpact':
+
+        impactMap = {
+
+        CommandImpact.Minimal:
+            [
+            ],
+
+        CommandImpact.Medium:
+            [
+                "git reset",
+                "git stash",
+                "git checkout",
+                "git add",
+                "git commit",
+                "pip",
+                "winget",
+                "npm",
+                "yarn",
+                "mkdir",
+                "cp",
+                "copy",
+                "mv",
+                "move",
+                "chmod",
+                "chown",
+            ],
+
+        CommandImpact.Dangerous:
+            [
+                "rm",
+                "rmdir",
+                "del",
+                "shutil",
+                "format",
+                "diskpart",
+                "mkfs",
+                "dd",
+                "net user /delete",
+                "reg delete",
+                "erase",
+            ],
+
+        }
+
+        highestImpact = CommandImpact.Minimal
+
+        for impact, argList in impactMap.items():
+            for arg in argList:
+                
+                if arg.lower() in command.lower():
+                    highestImpact = max(highestImpact, impact)
+
+                continue
+
+            continue
+
+        return highestImpact
 
 class AgentResponse(BaseModel):
     reply: str = ""
@@ -95,8 +162,26 @@ class IterativeAgent:
         self.verbose: bool = verbose
         self.workingDir: str = os.getcwd()
 
-        print(f'[AGNT] Using model: {self.model.name}')
+        print(f'[ AI ] Using model: {self.model.name}')
         assert self.model.isAvailable, f"Model '{self.model.name}' is not available, cannot create Agent."
+
+    def runCommand(self, command: str) -> CompletedProcess:
+
+        print(f"[ RUN]: {command}", file=sys.stderr, end=' ', flush=True)
+
+        impact = CommandImpact.measure(command)
+
+        if (impact > CommandImpact.Minimal) and (not input("Continue? (y/n): ").strip().lower() == "y"):
+
+            print( "\033[91m[CNCL]\033[0m Command refused", file=sys.stderr, flush=True)
+            return CompletedProcess(command, -1, 'Refused to run by human')
+
+        res: CompletedProcess = cli.runCommand(command, muteOutput=True, workingDir=self.workingDir)
+
+        message: str = "\033[92m[ OK ]\033[0m" if res.returncode == 0 else "\033[91m[ ERR]\033[0m"
+        print(message, file=sys.stderr, flush=True)
+
+        return res
 
     def ask(self, queryMessage: str) -> str:
         query = IterativeAgent.Query(queryMessage)
@@ -115,10 +200,7 @@ class IterativeAgent:
                 return response.reply
 
             for command in response.commands:
-                print(f"[ RUN]: {command}", file=sys.stderr, end=' ', flush=True)
-                res: CompletedProcess = cli.runCommand(command, muteOutput=True, workingDir=self.workingDir)
-                message: str = "\033[92m[ OK ]\033[0m" if res.returncode == 0 else "\033[91m[ ERR]\033[0m"
-                print(message, file=sys.stderr, flush=True)
+                res: CompletedProcess = IterativeAgent.runCommand(self, command)
                 query.previouslyRunCommands.append(res)
 
             continue
