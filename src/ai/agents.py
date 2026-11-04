@@ -128,6 +128,8 @@ class IterativeAgent:
         self.model: Model = model
         self.verbose: bool = verbose
         self.workingDir: str = os.getcwd()
+
+        print(f'[AGNT] Using model: {self.model.name}')
         assert self.model.isAvailable, f"Model '{self.model.name}' is not available, cannot create Agent."
 
     def ask(self, queryMessage: str) -> str:
